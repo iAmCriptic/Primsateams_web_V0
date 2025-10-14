@@ -41,9 +41,19 @@
                             <strong>{{ attachment.filename }}</strong>
                             <br>
                             <small class="text-muted">
-                                {{ (attachment.size / 1024)|round(1) }} KB • {{ attachment.content_type }}
+                                {% if attachment.size > 1024*1024 %}
+                                    {{ (attachment.size / (1024*1024))|round(1) }} MB
+                                {% else %}
+                                    {{ (attachment.size / 1024)|round(1) }} KB
+                                {% endif %}
+                                • {{ attachment.content_type }}
                                 {% if attachment.is_inline %}
                                 • Inline
+                                {% endif %}
+                                {% if attachment.file_path %}
+                                • Dateisystem
+                                {% else %}
+                                • Datenbank
                                 {% endif %}
                             </small>
                         </div>

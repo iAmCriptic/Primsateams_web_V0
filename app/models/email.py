@@ -44,7 +44,8 @@ class EmailAttachment(db.Model):
     filename = db.Column(db.String(255), nullable=False)
     content_type = db.Column(db.String(100), nullable=False)
     size = db.Column(db.Integer, nullable=False)  # Size in bytes
-    content = db.Column(db.LargeBinary, nullable=False)  # File content
+    content = db.Column(db.LargeBinary, nullable=True)  # File content (can be None for file storage)
+    file_path = db.Column(db.String(500), nullable=True)  # Path to file on disk
     is_inline = db.Column(db.Boolean, default=False)  # True if inline image
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
@@ -59,7 +60,29 @@ class EmailAttachment(db.Model):
         """Get data URL for inline images."""
         if self.is_inline and self.content_type.startswith('image/'):
             import base64
-            return f"data:{self.content_type};base64,{base64.b64encode(self.content).decode()}"
+            if self.content:
+                return f"data:{self.content_type};base64,{base64.b64encode(self.content).decode()}"
+            elif self.file_path:
+                try:
+                    import os
+                    with open(self.file_path, 'rb') as f:
+                        content = f.read()
+                        return f"data:{self.content_type};base64,{base64.b64encode(content).decode()}"
+                except:
+                    return None
+        return None
+    
+    def get_content(self):
+        """Get attachment content from database or file system."""
+        if self.content:
+            return self.content
+        elif self.file_path:
+            try:
+                import os
+                with open(self.file_path, 'rb') as f:
+                    return f.read()
+            except:
+                return None
         return None
 
 

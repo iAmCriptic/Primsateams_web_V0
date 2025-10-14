@@ -157,9 +157,15 @@ def sync_emails_from_server():
                             # Decode filename if encoded
                             filename = decode_header_field(filename)
                             
-                            # Get file content
+                            # Get file content with size limit
                             file_content = part.get_payload(decode=True)
                             if file_content:
+                                # Limit attachment size to 25MB for central email access
+                                max_size = 25 * 1024 * 1024  # 25MB
+                                if len(file_content) > max_size:
+                                    print(f"⚠️ Attachment zu groß ({len(file_content)} bytes): {filename} - wird übersprungen (Max: 25MB)")
+                                    continue
+                                
                                 attachments_data.append({
                                     'filename': filename,
                                     'content_type': content_type,
@@ -196,11 +202,16 @@ def sync_emails_from_server():
                     body_html = re.sub(r'<script[^>]*>.*?</script>', '', body_html, flags=re.DOTALL | re.IGNORECASE)
                     # Remove style tags that might break layout
                     body_html = re.sub(r'<style[^>]*>.*?</style>', '', body_html, flags=re.DOTALL | re.IGNORECASE)
-                    # Fix inline images - convert cid: to data URLs or placeholder
-                    body_html = re.sub(r'src="cid:([^"]+)"', r'src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="', body_html)
-                    # Remove problematic HTML entities that might cause "OBJ"
+                    # Remove problematic HTML entities that cause "OBJ" placeholders
                     body_html = re.sub(r'<o:p\s*/>', '', body_html)
                     body_html = re.sub(r'<o:p>.*?</o:p>', '', body_html, flags=re.DOTALL)
+                    body_html = re.sub(r'<w:.*?>.*?</w:.*?>', '', body_html, flags=re.DOTALL)
+                    body_html = re.sub(r'<m:.*?>.*?</m:.*?>', '', body_html, flags=re.DOTALL)
+                    # Fix inline images - convert cid: to data URLs or placeholder
+                    body_html = re.sub(r'src="cid:([^"]+)"', r'src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="', body_html)
+                    # Remove Microsoft Word artifacts
+                    body_html = re.sub(r'<v:.*?>.*?</v:.*?>', '', body_html, flags=re.DOTALL)
+                    body_html = re.sub(r'<![^>]*>', '', body_html)  # Remove comments
                     # Normalize whitespace
                     body_html = re.sub(r'\s+', ' ', body_html).strip()
                 
@@ -231,23 +242,64 @@ def sync_emails_from_server():
                 db.session.add(email_entry)
                 db.session.flush()  # Get the ID for attachments
                 
-                # Save attachments
+                # Save attachments with error handling and smart storage
                 for attachment_data in attachments_data:
-                    from app.models.email import EmailAttachment
-                    attachment = EmailAttachment(
-                        email_id=email_entry.id,
-                        filename=attachment_data['filename'],
-                        content_type=attachment_data['content_type'],
-                        size=attachment_data['size'],
-                        content=attachment_data['content'],
-                        is_inline=attachment_data.get('is_inline', False)
-                    )
-                    db.session.add(attachment)
+                    try:
+                        from app.models.email import EmailAttachment
+                        import os
+                        
+                        # For large files (>10MB), consider file system storage
+                        file_content = attachment_data['content']
+                        file_size = attachment_data['size']
+                        filename = attachment_data['filename']
+                        
+                        # Store in database for smaller files, file system for larger ones
+                        if file_size > 10 * 1024 * 1024:  # 10MB threshold
+                            # Store in file system
+                            upload_dir = os.path.join(current_app.root_path, 'static', 'attachments')
+                            os.makedirs(upload_dir, exist_ok=True)
+                            
+                            # Create unique filename
+                            import uuid
+                            unique_filename = f"{uuid.uuid4()}_{filename}"
+                            file_path = os.path.join(upload_dir, unique_filename)
+                            
+                            # Write to file system
+                            with open(file_path, 'wb') as f:
+                                f.write(file_content)
+                            
+                            attachment = EmailAttachment(
+                                email_id=email_entry.id,
+                                filename=filename,
+                                content_type=attachment_data['content_type'],
+                                size=file_size,
+                                content=None,  # Not stored in DB
+                                file_path=file_path,  # Stored on disk
+                                is_inline=attachment_data.get('is_inline', False)
+                            )
+                        else:
+                            # Store in database for smaller files
+                            attachment = EmailAttachment(
+                                email_id=email_entry.id,
+                                filename=filename,
+                                content_type=attachment_data['content_type'],
+                                size=file_size,
+                                content=file_content,  # Stored in DB
+                                file_path=None,  # Not on disk
+                                is_inline=attachment_data.get('is_inline', False)
+                            )
+                        
+                        db.session.add(attachment)
+                    except Exception as e:
+                        print(f"⚠️ Fehler beim Speichern des Attachments {attachment_data['filename']}: {str(e)}")
+                        continue
                 
                 synced_count += 1
                 
             except Exception as e:
                 logging.error(f"Failed to process email {email_id}: {str(e)}")
+                # Rollback session on error
+                db.session.rollback()
                 continue
         
         db.session.commit()
@@ -313,6 +365,14 @@ def view_email(email_id):
         # Basic HTML sanitization for safe display
         html_content = email_msg.body_html
         
+        # Remove Microsoft Word artifacts that cause "OBJ" placeholders
+        html_content = re.sub(r'<o:p\s*/>', '', html_content)
+        html_content = re.sub(r'<o:p>.*?</o:p>', '', html_content, flags=re.DOTALL)
+        html_content = re.sub(r'<w:.*?>.*?</w:.*?>', '', html_content, flags=re.DOTALL)
+        html_content = re.sub(r'<m:.*?>.*?</m:.*?>', '', html_content, flags=re.DOTALL)
+        html_content = re.sub(r'<v:.*?>.*?</v:.*?>', '', html_content, flags=re.DOTALL)
+        html_content = re.sub(r'<![^>]*>', '', html_content)  # Remove comments
+        
         # Replace cid: references with actual inline images
         for attachment in email_msg.attachments:
             if attachment.is_inline and attachment.content_type.startswith('image/'):
@@ -345,8 +405,14 @@ def download_attachment(attachment_id):
         flash('Anhang nicht gefunden.', 'danger')
         return redirect(url_for('email.index'))
     
-    # Create file-like object from binary data
-    file_obj = io.BytesIO(attachment.content)
+    # Get content from database or file system
+    content = attachment.get_content()
+    if not content:
+        flash('Anhang nicht gefunden oder beschädigt.', 'danger')
+        return redirect(url_for('email.index'))
+    
+    # Create file-like object from content
+    file_obj = io.BytesIO(content)
     
     return send_file(
         file_obj,
@@ -437,8 +503,12 @@ def sync_emails():
     print(f"   SSL: {current_app.config.get('IMAP_USE_SSL', True)}")
     
     # Clear existing emails to force re-sync with new attachment handling
-    EmailMessage.query.delete()
-    db.session.commit()
+    try:
+        EmailMessage.query.delete()
+        db.session.commit()
+    except Exception as e:
+        print(f"⚠️ Fehler beim Löschen der E-Mails: {str(e)}")
+        db.session.rollback()
     
     # Try to sync from IMAP server
     success, message = sync_emails_from_server()
@@ -458,24 +528,29 @@ def sync_emails():
                     'sender': 'admin@example.com',
                     'recipients': 'team@example.com',
                     'body_text': 'Willkommen in Ihrem neuen Team Portal! Hier können Sie E-Mails verwalten, chatten und zusammenarbeiten.',
+                    'body_html': '<p>Willkommen in Ihrem neuen <strong>Team Portal</strong>!</p><p>Hier können Sie:</p><ul><li>E-Mails verwalten</li><li>Chatten</li><li>Zusammenarbeiten</li></ul>',
                     'is_sent': False,
                     'received_at': datetime.utcnow(),
-                    'message_id': 'sample-1'
+                    'message_id': 'sample-1',
+                    'has_attachments': False
                 },
                 {
                     'subject': 'Meeting morgen um 10:00',
                     'sender': 'kollege@example.com',
                     'recipients': 'team@example.com',
                     'body_text': 'Hi Team,\n\nunser Meeting morgen um 10:00 Uhr findet im Konferenzraum statt.\n\nBeste Grüße',
+                    'body_html': '<p>Hi Team,</p><p>unser Meeting morgen um <strong>10:00 Uhr</strong> findet im Konferenzraum statt.</p><p>Beste Grüße</p>',
                     'is_sent': False,
                     'received_at': datetime.utcnow(),
-                    'message_id': 'sample-2'
+                    'message_id': 'sample-2',
+                    'has_attachments': True
                 },
                 {
                     'subject': 'Projekt Update',
                     'sender': 'manager@example.com',
                     'recipients': 'team@example.com',
                     'body_text': 'Das Projekt läuft gut voran. Hier ist das aktuelle Update...',
+                    'body_html': '<p>Das Projekt läuft gut voran. Hier ist das aktuelle <em>Update</em>...</p>',
                     'is_sent': False,
                     'received_at': datetime.utcnow(),
                     'message_id': 'sample-3'
