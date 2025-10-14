@@ -31,7 +31,7 @@
                         <td>{{ user.full_name }}</td>
                         <td>
                             <form method="POST" action="{{ url_for('settings.toggle_email_read', user_id=user.id) }}" class="d-inline">
-                                <button type="submit" class="btn btn-sm {% if perm and perm.can_read %}btn-success{% else %}btn-outline-secondary{% endif %}">
+                                <button type="submit" class="btn btn-sm {% if perm and perm.can_read %}btn-accent{% else %}btn-outline-secondary{% endif %}">
                                     <i class="bi bi-{% if perm and perm.can_read %}check-circle{% else %}x-circle{% endif %}"></i>
                                     {% if perm and perm.can_read %}Aktiviert{% else %}Deaktiviert{% endif %}
                                 </button>
@@ -39,7 +39,7 @@
                         </td>
                         <td>
                             <form method="POST" action="{{ url_for('settings.toggle_email_send', user_id=user.id) }}" class="d-inline">
-                                <button type="submit" class="btn btn-sm {% if perm and perm.can_send %}btn-success{% else %}btn-outline-secondary{% endif %}">
+                                <button type="submit" class="btn btn-sm {% if perm and perm.can_send %}btn-accent{% else %}btn-outline-secondary{% endif %}">
                                     <i class="bi bi-{% if perm and perm.can_send %}check-circle{% else %}x-circle{% endif %}"></i>
                                     {% if perm and perm.can_send %}Aktiviert{% else %}Deaktiviert{% endif %}
                                 </button>

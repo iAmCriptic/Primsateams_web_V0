@@ -8,62 +8,223 @@
         <h1><i class="bi bi-calendar-event"></i> Termine</h1>
     </div>
     <div class="col-auto">
-        <a href="{{ url_for('calendar.create_event') }}" class="btn btn-primary">
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-accent active" id="monthViewBtn">
+                <i class="bi bi-calendar-month"></i> Monatsansicht
+            </button>
+            <button type="button" class="btn btn-outline-accent" id="listViewBtn">
+                <i class="bi bi-list-ul"></i> Terminübersicht
+            </button>
+        </div>
+        <a href="{{ url_for('calendar.create_event') }}" class="btn btn-accent ms-2">
             <i class="bi bi-plus-circle"></i> Neuer Termin
         </a>
     </div>
 </div>
 
-{% if events %}
-<div class="row g-3">
-    {% for event in events %}
-    <div class="col-12 col-md-6 col-lg-4">
-        <div class="card event-card h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <h5 class="card-title mb-0">{{ event.title }}</h5>
-                    {% set participation = participations.get(event.id) %}
-                    {% if participation %}
-                        {% if participation.status == 'accepted' %}
-                        <span class="badge bg-success">Zugesagt</span>
-                        {% elif participation.status == 'declined' %}
-                        <span class="badge bg-danger">Abgesagt</span>
-                        {% elif participation.status == 'removed' %}
-                        <span class="badge bg-secondary">Entfernt</span>
-                        {% else %}
-                        <span class="badge bg-warning">Ausstehend</span>
-                        {% endif %}
-                    {% endif %}
-                </div>
-                
-                {% if event.description %}
-                <p class="card-text text-truncate-2">{{ event.description }}</p>
-                {% endif %}
-                
-                <div class="mb-2">
-                    <small class="text-muted">
-                        <i class="bi bi-calendar"></i> {{ event.start_time.strftime('%d.%m.%Y') }}<br>
-                        <i class="bi bi-clock"></i> {{ event.start_time.strftime('%H:%M') }} - {{ event.end_time.strftime('%H:%M') }} Uhr
-                    </small>
-                    {% if event.location %}
-                    <br><small class="text-muted"><i class="bi bi-geo-alt"></i> {{ event.location }}</small>
-                    {% endif %}
-                </div>
-                
-                <a href="{{ url_for('calendar.view_event', event_id=event.id) }}" class="btn btn-sm btn-outline-primary">
-                    Details anzeigen
-                </a>
-            </div>
+<!-- Monatsansicht -->
+<div id="monthView" class="calendar-view">
+    <div class="row mb-3">
+        <div class="col-auto">
+            <button class="btn btn-outline-secondary" id="prevMonth">
+                <i class="bi bi-chevron-left"></i>
+            </button>
+        </div>
+        <div class="col text-center">
+            <h3 id="currentMonth">{{ current_month.strftime('%B %Y') if current_month else 'Oktober 2025' }}</h3>
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-outline-secondary" id="nextMonth">
+                <i class="bi bi-chevron-right"></i>
+            </button>
         </div>
     </div>
-    {% endfor %}
+    
+    <div class="calendar-grid">
+        <div class="calendar-header">
+            <div class="day-header">Mo</div>
+            <div class="day-header">Di</div>
+            <div class="day-header">Mi</div>
+            <div class="day-header">Do</div>
+            <div class="day-header">Fr</div>
+            <div class="day-header">Sa</div>
+            <div class="day-header">So</div>
+        </div>
+        
+        <div class="calendar-body" id="calendarBody">
+            <!-- Kalender wird per JavaScript generiert -->
+        </div>
+    </div>
 </div>
-{% else %}
-<div class="alert alert-info">
-    <i class="bi bi-info-circle"></i>
-    Keine Termine vorhanden. Erstellen Sie den ersten Termin!
+
+<!-- Terminübersicht -->
+<div id="listView" class="calendar-view" style="display: none;">
+    {% if events %}
+    <div class="row g-3">
+        {% for event in events %}
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card event-card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title mb-0">{{ event.title }}</h5>
+                        {% set participation = participations.get(event.id) %}
+                        {% if participation %}
+                            {% if participation.status == 'accepted' %}
+                            <span class="badge bg-success">Zugesagt</span>
+                            {% elif participation.status == 'declined' %}
+                            <span class="badge bg-danger">Abgesagt</span>
+                            {% elif participation.status == 'removed' %}
+                            <span class="badge bg-secondary">Entfernt</span>
+                            {% else %}
+                            <span class="badge bg-warning">Ausstehend</span>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                    
+                    {% if event.description %}
+                    <p class="card-text text-truncate-2">{{ event.description }}</p>
+                    {% endif %}
+                    
+                    <div class="mb-2">
+                        <small class="text-muted">
+                            <i class="bi bi-calendar"></i> {{ event.start_time.strftime('%d.%m.%Y') }}<br>
+                            <i class="bi bi-clock"></i> {{ event.start_time.strftime('%H:%M') }} - {{ event.end_time.strftime('%H:%M') }} Uhr
+                        </small>
+                        {% if event.location %}
+                        <br><small class="text-muted"><i class="bi bi-geo-alt"></i> {{ event.location }}</small>
+                        {% endif %}
+                    </div>
+                    
+                    <a href="{{ url_for('calendar.view_event', event_id=event.id) }}" class="btn btn-sm btn-outline-accent">
+                        Details anzeigen
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i>
+        Keine Termine vorhanden. Erstellen Sie den ersten Termin!
+    </div>
+    {% endif %}
 </div>
-{% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // View Toggle
+    const monthViewBtn = document.getElementById('monthViewBtn');
+    const listViewBtn = document.getElementById('listViewBtn');
+    const monthView = document.getElementById('monthView');
+    const listView = document.getElementById('listView');
+    
+    monthViewBtn.addEventListener('click', function() {
+        monthView.style.display = 'block';
+        listView.style.display = 'none';
+        monthViewBtn.classList.add('active');
+        monthViewBtn.classList.remove('btn-outline-accent');
+        monthViewBtn.classList.add('btn-accent');
+        listViewBtn.classList.remove('active');
+        listViewBtn.classList.remove('btn-accent');
+        listViewBtn.classList.add('btn-outline-accent');
+    });
+    
+    listViewBtn.addEventListener('click', function() {
+        monthView.style.display = 'none';
+        listView.style.display = 'block';
+        listViewBtn.classList.add('active');
+        listViewBtn.classList.remove('btn-outline-accent');
+        listViewBtn.classList.add('btn-accent');
+        monthViewBtn.classList.remove('active');
+        monthViewBtn.classList.remove('btn-accent');
+        monthViewBtn.classList.add('btn-outline-accent');
+    });
+    
+    // Calendar Navigation
+    let currentDate = new Date();
+    const monthNames = [
+        'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+        'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
+    ];
+    
+    function updateCalendar() {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        
+        document.getElementById('currentMonth').textContent = 
+            monthNames[month] + ' ' + year;
+        
+        generateCalendar(year, month);
+    }
+    
+    function generateCalendar(year, month) {
+        const calendarBody = document.getElementById('calendarBody');
+        calendarBody.innerHTML = '';
+        
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        const daysInMonth = lastDay.getDate();
+        const startDay = (firstDay.getDay() + 6) % 7; // Montag = 0
+        
+        // Leere Zellen für Tage vor dem ersten Tag des Monats
+        for (let i = 0; i < startDay; i++) {
+            const emptyCell = document.createElement('div');
+            emptyCell.className = 'calendar-day empty';
+            calendarBody.appendChild(emptyCell);
+        }
+        
+        // Tage des Monats
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dayCell = document.createElement('div');
+            dayCell.className = 'calendar-day';
+            dayCell.textContent = day;
+            
+            // Heute markieren
+            const today = new Date();
+            if (year === today.getFullYear() && month === today.getMonth() && day === today.getDate()) {
+                dayCell.classList.add('today');
+            }
+            
+            // Events für diesen Tag hinzufügen
+            addEventsToDay(dayCell, year, month, day);
+            
+            calendarBody.appendChild(dayCell);
+        }
+    }
+    
+    function addEventsToDay(dayCell, year, month, day) {
+        // Hier würden die Events aus dem Backend geladen werden
+        // Für jetzt fügen wir ein Beispiel-Event hinzu
+        const events = [
+            // Beispiel: Event am 15. Oktober
+            { date: 15, title: 'Team Meeting', time: '10:00' }
+        ];
+        
+        const event = events.find(e => e.date === day);
+        if (event) {
+            const eventElement = document.createElement('div');
+            eventElement.className = 'calendar-event';
+            eventElement.textContent = event.title;
+            eventElement.title = event.title + ' - ' + event.time;
+            dayCell.appendChild(eventElement);
+        }
+    }
+    
+    document.getElementById('prevMonth').addEventListener('click', function() {
+        currentDate.setMonth(currentDate.getMonth() - 1);
+        updateCalendar();
+    });
+    
+    document.getElementById('nextMonth').addEventListener('click', function() {
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        updateCalendar();
+    });
+    
+    // Initial calendar generation
+    updateCalendar();
+});
+</script>
 {% endblock %}
 
 

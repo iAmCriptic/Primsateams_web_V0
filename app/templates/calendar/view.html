@@ -49,7 +49,7 @@
                 {% if user_participation and user_participation.status != 'removed' %}
                 <div class="d-flex gap-2">
                     <form method="POST" action="{{ url_for('calendar.set_participation', event_id=event.id, status='accepted') }}" class="d-inline">
-                        <button type="submit" class="btn btn-success">
+                        <button type="submit" class="btn btn-accent">
                             <i class="bi bi-check-circle"></i> Zusagen
                         </button>
                     </form>

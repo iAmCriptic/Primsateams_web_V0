@@ -6,6 +6,8 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    margin: 0;
+    padding: 0;
 }
 
 /* Mobile Navigation */
@@ -37,6 +39,23 @@ body {
     line-height: 1;
 }
 
+/* Darkmode Mobile Navigation - Immer dunkel */
+[data-bs-theme="dark"] .mobile-nav,
+.mobile-nav.dark-mode {
+    background-color: #212529 !important;
+    border-top: 1px solid #495057;
+}
+
+[data-bs-theme="dark"] .mobile-nav .nav-link,
+.mobile-nav.dark-mode .nav-link {
+    color: #adb5bd !important;
+}
+
+[data-bs-theme="dark"] .mobile-nav .nav-link.active,
+.mobile-nav.dark-mode .nav-link.active {
+    color: var(--accent-color) !important;
+}
+
 /* Desktop Sidebar */
 .sidebar {
     width: 280px;
@@ -46,6 +65,30 @@ body {
     left: 0;
     z-index: 100;
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Darkmode Sidebar - Immer dunkel */
+[data-bs-theme="dark"] .sidebar,
+.sidebar.dark-mode {
+    background-color: #212529 !important;
+    border-right: 1px solid #495057;
+}
+
+[data-bs-theme="dark"] .sidebar .nav-link,
+.sidebar.dark-mode .nav-link {
+    color: #adb5bd !important;
+}
+
+[data-bs-theme="dark"] .sidebar .nav-link:hover,
+.sidebar.dark-mode .nav-link:hover {
+    background-color: #495057 !important;
+    color: white !important;
+}
+
+[data-bs-theme="dark"] .sidebar .nav-link.active,
+.sidebar.dark-mode .nav-link.active {
+    background-color: var(--accent-color) !important;
+    color: white !important;
 }
 
 .sidebar .nav-link {
@@ -269,12 +312,149 @@ body {
     align-items: center;
     justify-content: center;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    margin: 0;
+    padding: 1rem;
 }
 
 .auth-card {
     max-width: 400px;
     width: 100%;
     margin: 1rem;
+}
+
+/* Accent Color Buttons */
+.btn-accent {
+    background-color: var(--accent-color) !important;
+    border-color: var(--accent-color) !important;
+    color: white !important;
+}
+
+.btn-accent:hover {
+    background-color: var(--accent-color) !important;
+    border-color: var(--accent-color) !important;
+    color: white !important;
+    opacity: 0.9;
+}
+
+.btn-accent:focus {
+    background-color: var(--accent-color) !important;
+    border-color: var(--accent-color) !important;
+    color: white !important;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* Calendar Styles */
+.calendar-grid {
+    background: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    overflow: hidden;
+}
+
+.calendar-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.day-header {
+    padding: 0.75rem;
+    text-align: center;
+    font-weight: 600;
+    color: #6c757d;
+    border-right: 1px solid #dee2e6;
+}
+
+.day-header:last-child {
+    border-right: none;
+}
+
+.calendar-body {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    min-height: 400px;
+}
+
+.calendar-day {
+    padding: 0.5rem;
+    border-right: 1px solid #dee2e6;
+    border-bottom: 1px solid #dee2e6;
+    min-height: 60px;
+    position: relative;
+    cursor: pointer;
+    transition: background-color 0.15s ease-in-out;
+}
+
+.calendar-day:hover {
+    background-color: #f8f9fa;
+}
+
+.calendar-day.empty {
+    background-color: #f8f9fa;
+    cursor: default;
+}
+
+.calendar-day.today {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+.calendar-day.today:hover {
+    background-color: var(--accent-color);
+    opacity: 0.9;
+}
+
+.calendar-event {
+    font-size: 0.75rem;
+    background-color: #e3f2fd;
+    color: #1976d2;
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+    margin-top: 0.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.calendar-day.today .calendar-event {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+/* Darkmode Calendar */
+[data-bs-theme="dark"] .calendar-grid {
+    background: #212529;
+    border: 1px solid #495057;
+}
+
+[data-bs-theme="dark"] .calendar-header {
+    background-color: #343a40;
+    border-bottom-color: #495057;
+}
+
+[data-bs-theme="dark"] .day-header {
+    color: #adb5bd;
+    border-right-color: #495057;
+}
+
+[data-bs-theme="dark"] .calendar-day {
+    border-right-color: #495057;
+    border-bottom-color: #495057;
+    color: #adb5bd;
+}
+
+[data-bs-theme="dark"] .calendar-day:hover {
+    background-color: #343a40;
+}
+
+[data-bs-theme="dark"] .calendar-day.empty {
+    background-color: #343a40;
+}
+
+[data-bs-theme="dark"] .calendar-event {
+    background-color: #0d6efd;
+    color: white;
 }
 
 /* Badges */
