@@ -17,6 +17,30 @@ import logging
 email_bp = Blueprint('email', __name__)
 
 
+def decode_header_field(field):
+    """Decode email header field properly."""
+    if not field:
+        return ''
+    
+    try:
+        from email.header import decode_header
+        decoded_parts = decode_header(field)
+        decoded_string = ''
+        
+        for part, encoding in decoded_parts:
+            if isinstance(part, bytes):
+                if encoding:
+                    decoded_string += part.decode(encoding)
+                else:
+                    decoded_string += part.decode('utf-8', errors='ignore')
+            else:
+                decoded_string += str(part)
+        
+        return decoded_string.strip()
+    except Exception:
+        return str(field)
+
+
 def connect_imap():
     """Connect to IMAP server and return connection."""
     try:
@@ -71,14 +95,29 @@ def sync_emails_from_server():
                 raw_email = msg_data[0][1]
                 email_message = email.message_from_bytes(raw_email)
                 
-                # Extract data
-                sender = email_message.get('From', '')
-                subject = email_message.get('Subject', '')
+                # Extract data with proper decoding
+                from email.header import decode_header
+                
+                # Decode sender
+                sender_raw = email_message.get('From', '')
+                sender = decode_header_field(sender_raw)
+                
+                # Decode subject
+                subject_raw = email_message.get('Subject', '')
+                subject = decode_header_field(subject_raw)
+                
+                # Decode other fields
                 date_str = email_message.get('Date', '')
                 message_id = email_message.get('Message-ID', '')
-                recipients = email_message.get('To', '')
-                cc = email_message.get('Cc', '')
-                bcc = email_message.get('Bcc', '')
+                
+                recipients_raw = email_message.get('To', '')
+                recipients = decode_header_field(recipients_raw)
+                
+                cc_raw = email_message.get('Cc', '')
+                cc = decode_header_field(cc_raw)
+                
+                bcc_raw = email_message.get('Bcc', '')
+                bcc = decode_header_field(bcc_raw)
                 
                 # Skip if no message ID (required for uniqueness)
                 if not message_id:
@@ -89,7 +128,7 @@ def sync_emails_from_server():
                 if existing:
                     continue
                 
-                # Parse body
+                # Parse body with HTML cleanup
                 body_text = ""
                 if email_message.is_multipart():
                     for part in email_message.walk():
@@ -98,6 +137,12 @@ def sync_emails_from_server():
                             break
                 else:
                     body_text = email_message.get_payload(decode=True).decode('utf-8', errors='ignore')
+                
+                # Clean HTML tags and normalize text
+                import re
+                body_text = re.sub(r'<[^>]+>', '', body_text)  # Remove HTML tags
+                body_text = re.sub(r'\s+', ' ', body_text)     # Normalize whitespace
+                body_text = body_text.strip()
                 
                 # Parse date
                 received_at = datetime.utcnow()
