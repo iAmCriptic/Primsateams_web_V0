@@ -140,10 +140,10 @@ def sync_emails_from_server():
                         content_type = part.get_content_type()
                         content_disposition = part.get('Content-Disposition', '')
                         
-                        # Handle attachments and inline images (but NOT HTML content)
+                        # Handle attachments and inline images (but NOT text content)
                         if (('attachment' in content_disposition or 'inline' in content_disposition) and 
-                            not content_type.startswith('text/html') and 
-                            content_type != 'text/plain'):
+                            not content_type.startswith('text/') and 
+                            not content_type.startswith('message/')):
                             has_attachments = True
                             
                             # Get filename or generate one
@@ -178,44 +178,96 @@ def sync_emails_from_server():
                             
                             continue
                         
-                        # Handle text content with better encoding
+                        # Handle text content with better encoding and priority
                         if content_type == "text/plain":
-                            if not body_text:  # Only take the first plain text part
+                            # Always take the latest plain text part (some emails have multiple)
+                            try:
+                                payload = part.get_payload(decode=True)
+                                if payload:
+                                    # Try to detect encoding
+                                    import chardet
+                                    detected = chardet.detect(payload)
+                                    encoding = detected.get('encoding', 'utf-8')
+                                    decoded_text = payload.decode(encoding, errors='ignore')
+                                    if decoded_text.strip():  # Only use if not empty
+                                        body_text = decoded_text
+                            except:
+                                # Fallback to utf-8
                                 try:
                                     payload = part.get_payload(decode=True)
                                     if payload:
-                                        # Try to detect encoding
-                                        import chardet
-                                        detected = chardet.detect(payload)
-                                        encoding = detected.get('encoding', 'utf-8')
-                                        body_text = payload.decode(encoding, errors='ignore')
+                                        decoded_text = payload.decode('utf-8', errors='ignore')
+                                        if decoded_text.strip():  # Only use if not empty
+                                            body_text = decoded_text
                                 except:
-                                    # Fallback to utf-8
-                                    body_text = part.get_payload(decode=True).decode('utf-8', errors='ignore')
+                                    pass
                         elif content_type == "text/html":
-                            if not body_html:  # Only take the first HTML part
+                            # Always take the latest HTML part (some emails have multiple)
+                            try:
+                                payload = part.get_payload(decode=True)
+                                if payload:
+                                    # Try to detect encoding
+                                    import chardet
+                                    detected = chardet.detect(payload)
+                                    encoding = detected.get('encoding', 'utf-8')
+                                    decoded_html = payload.decode(encoding, errors='ignore')
+                                    if decoded_html.strip():  # Only use if not empty
+                                        body_html = decoded_html
+                            except:
+                                # Fallback to utf-8
                                 try:
                                     payload = part.get_payload(decode=True)
                                     if payload:
-                                        # Try to detect encoding
-                                        import chardet
-                                        detected = chardet.detect(payload)
-                                        encoding = detected.get('encoding', 'utf-8')
-                                        body_html = payload.decode(encoding, errors='ignore')
+                                        decoded_html = payload.decode('utf-8', errors='ignore')
+                                        if decoded_html.strip():  # Only use if not empty
+                                            body_html = decoded_html
                                 except:
-                                    # Fallback to utf-8
-                                    body_html = part.get_payload(decode=True).decode('utf-8', errors='ignore')
+                                    pass
                 else:
+                    # Handle single-part emails
                     content_type = email_message.get_content_type()
-                    if content_type == "text/html":
-                        body_html = email_message.get_payload(decode=True).decode('utf-8', errors='ignore')
-                    else:
-                        body_text = email_message.get_payload(decode=True).decode('utf-8', errors='ignore')
+                    try:
+                        payload = email_message.get_payload(decode=True)
+                        if payload:
+                            # Try to detect encoding
+                            import chardet
+                            detected = chardet.detect(payload)
+                            encoding = detected.get('encoding', 'utf-8')
+                            decoded_content = payload.decode(encoding, errors='ignore')
+                            
+                            if content_type == "text/html":
+                                if decoded_content.strip():
+                                    body_html = decoded_content
+                            else:
+                                if decoded_content.strip():
+                                    body_text = decoded_content
+                    except:
+                        # Fallback to utf-8
+                        try:
+                            payload = email_message.get_payload(decode=True)
+                            if payload:
+                                decoded_content = payload.decode('utf-8', errors='ignore')
+                                if content_type == "text/html":
+                                    if decoded_content.strip():
+                                        body_html = decoded_content
+                                else:
+                                    if decoded_content.strip():
+                                        body_text = decoded_content
+                        except:
+                            pass
+                
+                # Debug logging for content extraction
+                print(f"📧 E-Mail Content Debug:")
+                print(f"   Subject: {subject}")
+                print(f"   Body Text Length: {len(body_text) if body_text else 0}")
+                print(f"   Body HTML Length: {len(body_html) if body_html else 0}")
+                print(f"   Attachments: {len(attachments_data)}")
                 
                 # Clean text version (remove excessive whitespace)
                 if body_text:
                     import re
                     body_text = re.sub(r'\s+', ' ', body_text).strip()
+                    print(f"   Cleaned Body Text Length: {len(body_text)}")
                 
                 # Clean HTML version (preserve links and basic formatting)
                 if body_html:
@@ -380,6 +432,13 @@ def view_email(email_id):
     if not email_msg.is_read:
         email_msg.is_read = True
         db.session.commit()
+    
+    # Debug email content
+    print(f"🔍 E-Mail View Debug:")
+    print(f"   ID: {email_msg.id}")
+    print(f"   Subject: {email_msg.subject}")
+    print(f"   Body Text: {'✅' if email_msg.body_text else '❌'} ({len(email_msg.body_text) if email_msg.body_text else 0} chars)")
+    print(f"   Body HTML: {'✅' if email_msg.body_html else '❌'} ({len(email_msg.body_html) if email_msg.body_html else 0} chars)")
     
     # Clean and prepare HTML content for display with clickable links
     html_content = None
