@@ -67,6 +67,31 @@ def create_app(config_name='default'):
             'app_logo': app_logo
         }
     
+    # Email header decoder filter
+    @app.template_filter('decode_email_header')
+    def decode_email_header_filter(header):
+        """Decode email header fields properly."""
+        if not header:
+            return ''
+        
+        try:
+            from email.header import decode_header
+            decoded_parts = decode_header(str(header))
+            decoded_string = ''
+            
+            for part, encoding in decoded_parts:
+                if isinstance(part, bytes):
+                    if encoding:
+                        decoded_string += part.decode(encoding)
+                    else:
+                        decoded_string += part.decode('utf-8', errors='ignore')
+                else:
+                    decoded_string += str(part)
+            
+            return decoded_string.strip()
+        except Exception:
+            return str(header)
+    
     
     # Register blueprints
     from app.blueprints.auth import auth_bp

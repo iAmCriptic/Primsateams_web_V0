@@ -565,6 +565,40 @@ body {
     }
 }
 
+/* Email HTML Content Styling */
+.email-html-content {
+    max-width: 100%;
+    overflow-x: hidden;
+    word-wrap: break-word;
+}
+
+.email-html-content img {
+    max-width: 100% !important;
+    height: auto !important;
+    display: block;
+    margin: 0.5rem 0;
+}
+
+.email-html-content table {
+    max-width: 100% !important;
+    table-layout: fixed;
+    word-wrap: break-word;
+}
+
+.email-html-content p,
+.email-html-content div,
+.email-html-content span {
+    max-width: 100%;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* Ensure email content doesn't break layout */
+.email-html-content * {
+    max-width: 100% !important;
+    box-sizing: border-box;
+}
+
 /* Badges */
 .badge {
     font-weight: 500;

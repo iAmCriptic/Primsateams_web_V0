@@ -128,21 +128,49 @@ def sync_emails_from_server():
                 if existing:
                     continue
                 
-                # Parse body with HTML cleanup
+                # Parse body with HTML and attachments support
                 body_text = ""
+                body_html = ""
+                has_attachments = False
+                
                 if email_message.is_multipart():
                     for part in email_message.walk():
-                        if part.get_content_type() == "text/plain":
-                            body_text = part.get_payload(decode=True).decode('utf-8', errors='ignore')
-                            break
+                        content_type = part.get_content_type()
+                        content_disposition = part.get('Content-Disposition', '')
+                        
+                        # Handle attachments
+                        if 'attachment' in content_disposition or 'inline' in content_disposition:
+                            has_attachments = True
+                            continue
+                        
+                        # Handle text content
+                        if content_type == "text/plain":
+                            if not body_text:  # Only take the first plain text part
+                                body_text = part.get_payload(decode=True).decode('utf-8', errors='ignore')
+                        elif content_type == "text/html":
+                            if not body_html:  # Only take the first HTML part
+                                body_html = part.get_payload(decode=True).decode('utf-8', errors='ignore')
                 else:
-                    body_text = email_message.get_payload(decode=True).decode('utf-8', errors='ignore')
+                    content_type = email_message.get_content_type()
+                    if content_type == "text/html":
+                        body_html = email_message.get_payload(decode=True).decode('utf-8', errors='ignore')
+                    else:
+                        body_text = email_message.get_payload(decode=True).decode('utf-8', errors='ignore')
                 
-                # Clean HTML tags and normalize text
-                import re
-                body_text = re.sub(r'<[^>]+>', '', body_text)  # Remove HTML tags
-                body_text = re.sub(r'\s+', ' ', body_text)     # Normalize whitespace
-                body_text = body_text.strip()
+                # Clean text version (remove excessive whitespace)
+                if body_text:
+                    import re
+                    body_text = re.sub(r'\s+', ' ', body_text).strip()
+                
+                # Clean HTML version (basic sanitization)
+                if body_html:
+                    import re
+                    # Remove script tags for security
+                    body_html = re.sub(r'<script[^>]*>.*?</script>', '', body_html, flags=re.DOTALL | re.IGNORECASE)
+                    # Remove style tags that might break layout
+                    body_html = re.sub(r'<style[^>]*>.*?</style>', '', body_html, flags=re.DOTALL | re.IGNORECASE)
+                    # Normalize whitespace
+                    body_html = re.sub(r'\s+', ' ', body_html).strip()
                 
                 # Parse date
                 received_at = datetime.utcnow()
@@ -160,7 +188,9 @@ def sync_emails_from_server():
                     recipients=recipients or 'Unknown',
                     cc=cc,
                     bcc=bcc,
-                    body_text=body_text[:1000],  # Limit body length
+                    body_text=body_text[:1000] if body_text else '',  # Limit body length
+                    body_html=body_html[:5000] if body_html else '',  # Limit HTML length
+                    has_attachments=has_attachments,
                     received_at=received_at,
                     is_read=False,
                     is_sent=False
@@ -221,7 +251,18 @@ def view_email(email_id):
         email_msg.is_read = True
         db.session.commit()
     
-    return render_template('email/view.html', email=email_msg)
+    # Clean and prepare HTML content for display
+    html_content = None
+    if email_msg.body_html:
+        import re
+        # Basic HTML sanitization for safe display
+        html_content = email_msg.body_html
+        
+        # Fix relative image URLs to absolute (if needed)
+        # This would need to be adapted based on your email server setup
+        html_content = re.sub(r'src="cid:([^"]+)"', r'data:image/png;base64,', html_content)
+    
+    return render_template('email/view.html', email=email_msg, html_content=html_content)
 
 
 @email_bp.route('/compose', methods=['GET', 'POST'])
