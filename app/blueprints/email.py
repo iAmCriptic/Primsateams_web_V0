@@ -61,57 +61,72 @@ def sync_emails_from_server():
         synced_count = 0
         
         for email_id in email_ids[-50:]:  # Only process last 50 emails
-            # Fetch email
-            status, msg_data = mail_conn.fetch(email_id, '(RFC822)')
-            if status != 'OK':
-                continue
-            
-            # Parse email
-            raw_email = msg_data[0][1]
-            email_message = email.message_from_bytes(raw_email)
-            
-            # Extract data
-            sender = email_message.get('From', '')
-            subject = email_message.get('Subject', '')
-            date_str = email_message.get('Date', '')
-            message_id = email_message.get('Message-ID', '')
-            
-            # Check if email already exists
-            existing = EmailMessage.query.filter_by(message_id=message_id).first()
-            if existing:
-                continue
-            
-            # Parse body
-            body_text = ""
-            if email_message.is_multipart():
-                for part in email_message.walk():
-                    if part.get_content_type() == "text/plain":
-                        body_text = part.get_payload(decode=True).decode('utf-8', errors='ignore')
-                        break
-            else:
-                body_text = email_message.get_payload(decode=True).decode('utf-8', errors='ignore')
-            
-            # Parse date
-            received_at = datetime.utcnow()
             try:
-                from email.utils import parsedate_to_datetime
-                received_at = parsedate_to_datetime(date_str)
-            except:
-                pass
-            
-            # Create database entry
-            email_entry = EmailMessage(
-                message_id=message_id,
-                sender=sender,
-                subject=subject,
-                body_text=body_text[:1000],  # Limit body length
-                received_at=received_at,
-                is_read=False,
-                is_sent=False
-            )
-            
-            db.session.add(email_entry)
-            synced_count += 1
+                # Fetch email
+                status, msg_data = mail_conn.fetch(email_id, '(RFC822)')
+                if status != 'OK':
+                    continue
+                
+                # Parse email
+                raw_email = msg_data[0][1]
+                email_message = email.message_from_bytes(raw_email)
+                
+                # Extract data
+                sender = email_message.get('From', '')
+                subject = email_message.get('Subject', '')
+                date_str = email_message.get('Date', '')
+                message_id = email_message.get('Message-ID', '')
+                recipients = email_message.get('To', '')
+                cc = email_message.get('Cc', '')
+                bcc = email_message.get('Bcc', '')
+                
+                # Skip if no message ID (required for uniqueness)
+                if not message_id:
+                    continue
+                
+                # Check if email already exists
+                existing = EmailMessage.query.filter_by(message_id=message_id).first()
+                if existing:
+                    continue
+                
+                # Parse body
+                body_text = ""
+                if email_message.is_multipart():
+                    for part in email_message.walk():
+                        if part.get_content_type() == "text/plain":
+                            body_text = part.get_payload(decode=True).decode('utf-8', errors='ignore')
+                            break
+                else:
+                    body_text = email_message.get_payload(decode=True).decode('utf-8', errors='ignore')
+                
+                # Parse date
+                received_at = datetime.utcnow()
+                try:
+                    from email.utils import parsedate_to_datetime
+                    received_at = parsedate_to_datetime(date_str)
+                except:
+                    pass
+                
+                # Create database entry
+                email_entry = EmailMessage(
+                    message_id=message_id,
+                    sender=sender,
+                    subject=subject,
+                    recipients=recipients or 'Unknown',
+                    cc=cc,
+                    bcc=bcc,
+                    body_text=body_text[:1000],  # Limit body length
+                    received_at=received_at,
+                    is_read=False,
+                    is_sent=False
+                )
+                
+                db.session.add(email_entry)
+                synced_count += 1
+                
+            except Exception as e:
+                logging.error(f"Failed to process email {email_id}: {str(e)}")
+                continue
         
         db.session.commit()
         mail_conn.close()
