@@ -457,6 +457,19 @@ body {
     color: white;
 }
 
+/* Email Mobile Styles */
+.email-item {
+    padding: 0.75rem;
+}
+
+.d-md-none .email-item {
+    padding: 1rem;
+}
+
+.badge.bg-accent {
+    background-color: var(--accent-color) !important;
+}
+
 /* Badges */
 .badge {
     font-weight: 500;

@@ -3,13 +3,30 @@
 {% block title %}E-Mail - Team Portal{% endblock %}
 
 {% block content %}
-<div class="row mb-3">
+<!-- Mobile Header -->
+<div class="d-md-none mb-3">
+    <div class="d-flex justify-content-between align-items-center">
+        <h1 class="h4 mb-0"><i class="bi bi-envelope"></i> E-Mail</h1>
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-sm btn-outline-accent" onclick="document.getElementById('syncForm').submit()">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+            <a href="{{ url_for('email.compose') }}" class="btn btn-sm btn-accent">
+                <i class="bi bi-pencil-square"></i>
+            </a>
+        </div>
+    </div>
+    <form id="syncForm" method="POST" action="{{ url_for('email.sync_emails') }}" style="display: none;"></form>
+</div>
+
+<!-- Desktop Header -->
+<div class="d-none d-md-flex row mb-3">
     <div class="col">
         <h1><i class="bi bi-envelope"></i> E-Mail</h1>
     </div>
     <div class="col-auto">
         <form method="POST" action="{{ url_for('email.sync_emails') }}" class="d-inline me-2">
-            <button type="submit" class="btn btn-outline-primary">
+            <button type="submit" class="btn btn-outline-accent">
                 <i class="bi bi-arrow-clockwise"></i> Synchronisieren
             </button>
         </form>
@@ -20,28 +37,50 @@
 </div>
 
 <div class="card">
-    <div class="card-header">
+    <div class="card-header d-none d-md-block">
         <h5 class="mb-0">Posteingang</h5>
     </div>
     <div class="card-body p-0">
         {% if emails %}
         <div class="list-group list-group-flush">
             {% for email in emails %}
-            <a href="{{ url_for('email.view_email', email_id=email.id) }}" class="list-group-item list-group-item-action {% if not email.is_read %}fw-bold{% endif %}">
-                <div class="d-flex w-100 justify-content-between align-items-start">
-                    <div class="flex-grow-1">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <h6 class="mb-0">{{ email.sender }}</h6>
-                            <small class="text-muted">{{ email.received_at.strftime('%d.%m.%Y %H:%M') if email.received_at else '' }}</small>
+            <a href="{{ url_for('email.view_email', email_id=email.id) }}" class="list-group-item list-group-item-action email-item {% if not email.is_read %}fw-bold{% endif %}">
+                <!-- Mobile Layout -->
+                <div class="d-md-none">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1 text-truncate">{{ email.sender }}</h6>
+                            <p class="mb-1 text-truncate">{{ email.subject }}</p>
+                            {% if email.body_text %}
+                            <small class="text-muted d-block text-truncate">{{ email.body_text[:80] }}...</small>
+                            {% endif %}
                         </div>
-                        <p class="mb-1">{{ email.subject }}</p>
-                        {% if email.body_text %}
-                        <small class="text-muted text-truncate d-block">{{ email.body_text[:100] }}...</small>
+                        <div class="text-end">
+                            {% if not email.is_read %}
+                            <span class="badge bg-accent mb-1">Neu</span><br>
+                            {% endif %}
+                            <small class="text-muted">{{ email.received_at.strftime('%d.%m %H:%M') if email.received_at else '' }}</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Desktop Layout -->
+                <div class="d-none d-md-block">
+                    <div class="d-flex w-100 justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <h6 class="mb-0">{{ email.sender }}</h6>
+                                <small class="text-muted">{{ email.received_at.strftime('%d.%m.%Y %H:%M') if email.received_at else '' }}</small>
+                            </div>
+                            <p class="mb-1">{{ email.subject }}</p>
+                            {% if email.body_text %}
+                            <small class="text-muted text-truncate d-block">{{ email.body_text[:100] }}...</small>
+                            {% endif %}
+                        </div>
+                        {% if not email.is_read %}
+                        <span class="badge bg-accent ms-2">Neu</span>
                         {% endif %}
                     </div>
-                    {% if not email.is_read %}
-                    <span class="badge bg-primary ms-2">Neu</span>
-                    {% endif %}
                 </div>
             </a>
             {% endfor %}

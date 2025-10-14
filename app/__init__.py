@@ -74,7 +74,7 @@ def create_app(config_name='default'):
     from app.blueprints.chat import chat_bp
     from app.blueprints.files import files_bp
     from app.blueprints.calendar import calendar_bp
-    from app.blueprints.email import email_bp
+    from app.blueprints.email import email_bp, start_email_sync
     from app.blueprints.credentials import credentials_bp
     from app.blueprints.manuals import manuals_bp
     from app.blueprints.canvas import canvas_bp
@@ -130,6 +130,9 @@ def create_app(config_name='default'):
             db.session.add(main_chat)
         
         db.session.commit()
+    
+    # Start email auto-sync
+    start_email_sync()
     
     return app
 
