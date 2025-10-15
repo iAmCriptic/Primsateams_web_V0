@@ -177,6 +177,35 @@ def create_app(config_name='default'):
                 is_direct_message=False
             )
             db.session.add(main_chat)
+            db.session.flush()  # Get the ID
+            
+            # Add all active users to the main chat
+            from app.models.chat import ChatMember
+            active_users = User.query.filter_by(is_active=True).all()
+            for user in active_users:
+                member = ChatMember(
+                    chat_id=main_chat.id,
+                    user_id=user.id
+                )
+                db.session.add(member)
+        
+        # Also ensure all new users are added to the main chat
+        else:
+            from app.models.chat import ChatMember
+            # Get all active users
+            active_users = User.query.filter_by(is_active=True).all()
+            # Get existing members of main chat
+            existing_members = ChatMember.query.filter_by(chat_id=main_chat.id).all()
+            existing_user_ids = [member.user_id for member in existing_members]
+            
+            # Add any users who aren't already members
+            for user in active_users:
+                if user.id not in existing_user_ids:
+                    member = ChatMember(
+                        chat_id=main_chat.id,
+                        user_id=user.id
+                    )
+                    db.session.add(member)
         
         db.session.commit()
     

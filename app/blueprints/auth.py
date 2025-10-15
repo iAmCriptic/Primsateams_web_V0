@@ -70,6 +70,17 @@ def register():
             can_send=True
         )
         db.session.add(email_perm)
+        
+        # Add user to main chat if it exists
+        from app.models.chat import Chat, ChatMember
+        main_chat = Chat.query.filter_by(is_main_chat=True).first()
+        if main_chat:
+            member = ChatMember(
+                chat_id=main_chat.id,
+                user_id=new_user.id
+            )
+            db.session.add(member)
+        
         db.session.commit()
         
         flash('Registrierung erfolgreich! Ein Administrator muss Ihr Konto noch freischalten.', 'success')
