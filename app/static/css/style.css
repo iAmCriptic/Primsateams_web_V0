@@ -132,6 +132,16 @@ body {
     padding-bottom: 70px; /* Reduzierte Space für mobile nav */
 }
 
+/* Mobile Chat Full Width Override */
+@media (max-width: 767.98px) {
+    .main-content:has(.chat-container) {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+}
+
 /* Email specific mobile adjustments */
 @media (max-width: 767.98px) {
     .main-content {
@@ -223,12 +233,14 @@ body {
     color: white;
     margin-left: auto; /* Push to right */
     margin-right: 1rem;
+    text-align: right; /* Align text to right */
 }
 
 .chat-message.other {
     background-color: #f8f9fa;
     margin-left: 1rem;
     margin-right: auto; /* Push to left */
+    text-align: left; /* Align text to left */
 }
 
 [data-bs-theme="dark"] .chat-message.other {
@@ -247,8 +259,7 @@ body {
     z-index: 1000 !important;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     width: 100vw !important;
-    margin-left: -15px !important;
-    margin-right: -15px !important;
+    margin: 0 !important;
 }
 
 [data-bs-theme="dark"] .mobile-chat-header {
@@ -274,9 +285,9 @@ body {
         overflow-y: auto;
         padding: 1rem;
         background-color: #f0f2f5;
-        min-height: calc(100vh - 250px); /* Minimum height to prevent background disappearing */
+        min-height: calc(100vh - 130px); /* Full height minus header and input */
         height: auto; /* Allow content to expand */
-        padding-bottom: 60px; /* Minimal space for input */
+        padding-bottom: 80px; /* Space for input */
         width: 100%; /* Full width */
     }
     
@@ -331,9 +342,9 @@ body {
         z-index: 1002;
         padding: 0.75rem 1rem;
         box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
-        margin-left: -15px; /* Remove left margin */
-        margin-right: -15px; /* Remove right margin */
-        width: calc(100vw); /* Full viewport width */
+        margin: 0; /* Remove all margins */
+        width: 100vw; /* Full viewport width */
+        position: fixed; /* Ensure proper positioning */
     }
 }
 
