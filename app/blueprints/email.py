@@ -19,7 +19,7 @@ email_bp = Blueprint('email', __name__)
 
 
 def decode_header_field(field):
-    """Decode email header field properly."""
+    """Decode email header field properly with multiple fallback strategies."""
     if not field:
         return ''
     
@@ -31,19 +31,38 @@ def decode_header_field(field):
         for part, encoding in decoded_parts:
             if isinstance(part, bytes):
                 if encoding:
+                    # Try the detected encoding first
                     try:
                         decoded_string += part.decode(encoding, errors='ignore')
+                        continue
                     except (UnicodeDecodeError, LookupError):
-                        decoded_string += part.decode('utf-8', errors='ignore')
+                        pass
+                
+                # Fallback strategies for bytes
+                for fallback_encoding in ['utf-8', 'latin-1', 'cp1252', 'ascii']:
+                    try:
+                        decoded_string += part.decode(fallback_encoding, errors='ignore')
+                        break
+                    except (UnicodeDecodeError, LookupError):
+                        continue
                 else:
-                    decoded_string += part.decode('utf-8', errors='ignore')
+                    # If all encodings fail, use ascii with replacement
+                    decoded_string += part.decode('ascii', errors='replace')
             else:
                 decoded_string += str(part)
         
-        return decoded_string.strip()
+        # Clean up the result
+        result = decoded_string.strip()
+        if not result:
+            return str(field) if field else ''
+        return result
+        
     except Exception as e:
-        print(f"Warning: Failed to decode header field: {e}")
-        return str(field) if field else ''
+        # Ultimate fallback
+        try:
+            return str(field) if field else ''
+        except:
+            return 'Unknown'
 
 
 def connect_imap():
@@ -380,14 +399,74 @@ def sync_emails_from_server():
                 synced_count += 1
                 
             except Exception as e:
-                # Handle Unicode errors gracefully
+                # Handle Unicode errors gracefully - try to process with fallbacks
                 error_msg = str(e)
                 if 'charmap' in error_msg or 'codec' in error_msg:
-                    # Only log every 10th Unicode error to reduce spam
-                    if int(email_id.decode()) % 10 == 0:
-                        logging.warning(f"Skipping emails with Unicode issues (e.g., {email_id})")
+                    try:
+                        # Try to process the email with minimal data extraction
+                        status, msg_data = mail_conn.fetch(email_id, '(RFC822)')
+                        if status == 'OK':
+                            raw_email = msg_data[0][1]
+                            email_message = email.message_from_bytes(raw_email)
+                            
+                            # Extract minimal data with fallbacks
+                            sender = "Unknown Sender"
+                            subject = "(No Subject)"
+                            message_id = f"fallback-{email_id.decode()}"
+                            
+                            try:
+                                sender_raw = email_message.get('From', '')
+                                if sender_raw:
+                                    sender = decode_header_field(sender_raw)
+                                if not sender or sender == '':
+                                    sender = "Unknown Sender"
+                            except:
+                                pass
+                            
+                            try:
+                                subject_raw = email_message.get('Subject', '')
+                                if subject_raw:
+                                    subject = decode_header_field(subject_raw)
+                                if not subject or subject == '':
+                                    subject = "(No Subject)"
+                            except:
+                                pass
+                            
+                            try:
+                                message_id = email_message.get('Message-ID', f"fallback-{email_id.decode()}")
+                            except:
+                                pass
+                            
+                            # Create minimal email record
+                            existing = EmailMessage.query.filter_by(message_id=message_id).first()
+                            if not existing:
+                                email_record = EmailMessage(
+                                    uid=email_id.decode(),
+                                    message_id=message_id,
+                                    sender=sender,
+                                    subject=subject,
+                                    recipients="Unknown Recipients",
+                                    body_text="E-Mail-Content konnte nicht verarbeitet werden (Unicode-Probleme)",
+                                    body_html="<p>E-Mail-Content konnte nicht verarbeitet werden (Unicode-Probleme)</p>",
+                                    has_attachments=False,
+                                    received_at=datetime.utcnow(),
+                                    is_read=False,
+                                    is_sent=False
+                                )
+                                db.session.add(email_record)
+                                synced_count += 1
+                                
+                                # Only log every 10th successful fallback
+                                if int(email_id.decode()) % 10 == 0:
+                                    logging.info(f"Processed {int(email_id.decode()) % 10} emails with Unicode fallback method")
+                        
+                    except Exception as fallback_error:
+                        # Only log every 10th fallback error to reduce spam
+                        if int(email_id.decode()) % 10 == 0:
+                            logging.warning(f"Could not process email {email_id} even with fallback: {str(fallback_error)}")
                 else:
                     logging.error(f"Failed to process email {email_id}: {error_msg}")
+                
                 # Rollback session on error
                 db.session.rollback()
                 continue
