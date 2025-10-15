@@ -48,7 +48,7 @@
                 {% if message.sender_id != current_user.id %}
                 <strong>{{ message.sender.full_name }}</strong>
                 {% else %}
-                <div></div>
+                <strong>Du</strong>
                 {% endif %}
                 <small class="text-muted">{{ message.created_at | localtime('%H:%M') }}</small>
             </div>
@@ -203,7 +203,7 @@
         
         messageDiv.innerHTML = `
             <div class="d-flex justify-content-between mb-1">
-                ${!isOwnMessage ? `<strong>${escapeHtml(message.sender)}</strong>` : '<div></div>'}
+                <strong>${isOwnMessage ? 'Du' : escapeHtml(message.sender)}</strong>
                 <small class="text-muted">${time}</small>
             </div>
             ${contentHtml}

@@ -266,8 +266,9 @@ body {
         overflow-y: auto;
         padding: 1rem;
         background-color: #f0f2f5;
-        height: calc(100vh - 250px); /* Full height minus header, input, nav and padding */
-        padding-bottom: 80px; /* Extra space for input */
+        min-height: calc(100vh - 250px); /* Minimum height to prevent background disappearing */
+        height: auto; /* Allow content to expand */
+        padding-bottom: 120px; /* Extra space for input and scrolling */
     }
     
     [data-bs-theme="dark"] .messages-area {
@@ -283,6 +284,8 @@ body {
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         background-color: white;
         overflow: hidden;
+        display: flex;
+        flex-direction: column;
     }
     
     [data-bs-theme="dark"] .chat-container {
@@ -293,6 +296,10 @@ body {
     .messages-area {
         background-color: transparent;
         padding: 1rem;
+        flex: 1;
+        overflow-y: auto;
+        height: auto;
+        min-height: 0;
     }
 }
 
