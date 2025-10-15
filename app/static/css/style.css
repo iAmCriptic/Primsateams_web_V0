@@ -243,8 +243,8 @@ body {
     padding: 0.5rem 0.75rem 0.75rem 0.75rem; /* More padding at bottom for timestamp */
     border-radius: 1rem; /* More rounded like WhatsApp */
     max-width: 80%; /* Limit width to 80% as requested */
-    min-width: fit-content; /* Shrink to content size */
-    width: fit-content; /* Shrink to content size */
+    min-width: 200px; /* Minimum width to prevent too narrow bubbles */
+    width: auto; /* Auto width with min/max constraints */
     position: relative;
     word-wrap: break-word;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); /* Subtle shadow */
@@ -261,16 +261,16 @@ body {
     display: block; /* Force block display for margin auto to work */
 }
 
-.chat-message.own .message-header {
-    text-align: right !important;
-}
-
-.chat-message.own .message-content {
-    text-align: right !important;
-}
-
+.chat-message.own .message-header,
+.chat-message.own .message-content,
 .chat-message.own .message-time {
     text-align: right !important;
+}
+
+.chat-message.other .message-header,
+.chat-message.other .message-content,
+.chat-message.other .message-time {
+    text-align: left !important;
 }
 
 .chat-message.other {
