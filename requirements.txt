@@ -23,6 +23,7 @@ python-dotenv>=1.0.0
 Pillow>=10.1.0
 requests>=2.31.0
 chardet>=5.2.0
+pytz>=2023.3
 
 # Email (optional)
 imapclient>=2.3.1

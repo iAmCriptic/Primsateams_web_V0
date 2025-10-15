@@ -46,6 +46,9 @@ class Config:
     APP_NAME = os.environ.get('APP_NAME', 'Team Portal')
     APP_LOGO = os.environ.get('APP_LOGO', 'static/img/logo.png')
     
+    # Timezone
+    TIMEZONE = os.environ.get('TIMEZONE', 'Europe/Berlin')
+    
     # File Versioning
     MAX_FILE_VERSIONS = 3
 

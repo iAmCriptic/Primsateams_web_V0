@@ -112,6 +112,8 @@ def get_messages(chat_id):
     
     messages = query.order_by(ChatMessage.created_at).all()
     
+    from app.utils import get_local_time
+    
     return jsonify([{
         'id': msg.id,
         'sender_id': msg.sender_id,
@@ -120,7 +122,7 @@ def get_messages(chat_id):
         'content': msg.content,
         'message_type': msg.message_type,
         'media_url': msg.media_url,
-        'created_at': msg.created_at.isoformat()
+        'created_at': get_local_time(msg.created_at).isoformat()
     } for msg in messages])
 
 

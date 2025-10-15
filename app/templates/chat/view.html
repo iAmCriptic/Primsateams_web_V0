@@ -3,7 +3,8 @@
 {% block title %}{{ chat.name }} - Chats{% endblock %}
 
 {% block content %}
-<div class="row mb-3">
+<!-- Desktop Header -->
+<div class="row mb-3 d-none d-md-flex">
     <div class="col">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
@@ -16,14 +17,40 @@
     </div>
 </div>
 
+<!-- Mobile Header -->
+<div class="mobile-chat-header d-md-none">
+    <div class="d-flex align-items-center">
+        <a href="{{ url_for('chat.index') }}" class="btn btn-link p-2 me-2">
+            <i class="bi bi-arrow-left fs-4"></i>
+        </a>
+        <div class="flex-grow-1">
+            <h5 class="mb-0 fw-bold">{{ chat.name }}</h5>
+            <small class="text-muted">{{ members|length }} Mitglieder</small>
+        </div>
+        <div class="dropdown">
+            <button class="btn btn-link p-2" data-bs-toggle="dropdown">
+                <i class="bi bi-three-dots-vertical fs-5"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="#"><i class="bi bi-info-circle me-2"></i>Chat-Info</a></li>
+                <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>Einstellungen</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
 <!-- Messages Container -->
-<div class="card mb-5" style="height: 60vh;">
-    <div class="card-body overflow-auto" id="messages-container">
+<div class="chat-container">
+    <div class="messages-area" id="messages-container">
         {% for message in messages %}
         <div class="chat-message {% if message.sender_id == current_user.id %}own{% else %}other{% endif %}">
             <div class="d-flex justify-content-between mb-1">
+                {% if message.sender_id != current_user.id %}
                 <strong>{{ message.sender.full_name }}</strong>
-                <small class="text-muted">{{ message.created_at.strftime('%H:%M') }}</small>
+                {% else %}
+                <div></div>
+                {% endif %}
+                <small class="text-muted">{{ message.created_at | localtime('%H:%M') }}</small>
             </div>
             
             {% if message.message_type == 'text' %}
@@ -144,8 +171,9 @@
     function addMessageToChat(message) {
         const container = document.getElementById('messages-container');
         const messageDiv = document.createElement('div');
-        messageDiv.className = `chat-message ${message.sender_id === currentUserId ? 'own' : 'other'}`;
+        messageDiv.className = `chat-message ${parseInt(message.sender_id) === parseInt(currentUserId) ? 'own' : 'other'}`;
         
+        // Parse the ISO string which should now be in local timezone
         const time = new Date(message.created_at).toLocaleTimeString('de-DE', {
             hour: '2-digit',
             minute: '2-digit'
@@ -171,9 +199,11 @@
             }
         }
         
+        const isOwnMessage = parseInt(message.sender_id) === parseInt(currentUserId);
+        
         messageDiv.innerHTML = `
             <div class="d-flex justify-content-between mb-1">
-                <strong>${escapeHtml(message.sender)}</strong>
+                ${!isOwnMessage ? `<strong>${escapeHtml(message.sender)}</strong>` : '<div></div>'}
                 <small class="text-muted">${time}</small>
             </div>
             ${contentHtml}

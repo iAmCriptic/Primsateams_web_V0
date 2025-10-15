@@ -131,13 +131,15 @@ def send_message(chat_id):
     db.session.commit()
     
     if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        from app.utils import get_local_time
         return jsonify({
             'id': message.id,
+            'sender_id': current_user.id,
             'sender': current_user.full_name,
             'content': message.content,
             'message_type': message.message_type,
             'media_url': message.media_url,
-            'created_at': message.created_at.isoformat()
+            'created_at': get_local_time(message.created_at).isoformat()
         })
     
     return redirect(url_for('chat.view_chat', chat_id=chat_id))

@@ -93,6 +93,19 @@ def create_app(config_name='default'):
             return str(header)
     
     
+    # Template filters
+    from app.utils import format_time, format_datetime
+    
+    @app.template_filter('localtime')
+    def localtime_filter(dt, format_string='%H:%M'):
+        """Filter to format datetime in local timezone."""
+        return format_time(dt, format_string)
+    
+    @app.template_filter('localdatetime')
+    def localdatetime_filter(dt, format_string='%d.%m.%Y %H:%M'):
+        """Filter to format datetime in local timezone."""
+        return format_datetime(dt, format_string)
+
     # Register blueprints
     from app.blueprints.auth import auth_bp
     from app.blueprints.dashboard import dashboard_bp
