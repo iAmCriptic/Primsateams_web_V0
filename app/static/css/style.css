@@ -215,17 +215,20 @@ body {
     margin-bottom: 1rem;
     padding: 0.75rem;
     border-radius: 0.5rem;
+    max-width: 80%; /* Limit message width */
 }
 
 .chat-message.own {
     background-color: var(--accent-color);
     color: white;
-    margin-left: 2rem;
+    margin-left: auto; /* Push to right */
+    margin-right: 1rem;
 }
 
 .chat-message.other {
     background-color: #f8f9fa;
-    margin-right: 2rem;
+    margin-left: 1rem;
+    margin-right: auto; /* Push to left */
 }
 
 [data-bs-theme="dark"] .chat-message.other {
@@ -243,7 +246,9 @@ body {
     right: 0 !important;
     z-index: 1000 !important;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    width: 100% !important;
+    width: 100vw !important;
+    margin-left: -15px !important;
+    margin-right: -15px !important;
 }
 
 [data-bs-theme="dark"] .mobile-chat-header {
@@ -254,11 +259,14 @@ body {
 /* Mobile Chat Container */
 @media (max-width: 767.98px) {
     .chat-container {
-        height: calc(100vh - 120px); /* Full height minus fixed header and input */
+        height: calc(100vh - 130px); /* Full height minus fixed header and input */
         margin-top: 70px; /* Space for fixed header */
         display: flex;
         flex-direction: column;
         position: relative;
+        margin-left: -15px; /* Remove left margin */
+        margin-right: -15px; /* Remove right margin */
+        width: calc(100vw); /* Full viewport width */
     }
     
     .messages-area {
@@ -269,6 +277,7 @@ body {
         min-height: calc(100vh - 250px); /* Minimum height to prevent background disappearing */
         height: auto; /* Allow content to expand */
         padding-bottom: 60px; /* Minimal space for input */
+        width: 100%; /* Full width */
     }
     
     [data-bs-theme="dark"] .messages-area {
@@ -322,6 +331,9 @@ body {
         z-index: 1002;
         padding: 0.75rem 1rem;
         box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+        margin-left: -15px; /* Remove left margin */
+        margin-right: -15px; /* Remove right margin */
+        width: calc(100vw); /* Full viewport width */
     }
 }
 
