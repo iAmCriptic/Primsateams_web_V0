@@ -253,7 +253,7 @@ body {
     color: white;
     margin-left: auto; /* Push to right side */
     margin-right: 1rem;
-    text-align: left; /* Text aligned left even for own messages */
+    text-align: right; /* Text aligned right for own messages */
     border-bottom-right-radius: 0.25rem; /* Tail effect like WhatsApp */
 }
 
@@ -262,7 +262,7 @@ body {
     color: #000;
     margin-right: auto; /* Push to left side */
     margin-left: 1rem;
-    text-align: left;
+    text-align: left; /* Text aligned left for other messages */
     border-bottom-left-radius: 0.25rem; /* Tail effect like WhatsApp */
     box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
 }

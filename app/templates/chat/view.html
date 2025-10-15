@@ -51,7 +51,7 @@
                 <div class="message-content">
                     {{ message.content }}
                 </div>
-                <div class="message-time {% if message.sender_id == current_user.id %}text-right{% else %}text-left{% endif %}">
+                <div class="message-time">
                     <small class="text-muted" style="font-size: 0.7rem; opacity: 0.7;">
                         {{ message.created_at | localtime('%H:%M') }}
                     </small>
@@ -189,7 +189,7 @@
                 <div class="message-content">
                     ${escapeHtml(message.content)}
                 </div>
-                <div class="message-time ${parseInt(message.sender_id) === parseInt(currentUserId) ? 'text-right' : 'text-left'}">
+                <div class="message-time">
                     <small class="text-muted" style="font-size: 0.7rem; opacity: 0.7;">
                         ${time}
                     </small>
@@ -199,7 +199,7 @@
             contentHtml = `
                 <img src="/static/../${message.media_url}" class="img-fluid rounded" style="max-width: 300px;">
                 ${message.content ? `<p class="mt-2 mb-0">${escapeHtml(message.content)}</p>` : ''}
-                <div class="message-time ${parseInt(message.sender_id) === parseInt(currentUserId) ? 'text-right' : 'text-left'}">
+                <div class="message-time">
                     <small class="text-muted" style="font-size: 0.7rem; opacity: 0.7;">
                         ${time}
                     </small>
@@ -209,7 +209,7 @@
             contentHtml = `
                 <video controls class="rounded" style="max-width: 300px;"><source src="/static/../${message.media_url}"></video>
                 ${message.content ? `<p class="mt-2 mb-0">${escapeHtml(message.content)}</p>` : ''}
-                <div class="message-time ${parseInt(message.sender_id) === parseInt(currentUserId) ? 'text-right' : 'text-left'}">
+                <div class="message-time">
                     <small class="text-muted" style="font-size: 0.7rem; opacity: 0.7;">
                         ${time}
                     </small>
@@ -219,7 +219,7 @@
             contentHtml = `
                 <audio controls><source src="/static/../${message.media_url}"></audio>
                 ${message.content ? `<p class="mt-2 mb-0">${escapeHtml(message.content)}</p>` : ''}
-                <div class="message-time ${parseInt(message.sender_id) === parseInt(currentUserId) ? 'text-right' : 'text-left'}">
+                <div class="message-time">
                     <small class="text-muted" style="font-size: 0.7rem; opacity: 0.7;">
                         ${time}
                     </small>
