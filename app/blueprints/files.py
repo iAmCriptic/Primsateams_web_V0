@@ -312,7 +312,10 @@ def edit_file(file_id):
     
     if file_ext not in editable_extensions:
         flash('Dieser Dateityp kann nicht online bearbeitet werden.', 'warning')
-        return redirect(url_for('files.browse_folder', folder_id=file.folder_id))
+        if file.folder_id:
+            return redirect(url_for('files.browse_folder', folder_id=file.folder_id))
+        else:
+            return redirect(url_for('files.index'))
     
     if request.method == 'POST':
         content = request.form.get('content', '')
@@ -358,7 +361,10 @@ def edit_file(file_id):
         db.session.commit()
         
         flash('Datei wurde gespeichert.', 'success')
-        return redirect(url_for('files.browse_folder', folder_id=file.folder_id))
+        if file.folder_id:
+            return redirect(url_for('files.browse_folder', folder_id=file.folder_id))
+        else:
+            return redirect(url_for('files.index'))
     
     # Read file content
     try:
@@ -372,9 +378,49 @@ def edit_file(file_id):
             content = f.read()
     except Exception as e:
         flash(f'Fehler beim Lesen der Datei: {str(e)}', 'danger')
-        return redirect(url_for('files.browse_folder', folder_id=file.folder_id))
+        if file.folder_id:
+            return redirect(url_for('files.browse_folder', folder_id=file.folder_id))
+        else:
+            return redirect(url_for('files.index'))
     
     return render_template('files/edit.html', file=file, content=content)
+
+
+@files_bp.route('/view/<int:file_id>')
+@login_required
+def view_file(file_id):
+    """View a file in fullscreen mode (for markdown/text files)."""
+    file = File.query.get_or_404(file_id)
+    
+    # Check if file is viewable
+    viewable_extensions = {'.txt', '.md', '.markdown', '.json', '.xml', '.csv', '.log'}
+    file_ext = os.path.splitext(file.original_name)[1].lower()
+    
+    if file_ext not in viewable_extensions:
+        flash('Dieser Dateityp kann nicht angezeigt werden.', 'warning')
+        if file.folder_id:
+            return redirect(url_for('files.browse_folder', folder_id=file.folder_id))
+        else:
+            return redirect(url_for('files.index'))
+    
+    # Read file content
+    try:
+        # Ensure we have an absolute path
+        if not os.path.isabs(file.file_path):
+            file_path = os.path.join(os.getcwd(), file.file_path)
+        else:
+            file_path = file.file_path
+            
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+    except Exception as e:
+        flash(f'Fehler beim Lesen der Datei: {str(e)}', 'danger')
+        if file.folder_id:
+            return redirect(url_for('files.browse_folder', folder_id=file.folder_id))
+        else:
+            return redirect(url_for('files.index'))
+    
+    return render_template('files/view.html', file=file, content=content)
 
 
 @files_bp.route('/delete/<int:file_id>', methods=['POST'])
@@ -406,7 +452,10 @@ def delete_file(file_id):
     db.session.commit()
     
     flash(f'Datei "{file.original_name}" wurde gelöscht.', 'success')
-    return redirect(url_for('files.browse_folder', folder_id=folder_id))
+    if folder_id:
+        return redirect(url_for('files.browse_folder', folder_id=folder_id))
+    else:
+        return redirect(url_for('files.index'))
 
 
 @files_bp.route('/delete-folder/<int:folder_id>', methods=['POST'])
@@ -446,7 +495,10 @@ def delete_folder(folder_id):
     db.session.commit()
     
     flash(f'Ordner "{folder.name}" wurde gelöscht.', 'success')
-    return redirect(url_for('files.browse_folder', folder_id=parent_id))
+    if parent_id:
+        return redirect(url_for('files.browse_folder', folder_id=parent_id))
+    else:
+        return redirect(url_for('files.index'))
 
 
 

@@ -105,6 +105,17 @@ def create_app(config_name='default'):
     def localdatetime_filter(dt, format_string='%d.%m.%Y %H:%M'):
         """Filter to format datetime in local timezone."""
         return format_datetime(dt, format_string)
+    
+    @app.template_filter('markdown')
+    def markdown_filter(text):
+        """Filter to render markdown text."""
+        try:
+            import markdown
+            md = markdown.Markdown(extensions=['tables', 'fenced_code', 'codehilite'])
+            return md.convert(text)
+        except ImportError:
+            # Fallback to plain text if markdown is not installed
+            return text.replace('\n', '<br>')
 
     # Register blueprints
     from app.blueprints.auth import auth_bp

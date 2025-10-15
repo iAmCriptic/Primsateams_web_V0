@@ -547,6 +547,18 @@ def compose():
             if cc:
                 msg.cc = cc.split(',')
             
+            # Handle attachments
+            if 'attachments' in request.files:
+                attachments = request.files.getlist('attachments')
+                for attachment in attachments:
+                    if attachment.filename:
+                        msg.attach(
+                            attachment.filename,
+                            attachment.content_type or 'application/octet-stream',
+                            attachment.read()
+                        )
+                        attachment.seek(0)  # Reset file pointer
+            
             mail.send(msg)
             
             # Save to database
@@ -558,7 +570,8 @@ def compose():
                 body_text=full_body,
                 is_sent=True,
                 sent_by_user_id=current_user.id,
-                sent_at=datetime.utcnow()
+                sent_at=datetime.utcnow(),
+                has_attachments=bool(request.files.getlist('attachments'))
             )
             db.session.add(email_record)
             db.session.commit()

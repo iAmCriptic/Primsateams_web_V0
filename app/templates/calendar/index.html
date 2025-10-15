@@ -8,15 +8,21 @@
         <h1><i class="bi bi-calendar-event"></i> Termine</h1>
     </div>
     <div class="col-auto">
-        <div class="btn-group" role="group">
+        <div class="btn-group me-3" role="group">
             <button type="button" class="btn btn-accent active" id="monthViewBtn">
                 <i class="bi bi-calendar-month"></i> Monatsansicht
+            </button>
+            <button type="button" class="btn btn-outline-accent" id="weekViewBtn">
+                <i class="bi bi-calendar-week"></i> Wochenansicht
+            </button>
+            <button type="button" class="btn btn-outline-accent" id="dayViewBtn">
+                <i class="bi bi-calendar-day"></i> Tagesansicht
             </button>
             <button type="button" class="btn btn-outline-accent" id="listViewBtn">
                 <i class="bi bi-list-ul"></i> Terminübersicht
             </button>
         </div>
-        <a href="{{ url_for('calendar.create_event') }}" class="btn btn-accent ms-2">
+        <a href="{{ url_for('calendar.create_event') }}" class="btn btn-accent">
             <i class="bi bi-plus-circle"></i> Neuer Termin
         </a>
     </div>
@@ -111,34 +117,95 @@
     {% endif %}
 </div>
 
+<!-- Wochenansicht -->
+<div id="weekView" class="calendar-view" style="display: none;">
+    <div class="row mb-3">
+        <div class="col">
+            <h4 id="weekTitle">Woche</h4>
+        </div>
+        <div class="col-auto">
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-outline-primary" id="prevWeekBtn">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <button type="button" class="btn btn-outline-primary" id="todayWeekBtn">Heute</button>
+                <button type="button" class="btn btn-outline-primary" id="nextWeekBtn">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    <div id="weekCalendar"></div>
+</div>
+
+<!-- Tagesansicht -->
+<div id="dayView" class="calendar-view" style="display: none;">
+    <div class="row mb-3">
+        <div class="col">
+            <h4 id="dayTitle">Tag</h4>
+        </div>
+        <div class="col-auto">
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-outline-primary" id="prevDayBtn">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <button type="button" class="btn btn-outline-primary" id="todayDayBtn">Heute</button>
+                <button type="button" class="btn btn-outline-primary" id="nextDayBtn">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    <div id="dayCalendar"></div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // View Toggle
     const monthViewBtn = document.getElementById('monthViewBtn');
+    const weekViewBtn = document.getElementById('weekViewBtn');
+    const dayViewBtn = document.getElementById('dayViewBtn');
     const listViewBtn = document.getElementById('listViewBtn');
     const monthView = document.getElementById('monthView');
+    const weekView = document.getElementById('weekView');
+    const dayView = document.getElementById('dayView');
     const listView = document.getElementById('listView');
     
-    monthViewBtn.addEventListener('click', function() {
-        monthView.style.display = 'block';
+    function switchView(activeView, activeBtn) {
+        // Hide all views
+        monthView.style.display = 'none';
+        weekView.style.display = 'none';
+        dayView.style.display = 'none';
         listView.style.display = 'none';
-        monthViewBtn.classList.add('active');
-        monthViewBtn.classList.remove('btn-outline-accent');
-        monthViewBtn.classList.add('btn-accent');
-        listViewBtn.classList.remove('active');
-        listViewBtn.classList.remove('btn-accent');
-        listViewBtn.classList.add('btn-outline-accent');
+        
+        // Remove active class from all buttons
+        [monthViewBtn, weekViewBtn, dayViewBtn, listViewBtn].forEach(btn => {
+            btn.classList.remove('active', 'btn-accent');
+            btn.classList.add('btn-outline-accent');
+        });
+        
+        // Show active view and button
+        activeView.style.display = 'block';
+        activeBtn.classList.add('active', 'btn-accent');
+        activeBtn.classList.remove('btn-outline-accent');
+    }
+    
+    monthViewBtn.addEventListener('click', function() {
+        switchView(monthView, monthViewBtn);
+    });
+    
+    weekViewBtn.addEventListener('click', function() {
+        switchView(weekView, weekViewBtn);
+        generateWeekView();
+    });
+    
+    dayViewBtn.addEventListener('click', function() {
+        switchView(dayView, dayViewBtn);
+        generateDayView();
     });
     
     listViewBtn.addEventListener('click', function() {
-        monthView.style.display = 'none';
-        listView.style.display = 'block';
-        listViewBtn.classList.add('active');
-        listViewBtn.classList.remove('btn-outline-accent');
-        listViewBtn.classList.add('btn-accent');
-        monthViewBtn.classList.remove('active');
-        monthViewBtn.classList.remove('btn-accent');
-        monthViewBtn.classList.add('btn-outline-accent');
+        switchView(listView, listViewBtn);
     });
     
     // Calendar Navigation
@@ -288,6 +355,178 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initial calendar generation
     updateCalendar();
+    }
+    
+    // Week View Functions
+    let currentWeekDate = new Date();
+    
+    function generateWeekView() {
+        const weekCalendar = document.getElementById('weekCalendar');
+        const weekTitle = document.getElementById('weekTitle');
+        
+        // Get start of week (Monday)
+        const startOfWeek = new Date(currentWeekDate);
+        const day = startOfWeek.getDay();
+        const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
+        startOfWeek.setDate(diff);
+        
+        // Get end of week (Sunday)
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        
+        weekTitle.textContent = `Woche ${startOfWeek.getDate()}.${startOfWeek.getMonth() + 1}. - ${endOfWeek.getDate()}.${endOfWeek.getMonth() + 1}.${endOfWeek.getFullYear()}`;
+        
+        // Generate week grid
+        const days = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
+        const hours = Array.from({length: 24}, (_, i) => i);
+        
+        let html = '<div class="week-grid">';
+        html += '<div class="week-header">';
+        html += '<div class="time-column"></div>';
+        
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(startOfWeek);
+            date.setDate(startOfWeek.getDate() + i);
+            const isToday = date.toDateString() === new Date().toDateString();
+            html += `<div class="day-header ${isToday ? 'today' : ''}">${days[i]}<br><small>${date.getDate()}.${date.getMonth() + 1}</small></div>`;
+        }
+        html += '</div>';
+        
+        // Time slots
+        for (const hour of hours) {
+            html += '<div class="time-row">';
+            html += `<div class="time-label">${hour.toString().padStart(2, '0')}:00</div>`;
+            
+            for (let day = 0; day < 7; day++) {
+                const date = new Date(startOfWeek);
+                date.setDate(startOfWeek.getDate() + day);
+                html += `<div class="time-slot" data-date="${date.toISOString().split('T')[0]}" data-hour="${hour}"></div>`;
+            }
+            html += '</div>';
+        }
+        
+        html += '</div>';
+        weekCalendar.innerHTML = html;
+        
+        // Load events for the week
+        loadWeekEvents(startOfWeek, endOfWeek);
+    }
+    
+    async function loadWeekEvents(startDate, endDate) {
+        try {
+            const response = await fetch(`/calendar/api/events/range/${startDate.toISOString().split('T')[0]}/${endDate.toISOString().split('T')[0]}`);
+            if (response.ok) {
+                const events = await response.json();
+                events.forEach(event => {
+                    const eventDate = new Date(event.start_time).toISOString().split('T')[0];
+                    const eventHour = new Date(event.start_time).getHours();
+                    const timeSlot = document.querySelector(`[data-date="${eventDate}"][data-hour="${eventHour}"]`);
+                    
+                    if (timeSlot) {
+                        const eventElement = document.createElement('div');
+                        eventElement.className = `calendar-event ${event.participation_status || 'pending'}`;
+                        eventElement.innerHTML = `
+                            <strong>${event.time}</strong><br>
+                            ${event.title}
+                        `;
+                        eventElement.onclick = () => window.location.href = event.url;
+                        timeSlot.appendChild(eventElement);
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Error loading week events:', error);
+        }
+    }
+    
+    // Day View Functions
+    let currentDayDate = new Date();
+    
+    function generateDayView() {
+        const dayCalendar = document.getElementById('dayCalendar');
+        const dayTitle = document.getElementById('dayTitle');
+        
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        dayTitle.textContent = currentDayDate.toLocaleDateString('de-DE', options);
+        
+        // Generate day grid
+        const hours = Array.from({length: 24}, (_, i) => i);
+        
+        let html = '<div class="day-grid">';
+        
+        for (const hour of hours) {
+            html += '<div class="day-time-row">';
+            html += `<div class="day-time-label">${hour.toString().padStart(2, '0')}:00</div>`;
+            html += `<div class="day-time-slot" data-hour="${hour}"></div>`;
+            html += '</div>';
+        }
+        
+        html += '</div>';
+        dayCalendar.innerHTML = html;
+        
+        // Load events for the day
+        loadDayEvents(currentDayDate);
+    }
+    
+    async function loadDayEvents(date) {
+        try {
+            const dateStr = date.toISOString().split('T')[0];
+            const response = await fetch(`/calendar/api/events/range/${dateStr}/${dateStr}`);
+            if (response.ok) {
+                const events = await response.json();
+                events.forEach(event => {
+                    const eventHour = new Date(event.start_time).getHours();
+                    const timeSlot = document.querySelector(`[data-hour="${eventHour}"]`);
+                    
+                    if (timeSlot) {
+                        const eventElement = document.createElement('div');
+                        eventElement.className = `calendar-event ${event.participation_status || 'pending'}`;
+                        eventElement.innerHTML = `
+                            <strong>${event.time}</strong><br>
+                            ${event.title}
+                            ${event.location ? `<br><small><i class="bi bi-geo-alt"></i> ${event.location}</small>` : ''}
+                        `;
+                        eventElement.onclick = () => window.location.href = event.url;
+                        timeSlot.appendChild(eventElement);
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Error loading day events:', error);
+        }
+    }
+    
+    // Week Navigation
+    document.getElementById('prevWeekBtn').addEventListener('click', function() {
+        currentWeekDate.setDate(currentWeekDate.getDate() - 7);
+        generateWeekView();
+    });
+    
+    document.getElementById('nextWeekBtn').addEventListener('click', function() {
+        currentWeekDate.setDate(currentWeekDate.getDate() + 7);
+        generateWeekView();
+    });
+    
+    document.getElementById('todayWeekBtn').addEventListener('click', function() {
+        currentWeekDate = new Date();
+        generateWeekView();
+    });
+    
+    // Day Navigation
+    document.getElementById('prevDayBtn').addEventListener('click', function() {
+        currentDayDate.setDate(currentDayDate.getDate() - 1);
+        generateDayView();
+    });
+    
+    document.getElementById('nextDayBtn').addEventListener('click', function() {
+        currentDayDate.setDate(currentDayDate.getDate() + 1);
+        generateDayView();
+    });
+    
+    document.getElementById('todayDayBtn').addEventListener('click', function() {
+        currentDayDate = new Date();
+        generateDayView();
+    });
 });
 </script>
 {% endblock %}

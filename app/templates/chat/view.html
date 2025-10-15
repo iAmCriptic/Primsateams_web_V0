@@ -26,11 +26,11 @@
         
         <!-- Group Avatar -->
         <div class="me-3">
-            {% if chat.group_avatar %}
-                <img src="{{ url_for('static', filename='../' + chat.group_avatar) }}" 
+            {% if chat.is_main_chat %}
+                <img src="{{ url_for('static', filename='img/logo.png') }}" 
                      class="rounded-circle" 
                      style="width: 40px; height: 40px; object-fit: cover;" 
-                     alt="Gruppenbild">
+                     alt="Team Logo">
             {% else %}
                 <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center" 
                      style="width: 40px; height: 40px;">

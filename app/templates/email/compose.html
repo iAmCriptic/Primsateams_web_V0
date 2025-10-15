@@ -17,7 +17,7 @@
                 <h4 class="mb-0">Neue E-Mail verfassen</h4>
             </div>
             <div class="card-body">
-                <form method="POST">
+                <form method="POST" enctype="multipart/form-data">
                     <div class="mb-3">
                         <label for="to" class="form-label">An</label>
                         <input type="text" class="form-control" id="to" name="to" placeholder="empfaenger@example.com" required>
@@ -38,6 +38,12 @@
                         <label for="body" class="form-label">Nachricht</label>
                         <textarea class="form-control" id="body" name="body" rows="10" required></textarea>
                         <div class="form-text">Der E-Mail-Footer wird automatisch hinzugefügt.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="attachments" class="form-label">Anhänge (optional)</label>
+                        <input type="file" class="form-control" id="attachments" name="attachments" multiple>
+                        <div class="form-text">Mehrere Dateien auswählen möglich</div>
                     </div>
                     
                     <div class="d-grid gap-2">

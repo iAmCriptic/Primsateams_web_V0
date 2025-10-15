@@ -250,7 +250,47 @@ def get_events_for_month(year, month):
             'url': url_for('calendar.view_event', event_id=event.id)
         })
     
-    return jsonify(events_data)
+            return jsonify(events_data)
+
+
+@calendar_bp.route('/api/events/range/<start_date>/<end_date>')
+@login_required
+def get_events_for_range(start_date, end_date):
+    """Get all events for a date range."""
+    try:
+        start_datetime = datetime.strptime(start_date, '%Y-%m-%d')
+        end_datetime = datetime.strptime(end_date, '%Y-%m-%d')
+        # Include the entire end date
+        end_datetime = end_datetime.replace(hour=23, minute=59, second=59)
+        
+        events = CalendarEvent.query.filter(
+            CalendarEvent.start_time >= start_datetime,
+            CalendarEvent.start_time <= end_datetime
+        ).order_by(CalendarEvent.start_time).all()
+        
+        events_data = []
+        for event in events:
+            participation = EventParticipant.query.filter_by(
+                event_id=event.id,
+                user_id=current_user.id
+            ).first()
+            
+            events_data.append({
+                'id': event.id,
+                'title': event.title,
+                'start_time': event.start_time.isoformat(),
+                'end_time': event.end_time.isoformat(),
+                'location': event.location,
+                'description': event.description,
+                'day': event.start_time.day,
+                'time': event.start_time.strftime('%H:%M'),
+                'participation_status': participation.status if participation else None,
+                'url': url_for('calendar.view_event', event_id=event.id)
+            })
+        
+        return jsonify(events_data)
+    except ValueError as e:
+        return jsonify({'error': 'Invalid date format'}), 400
 
 
 

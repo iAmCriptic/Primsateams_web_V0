@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}{{ file.name }} - Dateien{% endblock %}
+
+{% block extra_css %}
+<style>
+    .file-viewer {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--bs-body-bg);
+        z-index: 1050;
+        overflow-y: auto;
+    }
+    
+    .file-viewer-header {
+        position: sticky;
+        top: 0;
+        background: var(--bs-body-bg);
+        border-bottom: 1px solid var(--bs-border-color);
+        z-index: 1051;
+        padding: 1rem;
+    }
+    
+    .file-viewer-content {
+        padding: 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    .markdown-content {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        line-height: 1.6;
+    }
+    
+    .markdown-content h1, .markdown-content h2, .markdown-content h3 {
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+    
+    .markdown-content h1 { font-size: 2rem; border-bottom: 2px solid var(--bs-border-color); padding-bottom: 0.5rem; }
+    .markdown-content h2 { font-size: 1.5rem; border-bottom: 1px solid var(--bs-border-color); padding-bottom: 0.25rem; }
+    .markdown-content h3 { font-size: 1.25rem; }
+    
+    .markdown-content p { margin-bottom: 1rem; }
+    
+    .markdown-content code {
+        background: var(--bs-secondary-bg);
+        padding: 0.2rem 0.4rem;
+        border-radius: 0.25rem;
+        font-family: 'Courier New', monospace;
+    }
+    
+    .markdown-content pre {
+        background: var(--bs-secondary-bg);
+        padding: 1rem;
+        border-radius: 0.5rem;
+        overflow-x: auto;
+        margin-bottom: 1rem;
+    }
+    
+    .markdown-content blockquote {
+        border-left: 4px solid var(--accent-color);
+        padding-left: 1rem;
+        margin: 1rem 0;
+        font-style: italic;
+        color: var(--bs-secondary);
+    }
+    
+    .markdown-content table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 1rem;
+    }
+    
+    .markdown-content th, .markdown-content td {
+        border: 1px solid var(--bs-border-color);
+        padding: 0.5rem;
+        text-align: left;
+    }
+    
+    .markdown-content th {
+        background: var(--bs-secondary-bg);
+        font-weight: 600;
+    }
+    
+    .markdown-content ul, .markdown-content ol {
+        margin-bottom: 1rem;
+        padding-left: 2rem;
+    }
+    
+    .markdown-content li {
+        margin-bottom: 0.5rem;
+    }
+    
+    .text-content {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        line-height: 1.6;
+        white-space: pre-wrap;
+    }
+    
+    @media (max-width: 768px) {
+        .file-viewer-content {
+            padding: 1rem;
+        }
+        
+        .file-viewer-header {
+            padding: 0.75rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="file-viewer">
+    <div class="file-viewer-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="mb-0">{{ file.name }}</h4>
+                <small class="text-muted">
+                    {{ (file.file_size / 1024)|round(2) }} KB • 
+                    Von {{ file.uploader.full_name }} • 
+                    {{ file.created_at.strftime('%d.%m.%Y %H:%M') }}
+                    {% if file.version_number > 1 %}
+                    • Version {{ file.version_number }}
+                    {% endif %}
+                </small>
+            </div>
+            <div class="btn-group">
+                {% if file.name.endswith(('.txt', '.md')) %}
+                <a href="{{ url_for('files.edit_file', file_id=file.id) }}" class="btn btn-primary">
+                    <i class="bi bi-pencil"></i> Bearbeiten
+                </a>
+                {% endif %}
+                <a href="{{ url_for('files.download_file', file_id=file.id) }}" class="btn btn-outline-primary">
+                    <i class="bi bi-download"></i> Herunterladen
+                </a>
+                <button class="btn btn-outline-secondary" onclick="closeViewer()">
+                    <i class="bi bi-x-lg"></i> Schließen
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="file-viewer-content">
+        {% if file.name.endswith('.md') %}
+            <div class="markdown-content">
+                {{ content | markdown }}
+            </div>
+        {% else %}
+            <div class="text-content">{{ content }}</div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function closeViewer() {
+    window.history.back();
+}
+
+// Close with Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeViewer();
+    }
+});
+</script>
+{% endblock %}

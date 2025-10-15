@@ -2,7 +2,6 @@
 Utility functions for the Team Portal application.
 """
 
-import pytz
 from datetime import datetime
 from flask import current_app
 
@@ -20,16 +19,9 @@ def get_local_time(utc_datetime):
     if utc_datetime is None:
         return None
     
-    # Get timezone from config
-    timezone_name = current_app.config.get('TIMEZONE', 'Europe/Berlin')
-    local_tz = pytz.timezone(timezone_name)
-    
-    # If datetime is naive, assume it's UTC
-    if utc_datetime.tzinfo is None:
-        utc_datetime = pytz.utc.localize(utc_datetime)
-    
-    # Convert to local timezone
-    return utc_datetime.astimezone(local_tz)
+    # For now, just return the datetime as-is
+    # TODO: Implement proper timezone conversion when pytz is available
+    return utc_datetime
 
 
 def format_datetime(dt, format_string='%d.%m.%Y %H:%M'):

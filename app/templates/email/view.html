@@ -25,53 +25,94 @@
     <div class="card-body">
         {% if email.attachments %}
         <div class="attachments-section mb-3">
-            <h6 class="mb-2">
-                <i class="bi bi-paperclip"></i> Anhänge ({{ email.attachments|length }})
-            </h6>
-            <div class="list-group">
-                {% for attachment in email.attachments %}
-                <div class="list-group-item d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center">
-                        {% if attachment.is_inline and attachment.content_type.startswith('image/') %}
-                        <i class="bi bi-image me-2"></i>
-                        {% else %}
-                        <i class="bi bi-file-earmark me-2"></i>
-                        {% endif %}
-                        <div>
-                            <strong>{{ attachment.filename }}</strong>
-                            <br>
-                            <small class="text-muted">
-                                {% if attachment.size > 1024*1024 %}
-                                    {{ (attachment.size / (1024*1024))|round(1) }} MB
-                                {% else %}
-                                    {{ (attachment.size / 1024)|round(1) }} KB
-                                {% endif %}
-                                • {{ attachment.content_type }}
-                                {% if attachment.is_inline %}
-                                • Inline
-                                {% endif %}
-                                {% if attachment.file_path %}
-                                • Dateisystem
-                                {% else %}
-                                • Datenbank
-                                {% endif %}
-                            </small>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="mb-0">
+                    <i class="bi bi-paperclip"></i> Anhänge ({{ email.attachments|length }})
+                </h6>
+                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#attachmentsList" aria-expanded="true">
+                    <i class="bi bi-chevron-down" id="attachmentsToggleIcon"></i>
+                </button>
+            </div>
+            <div class="collapse show" id="attachmentsList">
+                <div class="list-group">
+                    {% for attachment in email.attachments %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            {% if attachment.content_type.startswith('image/') %}
+                            <i class="bi bi-image me-2 text-success"></i>
+                            {% elif attachment.content_type.startswith('application/pdf') %}
+                            <i class="bi bi-file-earmark-pdf me-2 text-danger"></i>
+                            {% elif attachment.content_type.startswith('text/') %}
+                            <i class="bi bi-file-earmark-text me-2 text-info"></i>
+                            {% elif attachment.content_type.startswith('application/') %}
+                            <i class="bi bi-file-earmark-binary me-2 text-warning"></i>
+                            {% else %}
+                            <i class="bi bi-file-earmark me-2 text-secondary"></i>
+                            {% endif %}
+                            <div>
+                                <strong>{{ attachment.filename }}</strong>
+                                <br>
+                                <small class="text-muted">
+                                    {% if attachment.size > 1024*1024 %}
+                                        {{ (attachment.size / (1024*1024))|round(1) }} MB
+                                    {% else %}
+                                        {{ (attachment.size / 1024)|round(1) }} KB
+                                    {% endif %}
+                                    • {{ attachment.content_type }}
+                                    {% if attachment.is_inline %}
+                                    • <span class="badge bg-info">Inline</span>
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                        <div class="btn-group">
+                            {% if attachment.content_type.startswith('image/') and not attachment.is_inline %}
+                            <button class="btn btn-sm btn-outline-info" onclick="previewAttachment({{ attachment.id }}, '{{ attachment.filename }}')">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            {% endif %}
+                            <a href="{{ url_for('email.download_attachment', attachment_id=attachment.id) }}" 
+                               class="btn btn-sm btn-outline-accent">
+                                <i class="bi bi-download"></i>
+                            </a>
                         </div>
                     </div>
-                    <a href="{{ url_for('email.download_attachment', attachment_id=attachment.id) }}" 
-                       class="btn btn-sm btn-outline-accent">
-                        <i class="bi bi-download"></i> Download
-                    </a>
+                    {% endfor %}
                 </div>
-                {% endfor %}
             </div>
         </div>
         {% endif %}
         
         {% if html_content %}
-        <div class="email-html-content">{{ html_content|safe }}</div>
+        <div class="email-content-wrapper">
+            <div class="email-content-header mb-2">
+                <div class="btn-group btn-group-sm" role="group">
+                    <button class="btn btn-outline-secondary active" id="htmlViewBtn">HTML</button>
+                    <button class="btn btn-outline-secondary" id="textViewBtn">Plain Text</button>
+                </div>
+            </div>
+            <div id="htmlContent" class="email-html-content">{{ html_content|safe }}</div>
+            <div id="textContent" class="email-text-content" style="display: none;">
+                <pre style="white-space: pre-wrap; font-family: inherit; background: transparent; border: none; padding: 0; margin: 0;">{{ email.body_text }}</pre>
+            </div>
+        </div>
         {% elif email.body_html %}
-        <div class="email-html-content">{{ email.body_html|safe }}</div>
+        <div class="email-content-wrapper">
+            <div class="email-content-header mb-2">
+                <div class="btn-group btn-group-sm" role="group">
+                    <button class="btn btn-outline-secondary active" id="htmlViewBtn">HTML</button>
+                    {% if email.body_text %}
+                    <button class="btn btn-outline-secondary" id="textViewBtn">Plain Text</button>
+                    {% endif %}
+                </div>
+            </div>
+            <div id="htmlContent" class="email-html-content">{{ email.body_html|safe }}</div>
+            {% if email.body_text %}
+            <div id="textContent" class="email-text-content" style="display: none;">
+                <pre style="white-space: pre-wrap; font-family: inherit; background: transparent; border: none; padding: 0; margin: 0;">{{ email.body_text }}</pre>
+            </div>
+            {% endif %}
+        </div>
         {% elif email.body_text %}
         <div class="email-text-content">
             <pre style="white-space: pre-wrap; font-family: inherit; background: transparent; border: none; padding: 0; margin: 0;">{{ email.body_text }}</pre>
@@ -89,6 +130,73 @@
         </a>
     </div>
 </div>
+
+<!-- Attachment Preview Modal -->
+<div class="modal fade" id="attachmentPreviewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="attachmentPreviewTitle">Anhang-Vorschau</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="attachmentPreviewImage" src="" class="img-fluid" alt="Anhang-Vorschau">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
+                <a id="attachmentDownloadLink" href="" class="btn btn-accent">
+                    <i class="bi bi-download"></i> Herunterladen
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Toggle attachments collapse icon
+document.getElementById('attachmentsList').addEventListener('show.bs.collapse', function () {
+    document.getElementById('attachmentsToggleIcon').className = 'bi bi-chevron-down';
+});
+
+document.getElementById('attachmentsList').addEventListener('hide.bs.collapse', function () {
+    document.getElementById('attachmentsToggleIcon').className = 'bi bi-chevron-right';
+});
+
+// Preview attachment function
+function previewAttachment(attachmentId, filename) {
+    const previewUrl = `{{ url_for('email.download_attachment', attachment_id=0) }}`.replace('0', attachmentId);
+    
+    document.getElementById('attachmentPreviewTitle').textContent = filename;
+    document.getElementById('attachmentPreviewImage').src = previewUrl;
+    document.getElementById('attachmentDownloadLink').href = previewUrl;
+    
+    new bootstrap.Modal(document.getElementById('attachmentPreviewModal')).show();
+}
+
+// Email content view toggle
+document.addEventListener('DOMContentLoaded', function() {
+    const htmlViewBtn = document.getElementById('htmlViewBtn');
+    const textViewBtn = document.getElementById('textViewBtn');
+    const htmlContent = document.getElementById('htmlContent');
+    const textContent = document.getElementById('textContent');
+    
+    if (htmlViewBtn && textViewBtn && htmlContent && textContent) {
+        htmlViewBtn.addEventListener('click', function() {
+            htmlContent.style.display = 'block';
+            textContent.style.display = 'none';
+            htmlViewBtn.classList.add('active');
+            textViewBtn.classList.remove('active');
+        });
+        
+        textViewBtn.addEventListener('click', function() {
+            htmlContent.style.display = 'none';
+            textContent.style.display = 'block';
+            textViewBtn.classList.add('active');
+            htmlViewBtn.classList.remove('active');
+        });
+    }
+});
+</script>
 {% endblock %}
 
 
