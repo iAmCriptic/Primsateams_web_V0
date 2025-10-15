@@ -237,73 +237,83 @@ body {
     border-bottom: 1px solid rgba(0, 0, 0, 0.125);
 }
 
-/* Chat Messages - WhatsApp Form with Original Colors */
+/* Chat Messages - Clean Single Bubble Design */
 .chat-message {
-    margin-bottom: 1rem;
-    padding: 0.75rem 1rem 0.75rem 1rem; /* More padding for better height */
-    border-radius: 1rem; /* More rounded like WhatsApp */
-    max-width: 80%; /* Limit width to 80% as requested */
-    min-width: 200px; /* Minimum width to prevent too narrow bubbles */
-    width: auto; /* Auto width with min/max constraints */
-    position: relative;
-    word-wrap: break-word;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); /* Subtle shadow */
-    display: inline-block; /* Allow proper alignment */
-    min-height: 60px; /* Minimum height to prevent flat appearance */
+    margin-bottom: 0.75rem;
+    max-width: 75%;
+    display: flex;
+    flex-direction: column;
 }
 
 .chat-message.own {
-    background-color: var(--accent-color); /* Original blue color */
-    color: white;
-    margin-left: auto; /* Push to right side */
-    margin-right: 1rem;
-    text-align: right; /* Text aligned right for own messages */
-    border-bottom-right-radius: 0.25rem; /* Tail effect like WhatsApp */
-    display: block; /* Force block display for margin auto to work */
-}
-
-.chat-message.own .message-header,
-.chat-message.own .message-content,
-.chat-message.own .message-time {
-    text-align: right !important;
-}
-
-.chat-message.other .message-header,
-.chat-message.other .message-content,
-.chat-message.other .message-time {
-    text-align: left !important;
-}
-
-/* Message Elements Styling */
-.message-header {
-    margin-bottom: 0.25rem;
-    font-weight: bold;
-}
-
-.message-content {
-    margin-bottom: 0.5rem;
-    line-height: 1.4;
-}
-
-.message-time {
-    font-size: 0.7rem;
-    opacity: 0.7;
-    margin-top: 0.25rem;
+    margin-left: auto;
+    align-items: flex-end;
 }
 
 .chat-message.other {
-    background-color: #f8f9fa; /* Original light background */
-    color: #000;
-    margin-right: auto; /* Push to left side */
-    margin-left: 1rem;
-    text-align: left; /* Text aligned left for other messages */
-    border-bottom-left-radius: 0.25rem; /* Tail effect like WhatsApp */
-    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
-    display: block; /* Force block display for margin auto to work */
+    margin-right: auto;
+    align-items: flex-start;
 }
 
-[data-bs-theme="dark"] .chat-message.other {
-    background-color: #2b3035;
+/* Message Header (Name) */
+.message-header {
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    padding: 0 0.5rem;
+    color: #666;
+}
+
+.chat-message.own .message-header {
+    color: #007bff;
+    text-align: right;
+}
+
+.chat-message.other .message-header {
+    color: #666;
+    text-align: left;
+}
+
+/* Message Content Bubble */
+.message-content {
+    padding: 0.75rem 1rem;
+    border-radius: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    word-wrap: break-word;
+    position: relative;
+    max-width: 100%;
+    line-height: 1.4;
+}
+
+/* Own Messages */
+.chat-message.own .message-content {
+    background-color: var(--accent-color);
+    color: white;
+    border-bottom-right-radius: 0.25rem;
+}
+
+/* Other Messages */
+.chat-message.other .message-content {
+    background-color: white;
+    color: #333;
+    border-bottom-left-radius: 0.25rem;
+    border: 1px solid #e9ecef;
+}
+
+/* Message Time */
+.message-time {
+    font-size: 0.65rem;
+    color: #999;
+    margin-top: 0.25rem;
+    padding: 0 0.5rem;
+}
+
+.chat-message.own .message-time {
+    text-align: right;
+}
+
+.chat-message.other .message-time {
+    text-align: left;
 }
 
 /* Mobile Chat Styles */
@@ -323,58 +333,6 @@ body {
     margin-right: calc(-50vw + 50%) !important;
 }
 
-/* WhatsApp/Signal Style Messages */
-.chat-message {
-    margin-bottom: 0.5rem;
-    max-width: 70%;
-    display: flex;
-    flex-direction: column;
-}
-
-.chat-message.own {
-    margin-left: auto;
-    align-items: flex-end;
-}
-
-.chat-message.other {
-    margin-right: auto;
-    align-items: flex-start;
-}
-
-.message-header {
-    font-size: 0.75rem;
-    color: #666;
-    margin-bottom: 0.25rem;
-    padding: 0 0.5rem;
-}
-
-.chat-message.own .message-header {
-    color: #007bff;
-    text-align: right;
-}
-
-.message-content {
-    padding: 0.75rem 1rem;
-    border-radius: 1rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    word-wrap: break-word;
-    position: relative;
-    max-width: 100%;
-}
-
-/* WhatsApp-style message bubbles */
-.chat-message.own .message-content {
-    background-color: var(--accent-color);
-    color: white;
-    border-bottom-right-radius: 0.25rem;
-}
-
-.chat-message.other .message-content {
-    background-color: white;
-    color: #333;
-    border-bottom-left-radius: 0.25rem;
-}
-
 /* Dark mode message bubbles */
 [data-bs-theme="dark"] .chat-message.own .message-content {
     background-color: var(--accent-color);
@@ -384,6 +342,7 @@ body {
 [data-bs-theme="dark"] .chat-message.other .message-content {
     background-color: #2a2f32;
     color: white;
+    border: 1px solid #404040;
 }
 
 [data-bs-theme="dark"] .message-header {
@@ -392,13 +351,6 @@ body {
 
 [data-bs-theme="dark"] .chat-message.own .message-header {
     color: #4fc3f7;
-}
-
-.message-time {
-    font-size: 0.65rem;
-    color: #999;
-    margin-top: 0.25rem;
-    padding: 0 0.5rem;
 }
 
 [data-bs-theme="dark"] .message-time {
