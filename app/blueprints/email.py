@@ -173,7 +173,7 @@ def sync_emails_from_server():
                                 # Limit attachment size to 25MB for central email access
                                 max_size = 25 * 1024 * 1024  # 25MB
                                 if len(file_content) > max_size:
-                                    print(f"⚠️ Attachment zu groß ({len(file_content)} bytes): {filename} - wird übersprungen (Max: 25MB)")
+                                    print(f"WARNING: Attachment zu groß ({len(file_content)} bytes): {filename} - wird übersprungen (Max: 25MB)")
                                     continue
                                 
                                 attachments_data.append({
@@ -374,7 +374,7 @@ def sync_emails_from_server():
                         
                         db.session.add(attachment)
                     except Exception as e:
-                        print(f"⚠️ Fehler beim Speichern des Attachments {attachment_data['filename']}: {str(e)}")
+                        print(f"ERROR: Fehler beim Speichern des Attachments {attachment_data['filename']}: {str(e)}")
                         continue
                 
                 synced_count += 1
@@ -383,7 +383,9 @@ def sync_emails_from_server():
                 # Handle Unicode errors gracefully
                 error_msg = str(e)
                 if 'charmap' in error_msg or 'codec' in error_msg:
-                    logging.warning(f"Skipping email {email_id}: Unicode encoding issue")
+                    # Only log every 10th Unicode error to reduce spam
+                    if int(email_id.decode()) % 10 == 0:
+                        logging.warning(f"Skipping emails with Unicode issues (e.g., {email_id})")
                 else:
                     logging.error(f"Failed to process email {email_id}: {error_msg}")
                 # Rollback session on error
@@ -618,7 +620,7 @@ def sync_emails():
         EmailMessage.query.delete()
         db.session.commit()
     except Exception as e:
-        print(f"⚠️ Fehler beim Löschen der E-Mails: {str(e)}")
+        print(f"ERROR: Fehler beim Löschen der E-Mails: {str(e)}")
         db.session.rollback()
     
     # Try to sync from IMAP server
@@ -673,10 +675,10 @@ def sync_emails():
                 db.session.add(email)
 
             db.session.commit()
-            flash(f'⚠️ IMAP-Sync fehlgeschlagen. {len(sample_emails)} Beispiel-E-Mails hinzugefügt.', 'warning')
-            print(f"⚠️ Fallback: {len(sample_emails)} Beispiel-E-Mails hinzugefügt")
+            flash(f'WARNING: IMAP-Sync fehlgeschlagen. {len(sample_emails)} Beispiel-E-Mails hinzugefügt.', 'warning')
+            print(f"WARNING: Fallback: {len(sample_emails)} Beispiel-E-Mails hinzugefügt")
         else:
-            flash(f'⚠️ {message}', 'warning')
+            flash(f'WARNING: {message}', 'warning')
 
     return redirect(url_for('email.index'))
 
@@ -688,11 +690,11 @@ def email_sync_scheduler(app):
             with app.app_context():
                 success, message = sync_emails_from_server()
                 if success:
-                    print(f"🔄 Auto-sync: {message}")
+                    print(f"Auto-sync: {message}")
                 else:
-                    print(f"🔄 Auto-sync failed: {message}")
+                    print(f"Auto-sync failed: {message}")
         except Exception as e:
-            print(f"🔄 Auto-sync error: {str(e)}")
+            print(f"Auto-sync error: {str(e)}")
         
         # Wait 15 minutes (900 seconds)
         time.sleep(900)
