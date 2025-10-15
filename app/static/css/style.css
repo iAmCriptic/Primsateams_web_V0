@@ -242,7 +242,7 @@ body {
     margin-bottom: 1rem;
     padding: 0.75rem;
     border-radius: 0.5rem;
-    max-width: 80%;
+    max-width: 90%;
 }
 
 .chat-message.own {
@@ -287,7 +287,7 @@ body {
 /* Mobile Chat Container */
 @media (max-width: 767.98px) {
     .chat-container {
-        height: calc(100vh - 130px); /* Full height minus fixed header and input */
+        height: calc(100vh - 140px); /* Full height minus fixed header and input */
         margin-top: 70px; /* Space for fixed header */
         display: flex;
         flex-direction: column;
@@ -303,9 +303,9 @@ body {
         overflow-y: auto;
         padding: 1rem;
         background-color: #f0f2f5;
-        height: calc(100vh - 250px); /* Fixed height to prevent over-scrolling */
-        max-height: calc(100vh - 250px); /* Maximum height */
-        padding-bottom: 20px; /* Minimal padding */
+        height: calc(100vh - 240px); /* Fixed height to prevent over-scrolling */
+        max-height: calc(100vh - 240px); /* Maximum height */
+        padding-bottom: 5px; /* Minimal padding to reduce white space */
         width: 100%; /* Full width */
         overflow-x: hidden; /* Prevent horizontal scrolling */
     }
