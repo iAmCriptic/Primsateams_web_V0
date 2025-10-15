@@ -268,7 +268,7 @@ body {
         background-color: #f0f2f5;
         min-height: calc(100vh - 250px); /* Minimum height to prevent background disappearing */
         height: auto; /* Allow content to expand */
-        padding-bottom: 120px; /* Extra space for input and scrolling */
+        padding-bottom: 60px; /* Minimal space for input */
     }
     
     [data-bs-theme="dark"] .messages-area {
