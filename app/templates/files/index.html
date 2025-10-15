@@ -106,7 +106,12 @@
 <div id="gridView" class="row g-3">
     {% for file in files %}
     <div class="col-12 col-md-6 col-lg-4">
-        <div class="card file-item h-100">
+        <div class="card file-item h-100" 
+             {% if file.name.endswith(('.txt', '.md', '.markdown')) %}
+             onclick="location.href='{{ url_for('files.view_file', file_id=file.id) }}'" style="cursor: pointer;"
+             {% else %}
+             onclick="location.href='{{ url_for('files.download_file', file_id=file.id) }}'" style="cursor: pointer;"
+             {% endif %}>
             <div class="card-body">
                 <!-- File Preview/Icon -->
                 <div class="text-center mb-3">
@@ -144,7 +149,7 @@
                         <span class="badge bg-info">v{{ file.version_number }}</span>
                         {% endif %}
                     </div>
-                    <div class="dropdown">
+                    <div class="dropdown" onclick="event.stopPropagation()">
                         <button class="btn btn-sm btn-link" data-bs-toggle="dropdown">
                             <i class="bi bi-three-dots-vertical"></i>
                         </button>
@@ -205,7 +210,12 @@
     {% for file in files %}
     <div class="list-group-item">
         <div class="d-flex w-100 justify-content-between align-items-center">
-            <div class="d-flex align-items-center">
+            <div class="d-flex align-items-center flex-grow-1" 
+                 {% if file.name.endswith(('.txt', '.md', '.markdown')) %}
+                 onclick="location.href='{{ url_for('files.view_file', file_id=file.id) }}'" style="cursor: pointer;"
+                 {% else %}
+                 onclick="location.href='{{ url_for('files.download_file', file_id=file.id) }}'" style="cursor: pointer;"
+                 {% endif %}>
                 <!-- File Icon -->
                 <div class="me-3">
                     {% if file.name.endswith('.md') %}
@@ -233,7 +243,7 @@
             </div>
             
             <!-- Details Button -->
-            <div class="dropdown">
+            <div class="dropdown" onclick="event.stopPropagation()">
                 <button class="btn btn-sm btn-link" data-bs-toggle="dropdown">
                     <i class="bi bi-three-dots-vertical"></i>
                 </button>

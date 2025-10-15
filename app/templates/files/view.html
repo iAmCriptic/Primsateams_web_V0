@@ -148,7 +148,7 @@
     <div class="file-viewer-content">
         {% if file.name.endswith('.md') %}
             <div class="markdown-content">
-                {{ content | markdown }}
+                {{ content | markdown | safe }}
             </div>
         {% else %}
             <div class="text-content">{{ content }}</div>
