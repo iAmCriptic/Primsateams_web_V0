@@ -64,17 +64,7 @@ def send_push_notification(
     
     if not subscriptions:
         logging.info(f"Keine Push-Subscriptions für Benutzer {user_id}")
-        # Speichere die Benachrichtigung trotzdem in der Datenbank
-        notification_log = NotificationLog(
-            user_id=user_id,
-            title=title,
-            body=body,
-            icon=icon,
-            url=url,
-            success=False  # False, da keine Push-Subscription vorhanden
-        )
-        db.session.add(notification_log)
-        db.session.commit()
+        # KEINE lokale Benachrichtigung mehr speichern - verhindert Spam!
         return False
     
     success_count = 0
@@ -116,18 +106,8 @@ def send_push_notification(
         except Exception as e:
             logging.error(f"Unerwarteter Fehler beim Senden der Push-Benachrichtigung: {e}")
     
-    # Logge das Ergebnis
-    log_entry = NotificationLog(
-        user_id=user_id,
-        title=title,
-        body=body,
-        icon=icon,
-        url=url,
-        success=success_count > 0,
-        error_message=None if success_count > 0 else f"Fehler beim Senden an {total_count - success_count} von {total_count} Subscriptions"
-    )
-    db.session.add(log_entry)
-    db.session.commit()
+    # KEINE NotificationLog-Einträge mehr - verhindert Spam-Benachrichtigungen!
+    # Das System speichert keine lokalen Benachrichtigungen mehr
     
     return success_count > 0
 
@@ -199,6 +179,7 @@ def send_chat_notification(
         title = chat_name or "Team Chat"
         body = f"{sender.full_name}: {display_content}"
         
+        # Sende NUR Push-Benachrichtigungen, KEINE lokalen Benachrichtigungen mehr
         if send_push_notification(
             user_id=user.id,
             title=title,
@@ -206,6 +187,10 @@ def send_chat_notification(
             url=f"/chat/{chat_id}"
         ):
             sent_count += 1
+        else:
+            # Auch wenn Push nicht funktioniert, KEINE lokale Benachrichtigung speichern
+            # Das verhindert Spam-Benachrichtigungen
+            pass
     
     return sent_count
 

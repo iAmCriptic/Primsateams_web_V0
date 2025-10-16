@@ -214,25 +214,13 @@ self.addEventListener('notificationclick', function(event) {
   }
 });
 
-// Hintergrund-Überprüfung für Benachrichtigungen
+// Hintergrund-Überprüfung für Benachrichtigungen - DEAKTIVIERT
 function startBackgroundNotificationCheck() {
-  console.log('Service Worker: Starte Hintergrund-Überprüfung');
+  console.log('Service Worker: Hintergrund-Überprüfung DEAKTIVIERT - keine Spam-Benachrichtigungen mehr!');
   
-  // Chat-Nachrichten alle 10 Sekunden
-  chatCheckInterval = setInterval(() => {
-    checkForChatNotifications();
-  }, 10000);
-  
-  // Andere Benachrichtigungen alle 30 Sekunden
-  notificationCheckInterval = setInterval(() => {
-    checkForOtherNotifications();
-  }, 30000);
-  
-  // Erste Prüfungen nach 5 Sekunden
-  setTimeout(() => {
-    checkForChatNotifications();
-    checkForOtherNotifications();
-  }, 5000);
+  // KEINE automatischen Überprüfungen mehr!
+  // Benachrichtigungen kommen nur noch bei echten neuen Nachrichten
+  // über die Push-API oder wenn explizit angefragt
 }
 
 // Chat-Benachrichtigungen alle 10 Sekunden
@@ -240,22 +228,16 @@ async function checkForChatNotifications() {
   try {
     console.log('Service Worker: Prüfe auf neue Chat-Nachrichten');
     
-    const [notificationsResponse, chatResponse] = await Promise.all([
-      fetch('/api/notifications/pending', { credentials: 'include' }),
-      fetch('/api/chat/unread-count', { credentials: 'include' })
-    ]);
-    
-    // Verarbeite Chat-Benachrichtigungen
-    if (notificationsResponse.ok) {
-      const data = await notificationsResponse.json();
-      handleNewChatNotifications(data.notifications);
-    }
+    // NUR Chat-Count prüfen, KEINE alten Benachrichtigungen mehr holen
+    const chatResponse = await fetch('/api/chat/unread-count', { credentials: 'include' });
     
     // Verarbeite Chat-Updates
     if (chatResponse.ok) {
       const data = await chatResponse.json();
       if (data.count > 0) {
         console.log(`Service Worker: ${data.count} neue Chat-Nachrichten`);
+        // Hier könnten wir eine generische Benachrichtigung senden
+        // aber KEINE alten Benachrichtigungen aus der DB
       }
     }
     
