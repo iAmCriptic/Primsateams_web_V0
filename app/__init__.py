@@ -195,7 +195,13 @@ def create_app(config_name='default'):
     
     # Create database tables
     with app.app_context():
-        db.create_all()
+        try:
+            # Erstelle alle Tabellen (nur neue werden hinzugefügt)
+            db.create_all()
+            print("[OK] Datenbank-Tabellen erfolgreich erstellt/aktualisiert")
+        except Exception as e:
+            print(f"[WARNUNG] Warnung beim Erstellen der Datenbank-Tabellen: {e}")
+            # Versuche trotzdem fortzufahren
         
         # Initialize system settings
         from app.models.settings import SystemSettings
@@ -262,6 +268,10 @@ def create_app(config_name='default'):
     
     # Start email auto-sync
     start_email_sync(app)
+    
+    # Start notification scheduler
+    from app.tasks.notification_scheduler import start_notification_scheduler
+    start_notification_scheduler(app)
     
     return app
 

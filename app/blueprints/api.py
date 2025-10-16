@@ -6,6 +6,8 @@ from app.models.chat import Chat, ChatMessage, ChatMember
 from app.models.file import File, Folder
 from app.models.calendar import CalendarEvent, EventParticipant
 from app.models.email import EmailMessage
+from app.models.notification import PushSubscription
+from app.utils.notifications import register_push_subscription, send_push_notification
 from datetime import datetime
 
 api_bp = Blueprint('api', __name__)
@@ -248,6 +250,202 @@ def get_dashboard_stats():
         'unread_emails': unread_emails,
         'total_files': total_files
     })
+
+
+# Push Notifications API
+@api_bp.route('/push/subscribe', methods=['POST'])
+@login_required
+def subscribe_push():
+    """Register push subscription for current user."""
+    try:
+        data = request.get_json()
+        subscription_data = data.get('subscription')
+        user_agent = data.get('user_agent', '')
+        
+        if not subscription_data:
+            return jsonify({'error': 'Subscription-Daten fehlen'}), 400
+        
+        # Registriere Push-Subscription
+        success = register_push_subscription(current_user.id, subscription_data)
+        
+        if success:
+            return jsonify({'message': 'Push-Subscription erfolgreich registriert'})
+        else:
+            return jsonify({'error': 'Fehler bei der Registrierung'}), 500
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@api_bp.route('/push/unsubscribe', methods=['POST'])
+@login_required
+def unsubscribe_push():
+    """Unregister push subscription for current user."""
+    try:
+        # Deaktiviere alle Push-Subscriptions des Benutzers
+        subscriptions = PushSubscription.query.filter_by(
+            user_id=current_user.id,
+            is_active=True
+        ).all()
+        
+        for subscription in subscriptions:
+            subscription.is_active = False
+        
+        db.session.commit()
+        
+        return jsonify({'message': 'Push-Subscription erfolgreich deaktiviert'})
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@api_bp.route('/push/test', methods=['POST'])
+@login_required
+def test_push():
+    """Send test push notification to current user."""
+    try:
+        success = send_push_notification(
+            user_id=current_user.id,
+            title='Test-Benachrichtigung',
+            body='Dies ist eine Test-Benachrichtigung vom Team Portal.',
+            url='/dashboard'
+        )
+        
+        if success:
+            return jsonify({'message': 'Test-Benachrichtigung gesendet'})
+        else:
+            return jsonify({'error': 'Keine aktive Push-Subscription gefunden'}), 400
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@api_bp.route('/push/status', methods=['GET'])
+@login_required
+def push_status():
+    """Get push notification status for current user."""
+    try:
+        # Prüfe ob aktive Subscriptions existieren
+        active_subscriptions = PushSubscription.query.filter_by(
+            user_id=current_user.id,
+            is_active=True
+        ).count()
+        
+        return jsonify({
+            'has_subscription': active_subscriptions > 0,
+            'subscription_count': active_subscriptions,
+            'notifications_enabled': current_user.notifications_enabled,
+            'chat_notifications': current_user.chat_notifications
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# Notification Settings API
+@api_bp.route('/notifications/settings', methods=['GET'])
+@login_required
+def get_notification_settings():
+    """Hole Benachrichtigungseinstellungen des aktuellen Benutzers."""
+    try:
+        from app.utils.notifications import get_or_create_notification_settings
+        
+        settings = get_or_create_notification_settings(current_user.id)
+        
+        return jsonify({
+            'chat_notifications_enabled': settings.chat_notifications_enabled,
+            'file_notifications_enabled': settings.file_notifications_enabled,
+            'file_new_notifications': settings.file_new_notifications,
+            'file_modified_notifications': settings.file_modified_notifications,
+            'email_notifications_enabled': settings.email_notifications_enabled,
+            'calendar_notifications_enabled': settings.calendar_notifications_enabled,
+            'calendar_all_events': settings.calendar_all_events,
+            'calendar_participating_only': settings.calendar_participating_only,
+            'calendar_not_participating': settings.calendar_not_participating,
+            'calendar_no_response': settings.calendar_no_response,
+            'reminder_times': settings.get_reminder_times()
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@api_bp.route('/notifications/settings', methods=['POST'])
+@login_required
+def update_notification_settings():
+    """Aktualisiere Benachrichtigungseinstellungen des aktuellen Benutzers."""
+    try:
+        from app.utils.notifications import get_or_create_notification_settings
+        
+        data = request.get_json()
+        settings = get_or_create_notification_settings(current_user.id)
+        
+        # Update settings
+        settings.chat_notifications_enabled = data.get('chat_notifications_enabled', True)
+        settings.file_notifications_enabled = data.get('file_notifications_enabled', True)
+        settings.file_new_notifications = data.get('file_new_notifications', True)
+        settings.file_modified_notifications = data.get('file_modified_notifications', True)
+        settings.email_notifications_enabled = data.get('email_notifications_enabled', True)
+        settings.calendar_notifications_enabled = data.get('calendar_notifications_enabled', True)
+        settings.calendar_all_events = data.get('calendar_all_events', False)
+        settings.calendar_participating_only = data.get('calendar_participating_only', True)
+        settings.calendar_not_participating = data.get('calendar_not_participating', False)
+        settings.calendar_no_response = data.get('calendar_no_response', False)
+        
+        # Update reminder times
+        reminder_times = data.get('reminder_times', [])
+        settings.set_reminder_times(reminder_times)
+        
+        db.session.commit()
+        
+        return jsonify({'message': 'Benachrichtigungseinstellungen aktualisiert'})
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@api_bp.route('/notifications/chat/<int:chat_id>', methods=['POST'])
+@login_required
+def update_chat_notification_settings(chat_id):
+    """Aktualisiere Chat-spezifische Benachrichtigungseinstellungen."""
+    try:
+        from app.models.notification import ChatNotificationSettings
+        
+        data = request.get_json()
+        enabled = data.get('enabled', True)
+        
+        # Prüfe ob Chat existiert und Benutzer Mitglied ist
+        from app.models.chat import ChatMember
+        membership = ChatMember.query.filter_by(
+            chat_id=chat_id,
+            user_id=current_user.id
+        ).first()
+        
+        if not membership:
+            return jsonify({'error': 'Nicht autorisiert'}), 403
+        
+        # Hole oder erstelle Chat-Einstellungen
+        chat_settings = ChatNotificationSettings.query.filter_by(
+            user_id=current_user.id,
+            chat_id=chat_id
+        ).first()
+        
+        if not chat_settings:
+            chat_settings = ChatNotificationSettings(
+                user_id=current_user.id,
+                chat_id=chat_id,
+                notifications_enabled=enabled
+            )
+            db.session.add(chat_settings)
+        else:
+            chat_settings.notifications_enabled = enabled
+        
+        db.session.commit()
+        
+        return jsonify({'message': 'Chat-Benachrichtigungseinstellungen aktualisiert'})
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 

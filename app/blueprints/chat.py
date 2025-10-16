@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from app import db
 from app.models.chat import Chat, ChatMessage, ChatMember
 from app.models.user import User
+from app.utils.notifications import send_chat_notification
 from datetime import datetime
 from werkzeug.utils import secure_filename
 import os
@@ -129,6 +130,18 @@ def send_message(chat_id):
     
     db.session.add(message)
     db.session.commit()
+    
+    # Sende Push-Benachrichtigungen an andere Chat-Mitglieder
+    try:
+        sent_count = send_chat_notification(
+            chat_id=chat_id,
+            sender_id=current_user.id,
+            message_content=content or f"[{message_type}]",
+            chat_name=chat.name
+        )
+        print(f"Push-Benachrichtigungen gesendet: {sent_count}")
+    except Exception as e:
+        print(f"Fehler beim Senden der Push-Benachrichtigungen: {e}")
     
     if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         from app.utils import get_local_time

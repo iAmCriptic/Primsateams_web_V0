@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from app import db
 from app.models.file import File, FileVersion, Folder
 from app.models.user import User
+from app.utils.notifications import send_file_notification
 from werkzeug.utils import secure_filename
 from datetime import datetime
 import os
@@ -228,6 +229,13 @@ def upload_file():
         existing_file.updated_at = datetime.utcnow()
         
         db.session.commit()
+        
+        # Sende Benachrichtigung für geänderte Datei
+        try:
+            send_file_notification(existing_file.id, 'modified')
+        except Exception as e:
+            print(f"Fehler beim Senden der Datei-Benachrichtigung: {e}")
+        
         flash(f'Datei "{original_name}" wurde aktualisiert (Version {version_number}).', 'success')
     else:
         # Create new file
@@ -252,6 +260,13 @@ def upload_file():
         )
         db.session.add(new_file)
         db.session.commit()
+        
+        # Sende Benachrichtigung für neue Datei
+        try:
+            send_file_notification(new_file.id, 'new')
+        except Exception as e:
+            print(f"Fehler beim Senden der Datei-Benachrichtigung: {e}")
+        
         flash(f'Datei "{original_name}" wurde hochgeladen.', 'success')
     
     if folder_id:

@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from app import db, mail
 from app.models.email import EmailMessage, EmailPermission, EmailAttachment
 from app.models.settings import SystemSettings
+from app.utils.notifications import send_email_notification
 from flask_mail import Message
 from datetime import datetime, timedelta
 import imaplib
@@ -395,6 +396,12 @@ def sync_emails_from_server():
                     except Exception as e:
                         print(f"ERROR: Fehler beim Speichern des Attachments {attachment_data['filename']}: {str(e)}")
                         continue
+                
+                # Sende Benachrichtigung für neue E-Mail
+                try:
+                    send_email_notification(email_entry.id)
+                except Exception as e:
+                    print(f"Fehler beim Senden der E-Mail-Benachrichtigung: {e}")
                 
                 synced_count += 1
                 

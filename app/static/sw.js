@@ -110,22 +110,50 @@ self.addEventListener('sync', function(event) {
   }
 });
 
-// Push Notifications (für zukünftige Erweiterungen)
+// Push Notifications
 self.addEventListener('push', function(event) {
   console.log('Service Worker: Push Event');
   
-  const options = {
-    body: event.data ? event.data.text() : 'Neue Benachrichtigung',
+  let notificationData = {
+    title: 'Team Portal',
+    body: 'Neue Benachrichtigung',
     icon: '/static/img/logo.png',
     badge: '/static/img/logo.png',
+    url: '/',
+    data: {}
+  };
+  
+  // Parse Push-Daten falls vorhanden
+  if (event.data) {
+    try {
+      const pushData = event.data.json();
+      notificationData = {
+        title: pushData.title || 'Team Portal',
+        body: pushData.body || 'Neue Benachrichtigung',
+        icon: pushData.icon || '/static/img/logo.png',
+        badge: pushData.icon || '/static/img/logo.png',
+        url: pushData.url || '/',
+        data: pushData.data || {}
+      };
+    } catch (e) {
+      console.log('Fehler beim Parsen der Push-Daten:', e);
+      notificationData.body = event.data.text() || 'Neue Benachrichtigung';
+    }
+  }
+  
+  const options = {
+    body: notificationData.body,
+    icon: notificationData.icon,
+    badge: notificationData.badge,
     vibrate: [100, 50, 100],
     data: {
-      dateOfArrival: Date.now(),
-      primaryKey: 1
+      url: notificationData.url,
+      ...notificationData.data,
+      dateOfArrival: Date.now()
     },
     actions: [
       {
-        action: 'explore',
+        action: 'open',
         title: 'Öffnen',
         icon: '/static/img/logo.png'
       },
@@ -134,24 +162,44 @@ self.addEventListener('push', function(event) {
         title: 'Schließen',
         icon: '/static/img/logo.png'
       }
-    ]
+    ],
+    requireInteraction: false,
+    silent: false
   };
 
   event.waitUntil(
-    self.registration.showNotification('Team Portal', options)
+    self.registration.showNotification(notificationData.title, options)
   );
 });
 
 // Notification Click Handler
 self.addEventListener('notificationclick', function(event) {
-  console.log('Service Worker: Notification Click');
+  console.log('Service Worker: Notification Click', event.action);
   
   event.notification.close();
 
-  if (event.action === 'explore') {
-    // Öffne die App
+  if (event.action === 'open' || !event.action) {
+    // Öffne die App oder spezifische URL
+    const url = event.notification.data?.url || '/';
+    
     event.waitUntil(
-      clients.openWindow('/')
+      clients.matchAll({ type: 'window' }).then(function(clientList) {
+        // Prüfe ob bereits ein Fenster/Tab offen ist
+        for (let i = 0; i < clientList.length; i++) {
+          const client = clientList[i];
+          if (client.url.includes(self.location.origin) && 'focus' in client) {
+            // Fokussiere bestehenden Tab
+            client.focus();
+            client.navigate(url);
+            return;
+          }
+        }
+        
+        // Öffne neuen Tab
+        if (clients.openWindow) {
+          return clients.openWindow(url);
+        }
+      })
     );
   }
 });

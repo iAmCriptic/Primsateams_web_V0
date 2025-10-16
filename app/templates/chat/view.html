@@ -109,7 +109,7 @@
             <button class="btn btn-link p-2" type="button" onclick="document.getElementById('file-upload').click()">
                 <i class="bi bi-paperclip fs-5"></i>
             </button>
-            <button class="btn btn-link p-2" type="button" onclick="startVoiceRecording()">
+            <button class="btn btn-link p-2" type="button" data-request-microphone onclick="startVoiceRecording()">
                 <i class="bi bi-mic fs-5" id="mic-icon"></i>
             </button>
             <input type="file" id="file-upload" name="file" class="d-none" accept="image/*,video/*,audio/*">
@@ -131,6 +131,9 @@
         <div class="input-group">
             <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('file-upload-desktop').click()">
                 <i class="bi bi-paperclip"></i>
+            </button>
+            <button class="btn btn-outline-secondary" type="button" data-request-microphone onclick="startVoiceRecording()">
+                <i class="bi bi-mic" id="mic-icon-desktop"></i>
             </button>
             <input type="file" id="file-upload-desktop" name="file" class="d-none" accept="image/*,video/*,audio/*">
             <input type="text" id="message-input-desktop" class="form-control" name="content" placeholder="Nachricht schreiben..." autocomplete="off">
@@ -425,15 +428,25 @@
     
     async function startVoiceRecording() {
         const micIcon = document.getElementById('mic-icon');
+        const micIconDesktop = document.getElementById('mic-icon-desktop');
         
         if (mediaRecorder && mediaRecorder.state === 'recording') {
             // Stop recording
             mediaRecorder.stop();
             micIcon.className = 'bi bi-mic fs-5';
+            if (micIconDesktop) micIconDesktop.className = 'bi bi-mic';
             return;
         }
         
         try {
+            // Prüfe Mikrofon-Berechtigung
+            if (typeof permissionManager !== 'undefined') {
+                const hasPermission = await permissionManager.requestMicrophonePermission();
+                if (!hasPermission) {
+                    return;
+                }
+            }
+            
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             mediaRecorder = new MediaRecorder(stream);
             audioChunks = [];
@@ -450,10 +463,17 @@
             
             mediaRecorder.start();
             micIcon.className = 'bi bi-stop-circle fs-5 text-danger';
+            if (micIconDesktop) micIconDesktop.className = 'bi bi-stop-circle text-danger';
             
         } catch (error) {
             console.error('Error accessing microphone:', error);
-            alert('Mikrofonzugriff wurde verweigert');
+            
+            // Zeige benutzerfreundliche Fehlermeldung
+            if (typeof permissionManager !== 'undefined') {
+                permissionManager.showPermissionInfo('Mikrofon', 'Mikrofon-Zugriff ist für Sprachnachrichten erforderlich.');
+            } else {
+                alert('Mikrofonzugriff wurde verweigert. Bitte erlauben Sie den Zugriff in Ihren Browser-Einstellungen.');
+            }
         }
     }
     

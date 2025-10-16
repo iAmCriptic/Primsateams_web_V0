@@ -86,6 +86,289 @@ window.addEventListener('appinstalled', function(evt) {
     }
 });
 
+// Push Notifications
+let pushSubscription = null;
+
+// Prüfe ob Push-Benachrichtigungen unterstützt werden
+if ('serviceWorker' in navigator && 'PushManager' in window) {
+    // Registriere Push-Subscription
+    registerPushNotifications();
+}
+
+// Berechtigungs-Manager
+class PermissionManager {
+    constructor() {
+        this.permissions = {
+            notifications: 'default',
+            microphone: 'default'
+        };
+        this.init();
+    }
+    
+    async init() {
+        // Prüfe aktuelle Berechtigungen
+        await this.checkPermissions();
+        
+        // Zeige Berechtigungsanfragen nach kurzer Verzögerung
+        setTimeout(() => {
+            this.requestPermissions();
+        }, 2000);
+    }
+    
+    async checkPermissions() {
+        // Prüfe Benachrichtigungsberechtigung
+        if ('Notification' in window) {
+            this.permissions.notifications = Notification.permission;
+        }
+        
+        // Prüfe Mikrofon-Berechtigung
+        if ('permissions' in navigator) {
+            try {
+                const micPermission = await navigator.permissions.query({ name: 'microphone' });
+                this.permissions.microphone = micPermission.state;
+            } catch (e) {
+                console.log('Mikrofon-Berechtigung kann nicht geprüft werden:', e);
+            }
+        }
+        
+        console.log('Aktuelle Berechtigungen:', this.permissions);
+    }
+    
+    async requestPermissions() {
+        // Zeige Berechtigungsanfragen nur wenn nötig
+        if (this.permissions.notifications === 'default') {
+            await this.requestNotificationPermission();
+        }
+        
+        // Mikrofon-Berechtigung wird erst bei Bedarf angefragt
+        this.setupMicrophonePermissionRequest();
+    }
+    
+    async requestNotificationPermission() {
+        if ('Notification' in window && Notification.permission === 'default') {
+            try {
+                const permission = await Notification.requestPermission();
+                this.permissions.notifications = permission;
+                
+                if (permission === 'granted') {
+                    console.log('Benachrichtigungsberechtigung erteilt');
+                    this.showPermissionSuccess('Benachrichtigungen', 'Sie erhalten jetzt Push-Benachrichtigungen für neue Nachrichten.');
+                    
+                    // Registriere Push-Subscription nach erfolgreicher Berechtigung
+                    if ('serviceWorker' in navigator && 'PushManager' in window) {
+                        await registerPushNotifications();
+                    }
+                } else {
+                    console.log('Benachrichtigungsberechtigung verweigert');
+                    this.showPermissionInfo('Benachrichtigungen', 'Sie können Benachrichtigungen in den Browser-Einstellungen aktivieren.');
+                }
+            } catch (error) {
+                console.error('Fehler bei Benachrichtigungsberechtigung:', error);
+            }
+        }
+    }
+    
+    async requestMicrophonePermission() {
+        if ('mediaDevices' in navigator && 'getUserMedia' in navigator.mediaDevices) {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                // Stoppe den Stream sofort - wir wollten nur die Berechtigung
+                stream.getTracks().forEach(track => track.stop());
+                
+                console.log('Mikrofon-Berechtigung erteilt');
+                this.showPermissionSuccess('Mikrofon', 'Sie können jetzt Sprachnachrichten aufnehmen.');
+                return true;
+            } catch (error) {
+                console.log('Mikrofon-Berechtigung verweigert:', error);
+                this.showPermissionInfo('Mikrofon', 'Mikrofon-Zugriff ist für Sprachnachrichten erforderlich.');
+                return false;
+            }
+        }
+        return false;
+    }
+    
+    setupMicrophonePermissionRequest() {
+        // Füge Event-Listener für Mikrofon-Buttons hinzu
+        document.addEventListener('click', async (event) => {
+            if (event.target.matches('[data-request-microphone]') || 
+                event.target.closest('[data-request-microphone]')) {
+                event.preventDefault();
+                await this.requestMicrophonePermission();
+            }
+        });
+    }
+    
+    showPermissionSuccess(type, message) {
+        this.showPermissionToast(type, message, 'success');
+    }
+    
+    showPermissionInfo(type, message) {
+        this.showPermissionToast(type, message, 'info');
+    }
+    
+    showPermissionToast(type, message, level) {
+        // Erstelle Toast-Benachrichtigung
+        const toast = document.createElement('div');
+        toast.className = `toast align-items-center text-white bg-${level === 'success' ? 'success' : 'info'} border-0`;
+        toast.setAttribute('role', 'alert');
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    <strong>${type}:</strong> ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+        
+        // Füge Toast-Container hinzu falls nicht vorhanden
+        let toastContainer = document.getElementById('toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.id = 'toast-container';
+            toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+            toastContainer.style.zIndex = '1060';
+            document.body.appendChild(toastContainer);
+        }
+        
+        toastContainer.appendChild(toast);
+        
+        // Zeige Toast
+        const bsToast = new bootstrap.Toast(toast);
+        bsToast.show();
+        
+        // Entferne Toast nach dem Ausblenden
+        toast.addEventListener('hidden.bs.toast', () => {
+            toast.remove();
+        });
+    }
+    
+    getPermissionStatus() {
+        return this.permissions;
+    }
+}
+
+// Initialisiere Berechtigungs-Manager
+const permissionManager = new PermissionManager();
+
+async function registerPushNotifications() {
+    try {
+        const registration = await navigator.serviceWorker.ready;
+        
+        // Prüfe ob bereits eine Subscription existiert
+        pushSubscription = await registration.pushManager.getSubscription();
+        
+        if (!pushSubscription) {
+            // Erstelle neue Subscription
+                const applicationServerKey = urlBase64ToUint8Array('MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEG4ECv1S2TNUvpqoXcq4hbpVrFKruYoRRc1A8NMDhmU_a597YCT1e3_61_ujJLDDEwSnkauzSkjXh_QgeMb6Nsg');
+            
+            pushSubscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: applicationServerKey
+            });
+            
+            console.log('Push-Subscription erstellt:', pushSubscription);
+        }
+        
+        // Sende Subscription an Server
+        await sendSubscriptionToServer(pushSubscription);
+        
+        // Zeige Benachrichtigungs-Button
+        showNotificationButton();
+        
+    } catch (error) {
+        console.error('Fehler bei Push-Notification Registrierung:', error);
+    }
+}
+
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+        .replace(/-/g, '+')
+        .replace(/_/g, '/');
+    
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
+async function sendSubscriptionToServer(subscription) {
+    try {
+        const response = await fetch('/api/push/subscribe', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                subscription: subscription,
+                user_agent: navigator.userAgent
+            })
+        });
+        
+        if (response.ok) {
+            console.log('Push-Subscription erfolgreich an Server gesendet');
+        } else {
+            console.error('Fehler beim Senden der Push-Subscription');
+        }
+    } catch (error) {
+        console.error('Fehler beim Senden der Push-Subscription:', error);
+    }
+}
+
+function showNotificationButton() {
+    // Erstelle Benachrichtigungs-Button falls noch nicht vorhanden
+    if (!document.getElementById('notification-btn')) {
+        const notificationBtn = document.createElement('button');
+        notificationBtn.id = 'notification-btn';
+        notificationBtn.className = 'btn btn-outline-primary position-fixed';
+        notificationBtn.style.cssText = 'bottom: 80px; left: 20px; z-index: 1050; display: none;';
+        notificationBtn.innerHTML = '<i class="bi bi-bell me-2"></i>Benachrichtigungen';
+        notificationBtn.onclick = requestNotificationPermission;
+        document.body.appendChild(notificationBtn);
+        
+        // Zeige Button nach kurzer Verzögerung
+        setTimeout(() => {
+            notificationBtn.style.display = 'block';
+        }, 5000);
+    }
+}
+
+async function requestNotificationPermission() {
+    if ('Notification' in window) {
+        const permission = await Notification.requestPermission();
+        
+        if (permission === 'granted') {
+            console.log('Benachrichtigungsberechtigung erteilt');
+            
+            // Verstecke Button
+            const notificationBtn = document.getElementById('notification-btn');
+            if (notificationBtn) {
+                notificationBtn.style.display = 'none';
+            }
+            
+            // Zeige Erfolgsmeldung
+            showNotification('Benachrichtigungen aktiviert', 'Sie erhalten jetzt Push-Benachrichtigungen für neue Chat-Nachrichten.');
+        } else {
+            console.log('Benachrichtigungsberechtigung verweigert');
+            showNotification('Benachrichtigungen deaktiviert', 'Sie können Benachrichtigungen in den Browser-Einstellungen aktivieren.');
+        }
+    }
+}
+
+function showNotification(title, body) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(title, {
+            body: body,
+            icon: '/static/img/logo.png',
+            badge: '/static/img/logo.png'
+        });
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Auto-dismiss alerts after 5 seconds
     const alerts = document.querySelectorAll('.alert:not(.alert-permanent)');

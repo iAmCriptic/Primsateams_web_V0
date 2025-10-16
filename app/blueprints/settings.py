@@ -4,6 +4,9 @@ from app import db
 from app.models.user import User
 from app.models.email import EmailPermission
 from app.models.settings import SystemSettings
+from app.models.notification import NotificationSettings, ChatNotificationSettings
+from app.models.chat import Chat, ChatMember
+from app.utils.notifications import get_or_create_notification_settings
 from werkzeug.utils import secure_filename
 from datetime import datetime
 import os
@@ -54,11 +57,89 @@ def profile():
                     
                     current_user.profile_picture = filepath
         
+        # Handle notification settings
+        current_user.notifications_enabled = 'notifications_enabled' in request.form
+        current_user.chat_notifications = 'chat_notifications' in request.form
+        current_user.email_notifications = 'email_notifications' in request.form
+        
         db.session.commit()
         flash('Profil wurde aktualisiert.', 'success')
         return redirect(url_for('settings.profile'))
     
     return render_template('settings/profile.html', user=current_user)
+
+
+@settings_bp.route('/notifications', methods=['GET', 'POST'])
+@login_required
+def notifications():
+    """Benachrichtigungseinstellungen."""
+    if request.method == 'POST':
+        # Hole oder erstelle Benachrichtigungseinstellungen
+        settings = get_or_create_notification_settings(current_user.id)
+        
+        # Chat-Benachrichtigungen
+        settings.chat_notifications_enabled = 'chat_notifications_enabled' in request.form
+        
+        # Datei-Benachrichtigungen
+        settings.file_notifications_enabled = 'file_notifications_enabled' in request.form
+        settings.file_new_notifications = 'file_new_notifications' in request.form
+        settings.file_modified_notifications = 'file_modified_notifications' in request.form
+        
+        # E-Mail-Benachrichtigungen
+        settings.email_notifications_enabled = 'email_notifications_enabled' in request.form
+        
+        # Kalender-Benachrichtigungen
+        settings.calendar_notifications_enabled = 'calendar_notifications_enabled' in request.form
+        settings.calendar_all_events = request.form.get('calendar_event_filter') == 'all'
+        settings.calendar_participating_only = 'calendar_participating_only' in request.form
+        settings.calendar_not_participating = 'calendar_not_participating' in request.form
+        settings.calendar_no_response = 'calendar_no_response' in request.form
+        
+        # Erinnerungszeiten
+        reminder_times = request.form.getlist('reminder_times')
+        settings.set_reminder_times([int(t) for t in reminder_times])
+        
+        # Chat-spezifische Einstellungen
+        # Lösche alle bestehenden Chat-Einstellungen
+        ChatNotificationSettings.query.filter_by(user_id=current_user.id).delete()
+        
+        # Erstelle neue Chat-Einstellungen
+        for key, value in request.form.items():
+            if key.startswith('chat_') and key != 'chat_notifications_enabled':
+                chat_id = int(key.split('_')[1])
+                chat_setting = ChatNotificationSettings(
+                    user_id=current_user.id,
+                    chat_id=chat_id,
+                    notifications_enabled=True
+                )
+                db.session.add(chat_setting)
+        
+        db.session.commit()
+        flash('Benachrichtigungseinstellungen wurden gespeichert.', 'success')
+        return redirect(url_for('settings.notifications'))
+    
+    # Hole Benachrichtigungseinstellungen
+    settings = get_or_create_notification_settings(current_user.id)
+    
+    # Hole alle Chats des Benutzers
+    memberships = ChatMember.query.filter_by(user_id=current_user.id).all()
+    user_chats = [membership.chat for membership in memberships]
+    
+    # Hole Chat-spezifische Einstellungen
+    chat_notification_settings = {}
+    for chat in user_chats:
+        chat_setting = ChatNotificationSettings.query.filter_by(
+            user_id=current_user.id,
+            chat_id=chat.id
+        ).first()
+        chat_notification_settings[chat.id] = chat_setting.notifications_enabled if chat_setting else True
+    
+    return render_template(
+        'settings/notifications.html',
+        settings=settings,
+        user_chats=user_chats,
+        chat_notification_settings=chat_notification_settings
+    )
 
 
 @settings_bp.route('/appearance', methods=['GET', 'POST'])

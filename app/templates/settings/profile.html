@@ -55,6 +55,39 @@
                     
                     <hr class="my-4">
                     
+                    <h5 class="mb-3">Benachrichtigungen</h5>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="notifications_enabled" name="notifications_enabled" {% if user.notifications_enabled %}checked{% endif %}>
+                            <label class="form-check-label" for="notifications_enabled">
+                                Push-Benachrichtigungen aktivieren
+                            </label>
+                            <div class="form-text">Erhalten Sie Benachrichtigungen auch wenn die App nicht geöffnet ist</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="chat_notifications" name="chat_notifications" {% if user.chat_notifications %}checked{% endif %}>
+                            <label class="form-check-label" for="chat_notifications">
+                                Chat-Benachrichtigungen
+                            </label>
+                            <div class="form-text">Benachrichtigungen für neue Chat-Nachrichten</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="email_notifications" name="email_notifications" {% if user.email_notifications %}checked{% endif %}>
+                            <label class="form-check-label" for="email_notifications">
+                                E-Mail-Benachrichtigungen
+                            </label>
+                            <div class="form-text">E-Mail-Benachrichtigungen für wichtige Ereignisse</div>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
                     <h5 class="mb-3">Passwort ändern</h5>
                     <div class="mb-3">
                         <label for="new_password" class="form-label">Neues Passwort (optional)</label>

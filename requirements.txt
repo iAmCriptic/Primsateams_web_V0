@@ -29,6 +29,9 @@ markdown>=3.9.0
 # Email (optional)
 imapclient>=2.3.1
 
+# Push Notifications
+pywebpush>=1.14.0
+
 # Production server (optional for development)
 gunicorn>=21.2.0
 

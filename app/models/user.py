@@ -30,6 +30,12 @@ class User(UserMixin, db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     last_login = db.Column(db.DateTime, nullable=True)
     
+    # Push Notifications
+    push_subscription = db.Column(db.Text, nullable=True)  # JSON string of push subscription
+    notifications_enabled = db.Column(db.Boolean, default=True, nullable=False)
+    chat_notifications = db.Column(db.Boolean, default=True, nullable=False)
+    email_notifications = db.Column(db.Boolean, default=True, nullable=False)
+    
     # Relationships
     chat_memberships = db.relationship('ChatMember', back_populates='user', cascade='all, delete-orphan')
     sent_messages = db.relationship('ChatMessage', back_populates='sender', cascade='all, delete-orphan')
