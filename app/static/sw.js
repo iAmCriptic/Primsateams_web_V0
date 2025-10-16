@@ -229,13 +229,16 @@ function startBackgroundNotificationCheck() {
   }, 5000);
 }
 
-// Chat-Updates für Dashboard (ohne Benachrichtigungen)
+// Chat-Updates für Dashboard UND Benachrichtigungen
 async function checkForChatUpdates() {
   try {
-    console.log('Service Worker: Prüfe Chat-Updates für Dashboard');
+    console.log('Service Worker: Prüfe Chat-Updates und Benachrichtigungen');
     
-    // NUR Chat-Count für Dashboard-Updates
-    const chatResponse = await fetch('/api/chat/unread-count', { credentials: 'include' });
+    // Prüfe Chat-Count UND Benachrichtigungen
+    const [chatResponse, notificationsResponse] = await Promise.all([
+      fetch('/api/chat/unread-count', { credentials: 'include' }),
+      fetch('/api/notifications/pending', { credentials: 'include' })
+    ]);
     
     if (chatResponse.ok) {
       const data = await chatResponse.json();
@@ -249,6 +252,22 @@ async function checkForChatUpdates() {
           count: data.count
         });
       });
+    }
+    
+    // Prüfe auf neue Benachrichtigungen
+    if (notificationsResponse.ok) {
+      const data = await notificationsResponse.json();
+      if (data.notifications && data.notifications.length > 0) {
+        console.log(`Service Worker: ${data.notifications.length} neue Benachrichtigungen gefunden`);
+        
+        // Zeige jede neue Benachrichtigung
+        data.notifications.forEach(notif => {
+          if (!shownNotificationIds.has(notif.id)) {
+            shownNotificationIds.add(notif.id);
+            showNotification(notif);
+          }
+        });
+      }
     }
     
   } catch (error) {
