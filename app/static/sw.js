@@ -311,27 +311,48 @@ async function checkForNotifications() {
     const response = await fetch('/api/notifications/pending', { 
       credentials: 'include',
       headers: {
-        'X-Requested-With': 'XMLHttpRequest'
+        'X-Requested-With': 'XMLHttpRequest',
+        'Content-Type': 'application/json'
       }
     });
     
+    console.log('Service Worker: Response Status:', response.status);
+    console.log('Service Worker: Response Headers:', response.headers);
+    
     if (response.ok) {
-      const data = await response.json();
-      if (data.notifications && data.notifications.length > 0) {
-        console.log(`Service Worker: ${data.notifications.length} neue Benachrichtigungen gefunden`);
+      const contentType = response.headers.get('content-type');
+      console.log('Service Worker: Content-Type:', contentType);
+      
+      if (contentType && contentType.includes('application/json')) {
+        const data = await response.json();
+        console.log('Service Worker: JSON Data:', data);
         
-        // Zeige jede neue Benachrichtigung nur einmal
-        data.notifications.forEach(notif => {
-          if (!shownNotificationIds.has(notif.id)) {
-            shownNotificationIds.add(notif.id);
-            showNotification(notif);
-          }
-        });
+        if (data.notifications && data.notifications.length > 0) {
+          console.log(`Service Worker: ${data.notifications.length} neue Benachrichtigungen gefunden`);
+          
+          // Zeige jede neue Benachrichtigung nur einmal
+          data.notifications.forEach(notif => {
+            if (!shownNotificationIds.has(notif.id)) {
+              shownNotificationIds.add(notif.id);
+              showNotification(notif);
+            }
+          });
+        } else {
+          console.log('Service Worker: Keine neuen Benachrichtigungen');
+        }
+      } else {
+        const text = await response.text();
+        console.log('Service Worker: Non-JSON Response:', text.substring(0, 200));
       }
+    } else {
+      console.log('Service Worker: Response nicht OK:', response.status);
+      const text = await response.text();
+      console.log('Service Worker: Error Response:', text.substring(0, 200));
     }
     
   } catch (error) {
     console.log('Service Worker: Fehler beim Prüfen der Benachrichtigungen:', error);
+    console.log('Service Worker: Error Details:', error.message);
   }
 }
 

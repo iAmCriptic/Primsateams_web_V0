@@ -51,8 +51,10 @@ class WhitelistEntry(db.Model):
         
         # Prüfe auf Domain
         if domain:
+            # Prüfe sowohl mit als auch ohne @
+            domain_with_at = '@' + domain
             domain_entry = WhitelistEntry.query.filter_by(
-                entry=domain,
+                entry=domain_with_at,
                 entry_type='domain',
                 is_active=True
             ).first()
