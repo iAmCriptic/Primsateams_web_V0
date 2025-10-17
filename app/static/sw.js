@@ -408,5 +408,5 @@ setInterval(() => {
 // Service Worker ist bereit für Push-Benachrichtigungen
 console.log('Service Worker: Bereit für Push-Benachrichtigungen');
 
-// Starte lokale Benachrichtigungsprüfung als Fallback
+// Starte lokale Benachrichtigungsprüfung für offene App
 startNotificationCheck();

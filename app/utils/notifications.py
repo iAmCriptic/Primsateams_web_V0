@@ -213,7 +213,24 @@ def send_chat_notification(
         title = f'"{chat_name or "Team Chat"}"'
         body = f'"{sender.full_name}": {display_content}'
         
-        # Sende Push-Benachrichtigung
+        # IMMER eine Benachrichtigung erstellen (für lokale Anzeige)
+        try:
+            notification_log = NotificationLog(
+                user_id=user.id,
+                title=title,
+                body=body,
+                icon="/static/img/logo.png",
+                url=f"/chat/{chat_id}",
+                success=False,
+                is_read=False
+            )
+            db.session.add(notification_log)
+            db.session.commit()
+            print(f"Benachrichtigung erstellt für Benutzer {user.id}")
+        except Exception as e:
+            print(f"Fehler beim Erstellen der Benachrichtigung: {e}")
+        
+        # ZUSÄTZLICH: Sende Push-Benachrichtigung (für geschlossene App)
         push_success = send_push_notification(
             user_id=user.id,
             title=title,
@@ -222,29 +239,11 @@ def send_chat_notification(
         )
         
         if push_success:
-            sent_count += 1
             print(f"Push-Benachrichtigung erfolgreich gesendet an Benutzer {user.id}")
         else:
-            # Fallback: Speichere Benachrichtigung für lokale Anzeige
-            # IMMER erstellen, auch wenn keine Push-Subscription vorhanden ist
-            try:
-                notification_log = NotificationLog(
-                    user_id=user.id,
-                    title=title,
-                    body=body,
-                    icon="/static/img/logo.png",
-                    url=f"/chat/{chat_id}",
-                    success=False,
-                    is_read=False
-                )
-                db.session.add(notification_log)
-                db.session.commit()
-                sent_count += 1
-                print(f"Fallback-Benachrichtigung erstellt für Benutzer {user.id}")
-            except Exception as e:
-                print(f"Fehler beim Erstellen der Benachrichtigung: {e}")
-                # Trotzdem als gesendet zählen
-                sent_count += 1
+            print(f"Push-Benachrichtigung fehlgeschlagen für Benutzer {user.id}")
+        
+        sent_count += 1
     
     return sent_count
 

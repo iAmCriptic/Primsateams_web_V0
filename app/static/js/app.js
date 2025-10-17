@@ -429,7 +429,7 @@ const notificationManager = new NotificationManager();
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.ready.then(function(registration) {
         console.log('Service Worker bereit für Push-Benachrichtigungen');
-        // Starte lokale Benachrichtigungen als Fallback
+        // Starte lokale Benachrichtigungen für offene App
         registration.active.postMessage({ type: 'START_NOTIFICATIONS' });
     });
 }
