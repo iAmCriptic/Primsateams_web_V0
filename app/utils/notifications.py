@@ -337,7 +337,8 @@ def send_email_notification(
     email_id: int
 ) -> int:
     """
-    Sendet Push-Benachrichtigungen für neue E-Mails.
+    Sendet zusammengefasste Push-Benachrichtigungen für neue E-Mails.
+    Eine Benachrichtigung pro Benutzer mit Anzahl der ungelesenen E-Mails.
     
     Args:
         email_id: ID der E-Mail
@@ -345,29 +346,96 @@ def send_email_notification(
     Returns:
         int: Anzahl der gesendeten Benachrichtigungen
     """
+    print(f"=== UTILS: E-MAIL-BENACHRICHTIGUNG START ===")
+    print(f"UTILS: E-Mail-Benachrichtigung für E-Mail ID: {email_id}")
+    
     email = EmailMessage.query.get(email_id)
     if not email:
+        print(f"UTILS: E-Mail mit ID {email_id} nicht gefunden")
         return 0
+    
+    print(f"UTILS: E-Mail gefunden: {email.subject}")
     
     # Hole alle Benutzer mit aktivierten E-Mail-Benachrichtigungen
     users = User.query.join(NotificationSettings).filter(
         NotificationSettings.email_notifications_enabled == True
     ).all()
     
+    print(f"UTILS: {len(users)} Benutzer mit aktivierten E-Mail-Benachrichtigungen gefunden")
+    
     sent_count = 0
     
     for user in users:
-        title = "Neue E-Mail"
-        body = f"Von: {email.sender} - Betreff: {email.subject[:50]}..."
+        print(f"UTILS: Verarbeite Benutzer {user.id} ({user.username})")
         
-        if send_push_notification(
+        # Prüfe ob bereits eine E-Mail-Benachrichtigung in den letzten 5 Minuten gesendet wurde
+        existing_notification = NotificationLog.query.filter_by(
+            user_id=user.id,
+            url="/email/",
+            success=True
+        ).filter(
+            NotificationLog.sent_at >= datetime.utcnow() - timedelta(minutes=5)
+        ).first()
+        
+        if existing_notification:
+            print(f"UTILS: E-Mail-Benachrichtigung bereits in den letzten 5 Minuten gesendet für Benutzer {user.id}")
+            continue  # Benachrichtigung bereits gesendet
+        
+        # Zähle ungelesene E-Mails
+        unread_count = EmailMessage.query.filter(
+            EmailMessage.is_read == False,
+            EmailMessage.is_sent == False  # Nur empfangene E-Mails
+        ).count()
+        
+        print(f"UTILS: {unread_count} ungelesene E-Mails für Benutzer {user.id}")
+        
+        if unread_count == 0:
+            print(f"UTILS: Keine ungelesenen E-Mails für Benutzer {user.id}")
+            continue  # Keine ungelesenen E-Mails
+        
+        # Erstelle zusammengefasste Benachrichtigung
+        if unread_count == 1:
+            title = "E-Mail"
+            body = "1 neue E-Mail"
+        else:
+            title = "E-Mail"
+            body = f"{unread_count} neue E-Mails"
+        
+        print(f"UTILS: Erstelle Benachrichtigung: {title} - {body}")
+        
+        # IMMER eine Benachrichtigung erstellen (für lokale Anzeige)
+        try:
+            notification_log = NotificationLog(
+                user_id=user.id,
+                title=title,
+                body=body,
+                icon="/static/img/logo.png",
+                url="/email/",
+                success=False,
+                is_read=False
+            )
+            db.session.add(notification_log)
+            db.session.commit()
+            print(f"UTILS: Zusammengefasste E-Mail-Benachrichtigung erstellt für Benutzer {user.id}: {unread_count} E-Mails")
+        except Exception as e:
+            print(f"UTILS: Fehler beim Erstellen der E-Mail-Benachrichtigung: {e}")
+        
+        # ZUSÄTZLICH: Sende Push-Benachrichtigung (für geschlossene App)
+        push_success = send_push_notification(
             user_id=user.id,
             title=title,
             body=body,
-            url=f"/email/view/{email_id}"
-        ):
-            sent_count += 1
+            url="/email/"
+        )
+        
+        if push_success:
+            print(f"UTILS: Zusammengefasste E-Mail-Push-Benachrichtigung erfolgreich gesendet an Benutzer {user.id}")
+        else:
+            print(f"UTILS: Zusammengefasste E-Mail-Push-Benachrichtigung fehlgeschlagen für Benutzer {user.id}")
+        
+        sent_count += 1
     
+    print(f"=== UTILS: E-MAIL-BENACHRICHTIGUNG ENDE - {sent_count} Benachrichtigungen gesendet ===")
     return sent_count
 
 

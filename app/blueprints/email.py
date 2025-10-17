@@ -399,9 +399,18 @@ def sync_emails_from_server():
                 
                 # Sende Benachrichtigung für neue E-Mail
                 try:
+                    print(f"=== EMAIL: SENDE BENACHRICHTIGUNG FÜR NEUE E-MAIL ===")
+                    print(f"EMAIL: Sende Benachrichtigung für E-Mail ID: {email_entry.id}")
+                    print(f"EMAIL: E-Mail Betreff: {email_entry.subject}")
+                    print(f"EMAIL: E-Mail Absender: {email_entry.sender}")
+                    print(f"EMAIL: E-Mail Empfänger: {email_entry.recipients}")
+                    print(f"EMAIL: E-Mail Zeitstempel: {email_entry.received_at}")
                     send_email_notification(email_entry.id)
                 except Exception as e:
-                    print(f"Fehler beim Senden der E-Mail-Benachrichtigung: {e}")
+                    print(f"=== EMAIL: FEHLER BEI E-MAIL-BENACHRICHTIGUNG ===")
+                    print(f"EMAIL: Fehler beim Senden der E-Mail-Benachrichtigung: {e}")
+                    import traceback
+                    print(f"EMAIL: Exception Stack: {traceback.format_exc()}")
                 
                 synced_count += 1
                 
