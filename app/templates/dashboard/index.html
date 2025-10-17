@@ -51,7 +51,7 @@
                         <i class="bi bi-chat-dots widget-icon text-success"></i>
                         Nachrichten
                     </h5>
-                    <span class="badge bg-success notification-badge">{{ unread_messages|length }}</span>
+                    <span class="badge bg-success notification-badge" id="chat-count-badge">0</span>
                 </div>
                 
                 {% if unread_messages %}
@@ -213,7 +213,8 @@ class DashboardUpdater {
             const response = await fetch('/api/chat/unread-count');
             if (response.ok) {
                 const data = await response.json();
-                this.updateBadge('.notification-badge', data.count);
+                this.updateBadge('#chat-count-badge', data.count);
+                console.log(`Dashboard: ${data.count} neue Chat-Nachrichten`);
             }
         } catch (error) {
             console.log('Fehler beim Aktualisieren der Chat-Nachrichten:', error);

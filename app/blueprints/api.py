@@ -514,23 +514,24 @@ def mark_notification_read(notification_id):
 @api_bp.route('/chat/unread-count', methods=['GET'])
 @login_required
 def get_unread_chat_count():
-    """Hole Anzahl ungelesener Chat-Nachrichten."""
+    """Hole Anzahl UNGELESENER Chat-Nachrichten (basierend auf last_read_at)."""
     try:
         from app.models.chat import ChatMessage, ChatMember
-        from datetime import datetime, timedelta
         
-        # Hole alle Chats des Benutzers
-        user_chats = ChatMember.query.filter_by(user_id=current_user.id).all()
-        chat_ids = [member.chat_id for member in user_chats]
+        # Hole alle Chat-Mitgliedschaften des Benutzers mit last_read_at
+        user_chat_members = ChatMember.query.filter_by(user_id=current_user.id).all()
         
-        # Zähle nur Nachrichten der letzten 2 Stunden, die nicht vom aktuellen Benutzer sind
-        # Das zeigt nur wirklich neue Nachrichten
-        since = datetime.utcnow() - timedelta(hours=2)
-        unread_count = ChatMessage.query.filter(
-            ChatMessage.chat_id.in_(chat_ids),
-            ChatMessage.sender_id != current_user.id,
-            ChatMessage.created_at > since
-        ).count()
+        unread_count = 0
+        for member in user_chat_members:
+            # Zähle Nachrichten in diesem Chat, die nach dem letzten Lesen erstellt wurden
+            # und nicht vom aktuellen Benutzer stammen
+            chat_unread = ChatMessage.query.filter(
+                ChatMessage.chat_id == member.chat_id,
+                ChatMessage.sender_id != current_user.id,
+                ChatMessage.created_at > member.last_read_at,
+                ChatMessage.is_deleted == False
+            ).count()
+            unread_count += chat_unread
         
         return jsonify({'count': unread_count})
         

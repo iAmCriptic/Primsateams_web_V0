@@ -137,7 +137,8 @@ def send_message(chat_id):
             chat_id=chat_id,
             sender_id=current_user.id,
             message_content=content or f"[{message_type}]",
-            chat_name=chat.name
+            chat_name=chat.name,
+            message_id=message.id  # WICHTIG: Für Duplikat-Vermeidung
         )
         print(f"Push-Benachrichtigungen gesendet: {sent_count}")
     except Exception as e:

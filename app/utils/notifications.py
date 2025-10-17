@@ -137,16 +137,19 @@ def send_chat_notification(
     chat_id: int,
     sender_id: int,
     message_content: str,
-    chat_name: str = None
+    chat_name: str = None,
+    message_id: int = None
 ) -> int:
     """
     Sendet Push-Benachrichtigungen für eine neue Chat-Nachricht.
+    Nur für Benutzer, die die Nachricht noch nicht gelesen haben.
     
     Args:
         chat_id: ID des Chats
         sender_id: ID des Absenders
         message_content: Inhalt der Nachricht
         chat_name: Name des Chats
+        message_id: ID der Nachricht (für Duplikat-Vermeidung)
     
     Returns:
         int: Anzahl der gesendeten Benachrichtigungen
@@ -179,6 +182,19 @@ def send_chat_notification(
         
         if chat_settings and not chat_settings.notifications_enabled:
             continue
+        
+        # WICHTIG: Prüfe ob bereits eine Benachrichtigung für diese Nachricht gesendet wurde
+        if message_id:
+            existing_notification = NotificationLog.query.filter_by(
+                user_id=user.id,
+                url=f"/chat/{chat_id}",
+                success=True
+            ).filter(
+                NotificationLog.created_at >= datetime.utcnow() - timedelta(minutes=5)
+            ).first()
+            
+            if existing_notification:
+                continue  # Benachrichtigung bereits gesendet
         
         # Kürze Nachricht für Benachrichtigung
         if len(message_content) > 50:
