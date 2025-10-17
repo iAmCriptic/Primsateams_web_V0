@@ -203,8 +203,8 @@ def send_chat_notification(
             display_content = message_content
         
         # Neues Format: "Gruppenname" / "Sender: Nachricht"
-        title = chat_name or "Team Chat"
-        body = f"{sender.full_name}: {display_content}"
+        title = f'"{chat_name or "Team Chat"}"'
+        body = f'"{sender.full_name}": {display_content}'
         
         # Sende Push-Benachrichtigung
         push_success = send_push_notification(

@@ -7,6 +7,11 @@ if ('serviceWorker' in navigator) {
             .then(function(registration) {
                 console.log('Service Worker registriert:', registration.scope);
                 
+                // Starte Benachrichtigungen im Service Worker
+                if (registration.active) {
+                    registration.active.postMessage({ type: 'START_NOTIFICATIONS' });
+                }
+                
                 // Prüfe auf Updates
                 registration.addEventListener('updatefound', function() {
                     const newWorker = registration.installing;
@@ -416,6 +421,14 @@ class NotificationManager {
 
 // Initialisiere Benachrichtigungs-Manager
 const notificationManager = new NotificationManager();
+
+// Starte Service Worker Benachrichtigungen wenn bereit
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready.then(function(registration) {
+        console.log('Service Worker bereit, starte Benachrichtigungen');
+        registration.active.postMessage({ type: 'START_NOTIFICATIONS' });
+    });
+}
 
 async function registerPushNotifications() {
     try {

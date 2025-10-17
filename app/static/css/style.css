@@ -627,6 +627,37 @@ body {
     z-index: 9999;
 }
 
+/* Offline Banner */
+.offline-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    margin: 0;
+    border-radius: 0;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Body offset for offline banner */
+body.offline-mode {
+    margin-top: 60px;
+}
+
+/* PWA Install Button */
+#pwa-install-btn, #notification-btn {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: none;
+    font-weight: 500;
+}
+
+#pwa-install-btn:hover, #notification-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
 /* Auth Pages */
 .auth-container {
     min-height: 100vh;

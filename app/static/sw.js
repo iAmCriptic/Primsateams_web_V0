@@ -1,5 +1,5 @@
-// Service Worker für Team Portal PWA
-const CACHE_NAME = 'team-portal-v1';
+// Service Worker für Team Portal PWA - REPARIERT
+const CACHE_NAME = 'team-portal-v2';
 const urlsToCache = [
   '/',
   '/static/css/style.css',
@@ -10,12 +10,10 @@ const urlsToCache = [
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js'
 ];
 
-// Hintergrund-Überprüfung für Benachrichtigungen
+// Globale Variablen für Benachrichtigungen
 let notificationCheckInterval = null;
-let chatCheckInterval = null;
-let lastNotificationCheck = null;
-let lastChatCheck = null;
-let shownNotificationIds = new Set(); // Tracke bereits angezeigte Benachrichtigungen
+let shownNotificationIds = new Set();
+let isOnline = navigator.onLine;
 
 // Install Event - Cache wichtige Ressourcen
 self.addEventListener('install', function(event) {
@@ -30,6 +28,8 @@ self.addEventListener('install', function(event) {
         console.log('Service Worker: Fehler beim Caching:', error);
       })
   );
+  // Sofort aktivieren
+  self.skipWaiting();
 });
 
 // Activate Event - Alte Caches löschen
@@ -45,14 +45,17 @@ self.addEventListener('activate', function(event) {
           }
         })
       );
+    }).then(() => {
+      // Starte Benachrichtigungen nach Cache-Bereinigung
+      startNotificationCheck();
     })
   );
   
-  // Starte Hintergrund-Überprüfung
-  startBackgroundNotificationCheck();
+  // Übernehme sofort die Kontrolle
+  return self.clients.claim();
 });
 
-// Fetch Event - Cache-First Strategie
+// Fetch Event - Cache-First Strategie mit Offline-Fallback
 self.addEventListener('fetch', function(event) {
   // Nur GET-Requests cachen
   if (event.request.method !== 'GET') {
@@ -92,12 +95,56 @@ self.addEventListener('fetch', function(event) {
         }).catch(function(error) {
           console.log('Service Worker: Fetch fehlgeschlagen:', error);
           
-          // Für HTML-Seiten, zeige Offline-Seite
+          // Für HTML-Seiten, zeige Offline-Seite mit freundlicher Nachricht
           if (event.request.destination === 'document') {
-            return caches.match('/') || new Response(
-              '<!DOCTYPE html><html><head><title>Offline - Team Portal</title></head><body><h1>Sie sind offline</h1><p>Bitte überprüfen Sie Ihre Internetverbindung.</p></body></html>',
-              { headers: { 'Content-Type': 'text/html' } }
-            );
+            return caches.match('/').then(function(cachedResponse) {
+              if (cachedResponse) {
+                // Modifiziere die gecachte Seite um Offline-Banner hinzuzufügen
+                return cachedResponse.text().then(function(html) {
+                  const modifiedHtml = html.replace(
+                    '<body>',
+                    '<body><div class="alert alert-warning alert-dismissible fade show" role="alert" style="margin: 0; border-radius: 0; position: fixed; top: 0; left: 0; right: 0; z-index: 9999;"><i class="bi bi-wifi-off me-2"></i><strong>Offline-Modus:</strong> Sie sind derzeit offline. Einige Funktionen sind möglicherweise eingeschränkt.<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div><div style="margin-top: 60px;">'
+                  ).replace('</body>', '</div></body>');
+                  
+                  return new Response(modifiedHtml, {
+                    headers: { 'Content-Type': 'text/html' }
+                  });
+                });
+              } else {
+                // Fallback Offline-Seite
+                return new Response(
+                  `<!DOCTYPE html>
+                  <html lang="de">
+                  <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Offline - Team Portal</title>
+                    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+                    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+                  </head>
+                  <body class="bg-light">
+                    <div class="container mt-5">
+                      <div class="row justify-content-center">
+                        <div class="col-md-6">
+                          <div class="card shadow">
+                            <div class="card-body text-center">
+                              <i class="bi bi-wifi-off text-warning" style="font-size: 4rem;"></i>
+                              <h2 class="mt-3">Offline-Modus</h2>
+                              <p class="text-muted">Sie sind derzeit offline. Bitte überprüfen Sie Ihre Internetverbindung.</p>
+                              <button class="btn btn-primary" onclick="window.location.reload()">
+                                <i class="bi bi-arrow-clockwise me-2"></i>Erneut versuchen
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </body>
+                  </html>`,
+                  { headers: { 'Content-Type': 'text/html' } }
+                );
+              }
+            });
           }
           
           // Für andere Ressourcen, gib eine leere Antwort zurück
@@ -107,20 +154,7 @@ self.addEventListener('fetch', function(event) {
   );
 });
 
-// Background Sync für Offline-Funktionalität
-self.addEventListener('sync', function(event) {
-  console.log('Service Worker: Background Sync Event:', event.tag);
-  
-  if (event.tag === 'background-sync') {
-    event.waitUntil(
-      // Hier könnten Offline-Aktionen synchronisiert werden
-      // z.B. gespeicherte Chat-Nachrichten senden
-      console.log('Background Sync: Synchronisiere Offline-Daten')
-    );
-  }
-});
-
-// Push Notifications
+// Push Notifications - Vereinfacht und repariert
 self.addEventListener('push', function(event) {
   console.log('Service Worker: Push Event');
   
@@ -214,53 +248,75 @@ self.addEventListener('notificationclick', function(event) {
   }
 });
 
-// Hintergrund-Überprüfung für Benachrichtigungen - REPARIERT
-function startBackgroundNotificationCheck() {
-  console.log('Service Worker: Starte reparierte Hintergrund-Überprüfung');
+// Background Sync für Offline-Funktionalität
+self.addEventListener('sync', function(event) {
+  console.log('Service Worker: Background Sync Event:', event.tag);
   
-  // Chat-Nachrichten alle 10 Sekunden - aber NUR für Dashboard-Updates
-  chatCheckInterval = setInterval(() => {
-    checkForChatUpdates();
-  }, 10000);
+  if (event.tag === 'background-sync') {
+    event.waitUntil(
+      // Hier könnten Offline-Aktionen synchronisiert werden
+      console.log('Background Sync: Synchronisiere Offline-Daten')
+    );
+  }
+});
+
+// Starte Benachrichtigungs-Check nach Aktivierung
+self.addEventListener('message', function(event) {
+  if (event.data && event.data.type === 'START_NOTIFICATIONS') {
+    startNotificationCheck();
+  }
+  
+  if (event.data && event.data.type === 'STOP_NOTIFICATIONS') {
+    stopNotificationCheck();
+  }
+});
+
+// Vereinfachte Benachrichtigungs-Überprüfung
+function startNotificationCheck() {
+  console.log('Service Worker: Starte Benachrichtigungs-Überprüfung');
+  
+  // Stoppe vorherige Intervalle
+  if (notificationCheckInterval) {
+    clearInterval(notificationCheckInterval);
+  }
+  
+  // Prüfe alle 15 Sekunden auf neue Benachrichtigungen
+  notificationCheckInterval = setInterval(() => {
+    checkForNotifications();
+  }, 15000);
   
   // Erste Prüfung nach 5 Sekunden
   setTimeout(() => {
-    checkForChatUpdates();
+    checkForNotifications();
   }, 5000);
 }
 
-// Chat-Updates für Dashboard UND Benachrichtigungen
-async function checkForChatUpdates() {
+function stopNotificationCheck() {
+  console.log('Service Worker: Stoppe Benachrichtigungs-Überprüfung');
+  if (notificationCheckInterval) {
+    clearInterval(notificationCheckInterval);
+    notificationCheckInterval = null;
+  }
+}
+
+// Prüfe auf neue Benachrichtigungen
+async function checkForNotifications() {
   try {
-    console.log('Service Worker: Prüfe Chat-Updates und Benachrichtigungen');
+    console.log('Service Worker: Prüfe auf neue Benachrichtigungen');
     
-    // Prüfe Chat-Count UND Benachrichtigungen
-    const [chatResponse, notificationsResponse] = await Promise.all([
-      fetch('/api/chat/unread-count', { credentials: 'include' }),
-      fetch('/api/notifications/pending', { credentials: 'include' })
-    ]);
+    const response = await fetch('/api/notifications/pending', { 
+      credentials: 'include',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    });
     
-    if (chatResponse.ok) {
-      const data = await chatResponse.json();
-      console.log(`Service Worker: ${data.count} neue Chat-Nachrichten für Dashboard`);
-      
-      // Sende Message an alle offenen Tabs für Dashboard-Update
-      const clients = await self.clients.matchAll();
-      clients.forEach(client => {
-        client.postMessage({
-          type: 'CHAT_UPDATE',
-          count: data.count
-        });
-      });
-    }
-    
-    // Prüfe auf neue Benachrichtigungen
-    if (notificationsResponse.ok) {
-      const data = await notificationsResponse.json();
+    if (response.ok) {
+      const data = await response.json();
       if (data.notifications && data.notifications.length > 0) {
         console.log(`Service Worker: ${data.notifications.length} neue Benachrichtigungen gefunden`);
         
-        // Zeige jede neue Benachrichtigung
+        // Zeige jede neue Benachrichtigung nur einmal
         data.notifications.forEach(notif => {
           if (!shownNotificationIds.has(notif.id)) {
             shownNotificationIds.add(notif.id);
@@ -271,93 +327,20 @@ async function checkForChatUpdates() {
     }
     
   } catch (error) {
-    console.log('Service Worker: Fehler beim Prüfen der Chat-Updates:', error);
+    console.log('Service Worker: Fehler beim Prüfen der Benachrichtigungen:', error);
   }
 }
 
-// Andere Benachrichtigungen alle 30 Sekunden
-async function checkForOtherNotifications() {
-  try {
-    console.log('Service Worker: Prüfe auf andere Benachrichtigungen');
-    
-    const [emailResponse, calendarResponse] = await Promise.all([
-      fetch('/api/email/unread-count', { credentials: 'include' }),
-      fetch('/api/calendar/upcoming-count', { credentials: 'include' })
-    ]);
-    
-    // Verarbeite E-Mail-Updates
-    if (emailResponse.ok) {
-      const data = await emailResponse.json();
-      if (data.count > 0) {
-        console.log(`Service Worker: ${data.count} neue E-Mails`);
-      }
+// Periodic Background Sync (falls unterstützt)
+if ('serviceWorker' in self && 'periodicSync' in self.registration) {
+  self.addEventListener('periodicsync', function(event) {
+    if (event.tag === 'notification-check') {
+      event.waitUntil(checkForNotifications());
     }
-    
-    // Verarbeite Kalender-Updates
-    if (calendarResponse.ok) {
-      const data = await calendarResponse.json();
-      if (data.count > 0) {
-        console.log(`Service Worker: ${data.count} anstehende Termine`);
-      }
-    }
-    
-  } catch (error) {
-    console.log('Service Worker: Fehler beim Prüfen der anderen Benachrichtigungen:', error);
-  }
-}
-
-// Verarbeite Chat-Benachrichtigungen
-function handleNewChatNotifications(notifications) {
-  // Filtere nur neue Chat-Benachrichtigungen, die noch nicht angezeigt wurden
-  const newNotifications = notifications.filter(notif => {
-    // Prüfe ob bereits angezeigt
-    if (shownNotificationIds.has(notif.id)) {
-      return false;
-    }
-    
-    // Prüfe Zeitstempel
-    if (!lastChatCheck) return true;
-    return new Date(notif.sent_at) > lastChatCheck;
   });
-  
-  if (newNotifications.length > 0) {
-    console.log(`Service Worker: ${newNotifications.length} neue Chat-Benachrichtigungen gefunden`);
-    lastChatCheck = new Date();
-    
-    // Zeige jede neue Chat-Benachrichtigung und markiere als angezeigt
-    newNotifications.forEach(notif => {
-      shownNotificationIds.add(notif.id);
-      showNotification(notif);
-    });
-  }
 }
 
-// Verarbeite andere Benachrichtigungen
-function handleNewNotifications(notifications) {
-  // Filtere nur neue Benachrichtigungen, die noch nicht angezeigt wurden
-  const newNotifications = notifications.filter(notif => {
-    // Prüfe ob bereits angezeigt
-    if (shownNotificationIds.has(notif.id)) {
-      return false;
-    }
-    
-    // Prüfe Zeitstempel
-    if (!lastNotificationCheck) return true;
-    return new Date(notif.sent_at) > lastNotificationCheck;
-  });
-  
-  if (newNotifications.length > 0) {
-    console.log(`Service Worker: ${newNotifications.length} neue Benachrichtigungen gefunden`);
-    lastNotificationCheck = new Date();
-    
-    // Zeige jede neue Benachrichtigung und markiere als angezeigt
-    newNotifications.forEach(notif => {
-      shownNotificationIds.add(notif.id);
-      showNotification(notif);
-    });
-  }
-}
-
+// Zeige Benachrichtigung an
 function showNotification(notification) {
   const options = {
     body: notification.body,
@@ -399,7 +382,10 @@ async function markNotificationAsRead(notificationId) {
   try {
     await fetch(`/api/notifications/mark-read/${notificationId}`, {
       method: 'POST',
-      credentials: 'include'
+      credentials: 'include',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      }
     });
     console.log(`Service Worker: Benachrichtigung ${notificationId} als gelesen markiert`);
   } catch (error) {
@@ -407,34 +393,22 @@ async function markNotificationAsRead(notificationId) {
   }
 }
 
-// Bereinige alte Benachrichtigungs-IDs (alle 5 Minuten)
+// Bereinige alte Benachrichtigungs-IDs (alle 10 Minuten)
 setInterval(() => {
-  // Entferne IDs älter als 1 Stunde
-  const oneHourAgo = Date.now() - (60 * 60 * 1000);
-  shownNotificationIds.forEach(id => {
-    // Hier könnten wir die Zeit aus der ID extrahieren, aber für jetzt
-    // begrenzen wir einfach die Anzahl der gespeicherten IDs
-    if (shownNotificationIds.size > 100) {
-      shownNotificationIds.clear();
-    }
-  });
-}, 5 * 60 * 1000); // Alle 5 Minuten
+  // Begrenze die Anzahl der gespeicherten IDs
+  if (shownNotificationIds.size > 100) {
+    shownNotificationIds.clear();
+  }
+}, 10 * 60 * 1000); // Alle 10 Minuten
 
-// Höre auf Nachrichten vom Frontend
-self.addEventListener('message', function(event) {
-  if (event.data && event.data.type === 'STOP_BACKGROUND_CHECK') {
-    if (notificationCheckInterval) {
-      clearInterval(notificationCheckInterval);
-      notificationCheckInterval = null;
-    }
-    if (chatCheckInterval) {
-      clearInterval(chatCheckInterval);
-      chatCheckInterval = null;
-    }
+// Starte Benachrichtigungen automatisch - auch ohne aktive Tabs
+startNotificationCheck();
+
+// Stelle sicher, dass der Service Worker auch ohne aktive Tabs läuft
+// durch kontinuierliche Benachrichtigungsprüfung
+setInterval(() => {
+  if (!notificationCheckInterval) {
+    console.log('Service Worker: Starte Benachrichtigungen neu');
+    startNotificationCheck();
   }
-  
-  // Behandle Chat-Updates vom Frontend
-  if (event.data && event.data.type === 'CHAT_UPDATE') {
-    console.log('Service Worker: Chat-Update erhalten:', event.data.count);
-  }
-});
+}, 60000); // Alle 60 Sekunden prüfen
