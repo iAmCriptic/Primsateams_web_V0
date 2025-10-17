@@ -259,6 +259,10 @@ def subscribe_push():
     """Register push subscription for current user."""
     try:
         print(f"Push-Subscription Registrierung für Benutzer {current_user.id}")
+        print(f"Request Headers: {dict(request.headers)}")
+        print(f"Request Method: {request.method}")
+        print(f"Request Content-Type: {request.content_type}")
+        
         data = request.get_json()
         print(f"Empfangene Daten: {data}")
         
@@ -270,6 +274,8 @@ def subscribe_push():
             return jsonify({'error': 'Subscription-Daten fehlen'}), 400
         
         print(f"Subscription-Daten: {subscription_data}")
+        print(f"Subscription Endpoint: {subscription_data.get('endpoint')}")
+        print(f"Subscription Keys: {subscription_data.get('keys')}")
         
         # Registriere Push-Subscription
         success = register_push_subscription(current_user.id, subscription_data)
@@ -283,6 +289,9 @@ def subscribe_push():
             
     except Exception as e:
         print(f"Exception bei Push-Subscription Registrierung: {e}")
+        print(f"Exception Details: {str(e)}")
+        import traceback
+        print(f"Exception Stack: {traceback.format_exc()}")
         return jsonify({'error': str(e), 'success': False}), 500
 
 

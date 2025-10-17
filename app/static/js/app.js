@@ -97,14 +97,23 @@ let pushSubscription = null;
 // Prüfe ob Push-Benachrichtigungen unterstützt werden
 if ('serviceWorker' in navigator && 'PushManager' in window) {
     console.log('Push-Benachrichtigungen werden unterstützt');
-    // Warte bis Service Worker bereit ist, dann registriere Push-Subscription
-    navigator.serviceWorker.ready.then(function(registration) {
-        console.log('Service Worker bereit, registriere Push-Subscription');
-        // Warte 3 Sekunden bevor Push-Subscription registriert wird
-        setTimeout(() => {
-            registerPushNotifications();
-        }, 3000);
-    });
+    
+    // Prüfe ob wir in einem sicheren Kontext sind
+    if (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+        console.log('Sicherer Kontext erkannt, registriere Push-Subscription');
+        // Warte bis Service Worker bereit ist, dann registriere Push-Subscription
+        navigator.serviceWorker.ready.then(function(registration) {
+            console.log('Service Worker bereit, registriere Push-Subscription');
+            // Warte 3 Sekunden bevor Push-Subscription registriert wird
+            setTimeout(() => {
+                registerPushNotifications();
+            }, 3000);
+        });
+    } else {
+        console.log('UNSICHERER KONTEXT: Push-Benachrichtigungen funktionieren nur mit HTTPS!');
+        console.log('Aktuelle URL:', location.href);
+        console.log('Protokoll:', location.protocol);
+    }
 } else {
     console.log('Push-Benachrichtigungen werden NICHT unterstützt');
 }
@@ -443,6 +452,10 @@ if ('serviceWorker' in navigator) {
 async function registerPushNotifications() {
     try {
         console.log('Starte Push-Notification Registrierung...');
+        console.log('Aktuelle URL:', location.href);
+        console.log('Protokoll:', location.protocol);
+        console.log('Hostname:', location.hostname);
+        
         const registration = await navigator.serviceWorker.ready;
         console.log('Service Worker Registration:', registration);
         
@@ -490,6 +503,9 @@ async function registerPushNotifications() {
         
     } catch (error) {
         console.error('Fehler bei Push-Notification Registrierung:', error);
+        console.error('Fehler-Details:', error.message);
+        console.error('Fehler-Stack:', error.stack);
+        
         // Versuche es erneut nach 5 Sekunden
         setTimeout(() => {
             console.log('Versuche Push-Notification Registrierung erneut...');
@@ -516,6 +532,12 @@ function urlBase64ToUint8Array(base64String) {
 async function sendSubscriptionToServer(subscription) {
     try {
         console.log('Sende Push-Subscription an Server:', subscription);
+        console.log('Subscription Endpoint:', subscription.endpoint);
+        console.log('Subscription Keys:', subscription.getKey ? {
+            p256dh: subscription.getKey('p256dh') ? 'vorhanden' : 'fehlt',
+            auth: subscription.getKey('auth') ? 'vorhanden' : 'fehlt'
+        } : 'Keine Keys');
+        
         const response = await fetch('/api/push/subscribe', {
             method: 'POST',
             headers: {
@@ -529,6 +551,7 @@ async function sendSubscriptionToServer(subscription) {
         });
         
         console.log('Server-Response Status:', response.status);
+        console.log('Server-Response Headers:', response.headers);
         
         if (response.ok) {
             console.log('Push-Subscription erfolgreich an Server gesendet');
@@ -546,6 +569,7 @@ async function sendSubscriptionToServer(subscription) {
         }
     } catch (error) {
         console.error('Fehler beim Senden der Push-Subscription:', error);
+        console.error('Fehler-Details:', error.message);
         // Versuche es erneut nach 3 Sekunden
         setTimeout(() => {
             console.log('Versuche Push-Subscription erneut zu senden...');

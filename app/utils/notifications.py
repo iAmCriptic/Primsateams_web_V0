@@ -73,6 +73,7 @@ def send_push_notification(
     # Debug: Zeige alle Subscriptions
     for i, sub in enumerate(subscriptions):
         print(f"  Subscription {i+1}: {sub.endpoint[:50]}... - Active: {sub.is_active}")
+        print(f"    ID: {sub.id}, User: {sub.user_id}, Last Used: {sub.last_used}")
     
     success_count = 0
     total_count = len(subscriptions)
@@ -502,6 +503,9 @@ def register_push_subscription(user_id: int, subscription_data: Dict) -> bool:
         
         if not endpoint or not keys.get('p256dh') or not keys.get('auth'):
             print("Fehler: Endpoint oder Keys fehlen")
+            print(f"Endpoint vorhanden: {bool(endpoint)}")
+            print(f"p256dh Key vorhanden: {bool(keys.get('p256dh'))}")
+            print(f"auth Key vorhanden: {bool(keys.get('auth'))}")
             return False
         
         # Prüfe ob Subscription bereits existiert
@@ -540,6 +544,7 @@ def register_push_subscription(user_id: int, subscription_data: Dict) -> bool:
         
         if saved_subscription:
             print(f"Push-Subscription erfolgreich verifiziert für Benutzer {user_id}")
+            print(f"Verifizierte Subscription ID: {saved_subscription.id}")
             return True
         else:
             print(f"Fehler: Push-Subscription konnte nicht verifiziert werden für Benutzer {user_id}")
@@ -548,6 +553,8 @@ def register_push_subscription(user_id: int, subscription_data: Dict) -> bool:
     except Exception as e:
         logging.error(f"Fehler beim Registrieren der Push-Subscription: {e}")
         print(f"Fehler beim Registrieren der Push-Subscription: {e}")
+        import traceback
+        print(f"Exception Stack: {traceback.format_exc()}")
         db.session.rollback()
         return False
 
