@@ -154,9 +154,9 @@ self.addEventListener('fetch', function(event) {
   );
 });
 
-// Push Notifications - Vereinfacht und repariert
+// Push Notifications - Echte Push-Benachrichtigungen
 self.addEventListener('push', function(event) {
-  console.log('Service Worker: Push Event');
+  console.log('Service Worker: Push Event empfangen');
   
   let notificationData = {
     title: 'Team Portal',
@@ -171,11 +171,12 @@ self.addEventListener('push', function(event) {
   if (event.data) {
     try {
       const pushData = event.data.json();
+      console.log('Push-Daten empfangen:', pushData);
       notificationData = {
         title: pushData.title || 'Team Portal',
         body: pushData.body || 'Neue Benachrichtigung',
         icon: pushData.icon || '/static/img/logo.png',
-        badge: pushData.icon || '/static/img/logo.png',
+        badge: pushData.badge || '/static/img/logo.png',
         url: pushData.url || '/',
         data: pushData.data || {}
       };
@@ -208,8 +209,11 @@ self.addEventListener('push', function(event) {
       }
     ],
     requireInteraction: false,
-    silent: false
+    silent: false,
+    tag: `notification-${Date.now()}` // Eindeutige Tags für jede Benachrichtigung
   };
+
+  console.log('Zeige Push-Benachrichtigung:', notificationData.title, notificationData.body);
 
   event.waitUntil(
     self.registration.showNotification(notificationData.title, options)
@@ -401,14 +405,9 @@ setInterval(() => {
   }
 }, 10 * 60 * 1000); // Alle 10 Minuten
 
-// Starte Benachrichtigungen automatisch - auch ohne aktive Tabs
-startNotificationCheck();
+// Service Worker ist bereit für Push-Benachrichtigungen
+console.log('Service Worker: Bereit für Push-Benachrichtigungen');
 
-// Stelle sicher, dass der Service Worker auch ohne aktive Tabs läuft
-// durch kontinuierliche Benachrichtigungsprüfung
-setInterval(() => {
-  if (!notificationCheckInterval) {
-    console.log('Service Worker: Starte Benachrichtigungen neu');
-    startNotificationCheck();
-  }
-}, 60000); // Alle 60 Sekunden prüfen
+// Starte lokale Benachrichtigungsprüfung nur wenn explizit angefordert
+// (für Fallback wenn Push-Benachrichtigungen nicht funktionieren)
+// startNotificationCheck();

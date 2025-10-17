@@ -96,8 +96,11 @@ let pushSubscription = null;
 
 // Prüfe ob Push-Benachrichtigungen unterstützt werden
 if ('serviceWorker' in navigator && 'PushManager' in window) {
-    // Registriere Push-Subscription
-    registerPushNotifications();
+    // Warte bis Service Worker bereit ist, dann registriere Push-Subscription
+    navigator.serviceWorker.ready.then(function(registration) {
+        console.log('Service Worker bereit, registriere Push-Subscription');
+        registerPushNotifications();
+    });
 }
 
 // Berechtigungs-Manager
@@ -419,14 +422,14 @@ class NotificationManager {
     }
 }
 
-// Initialisiere Benachrichtigungs-Manager
-const notificationManager = new NotificationManager();
+// Initialisiere Benachrichtigungs-Manager (nur für Fallback)
+// const notificationManager = new NotificationManager();
 
-// Starte Service Worker Benachrichtigungen wenn bereit
+// Service Worker ist bereit für Push-Benachrichtigungen
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.ready.then(function(registration) {
-        console.log('Service Worker bereit, starte Benachrichtigungen');
-        registration.active.postMessage({ type: 'START_NOTIFICATIONS' });
+        console.log('Service Worker bereit für Push-Benachrichtigungen');
+        // Keine lokalen Benachrichtigungen mehr - nur noch echte Push-Benachrichtigungen
     });
 }
 
@@ -438,8 +441,20 @@ async function registerPushNotifications() {
         pushSubscription = await registration.pushManager.getSubscription();
         
         if (!pushSubscription) {
+            // Prüfe ob Benachrichtigungen erlaubt sind
+            if (Notification.permission === 'default') {
+                const permission = await Notification.requestPermission();
+                if (permission !== 'granted') {
+                    console.log('Push-Benachrichtigungen nicht erlaubt');
+                    return;
+                }
+            } else if (Notification.permission !== 'granted') {
+                console.log('Push-Benachrichtigungen nicht erlaubt');
+                return;
+            }
+            
             // Erstelle neue Subscription
-                const applicationServerKey = urlBase64ToUint8Array('MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEG4ECv1S2TNUvpqoXcq4hbpVrFKruYoRRc1A8NMDhmU_a597YCT1e3_61_ujJLDDEwSnkauzSkjXh_QgeMb6Nsg');
+            const applicationServerKey = urlBase64ToUint8Array('MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEG4ECv1S2TNUvpqoXcq4hbpVrFKruYoRRc1A8NMDhmU_a597YCT1e3_61_ujJLDDEwSnkauzSkjXh_QgeMb6Nsg');
             
             pushSubscription = await registration.pushManager.subscribe({
                 userVisibleOnly: true,
@@ -452,8 +467,7 @@ async function registerPushNotifications() {
         // Sende Subscription an Server
         await sendSubscriptionToServer(pushSubscription);
         
-        // Zeige Benachrichtigungs-Button
-        showNotificationButton();
+        console.log('Push-Benachrichtigungen erfolgreich registriert');
         
     } catch (error) {
         console.error('Fehler bei Push-Notification Registrierung:', error);
@@ -491,8 +505,12 @@ async function sendSubscriptionToServer(subscription) {
         
         if (response.ok) {
             console.log('Push-Subscription erfolgreich an Server gesendet');
+            const result = await response.json();
+            console.log('Server-Antwort:', result);
         } else {
             console.error('Fehler beim Senden der Push-Subscription');
+            const error = await response.text();
+            console.error('Server-Fehler:', error);
         }
     } catch (error) {
         console.error('Fehler beim Senden der Push-Subscription:', error);

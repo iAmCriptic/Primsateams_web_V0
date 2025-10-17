@@ -64,6 +64,7 @@ def send_push_notification(
     
     if not subscriptions:
         logging.info(f"Keine Push-Subscriptions für Benutzer {user_id}")
+        print(f"Keine Push-Subscriptions für Benutzer {user_id}")
         # Keine Push-Benachrichtigung möglich
         return False
     
@@ -82,6 +83,7 @@ def send_push_notification(
             }
             
             # Sende Push-Benachrichtigung
+            print(f"Sende Push-Benachrichtigung an Benutzer {user_id}: {payload}")
             webpush(
                 subscription_info=subscription.to_dict(),
                 data=json.dumps(payload),
@@ -94,6 +96,7 @@ def send_push_notification(
             success_count += 1
             
             logging.info(f"Push-Benachrichtigung erfolgreich gesendet an Benutzer {user_id}")
+            print(f"Push-Benachrichtigung erfolgreich gesendet an Benutzer {user_id}")
             
         except WebPushException as e:
             logging.error(f"WebPush Fehler für Benutzer {user_id}: {e}")
@@ -220,6 +223,7 @@ def send_chat_notification(
         
         if push_success:
             sent_count += 1
+            print(f"Push-Benachrichtigung erfolgreich gesendet an Benutzer {user.id}")
         else:
             # Fallback: Speichere Benachrichtigung für lokale Anzeige
             # IMMER erstellen, auch wenn keine Push-Subscription vorhanden ist
@@ -236,6 +240,7 @@ def send_chat_notification(
                 db.session.add(notification_log)
                 db.session.commit()
                 sent_count += 1
+                print(f"Fallback-Benachrichtigung erstellt für Benutzer {user.id}")
             except Exception as e:
                 print(f"Fehler beim Erstellen der Benachrichtigung: {e}")
                 # Trotzdem als gesendet zählen
@@ -485,10 +490,12 @@ def register_push_subscription(user_id: int, subscription_data: Dict) -> bool:
             db.session.add(new_subscription)
         
         db.session.commit()
+        print(f"Push-Subscription erfolgreich registriert für Benutzer {user_id}")
         return True
         
     except Exception as e:
         logging.error(f"Fehler beim Registrieren der Push-Subscription: {e}")
+        print(f"Fehler beim Registrieren der Push-Subscription: {e}")
         db.session.rollback()
         return False
 
