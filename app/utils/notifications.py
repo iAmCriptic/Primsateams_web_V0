@@ -349,12 +349,18 @@ def send_email_notification(
     print(f"=== UTILS: E-MAIL-BENACHRICHTIGUNG START ===")
     print(f"UTILS: E-Mail-Benachrichtigung für E-Mail ID: {email_id}")
     
-    email = EmailMessage.query.get(email_id)
-    if not email:
-        print(f"UTILS: E-Mail mit ID {email_id} nicht gefunden")
+    # Verwende flush() um sicherzustellen, dass die E-Mail in der Datenbank verfügbar ist
+    try:
+        db.session.flush()
+        email = EmailMessage.query.get(email_id)
+        if not email:
+            print(f"UTILS: E-Mail mit ID {email_id} nicht gefunden")
+            return 0
+        
+        print(f"UTILS: E-Mail gefunden: {email.subject}")
+    except Exception as e:
+        print(f"UTILS: Fehler beim Laden der E-Mail: {e}")
         return 0
-    
-    print(f"UTILS: E-Mail gefunden: {email.subject}")
     
     # Hole alle Benutzer mit aktivierten E-Mail-Benachrichtigungen
     try:

@@ -152,9 +152,20 @@ def sync_emails_from_server():
                 if not message_id:
                     continue
                 
-                # Check if email already exists
+                # Check if email already exists (mit besserer Duplikat-Prüfung)
                 existing = EmailMessage.query.filter_by(message_id=message_id).first()
                 if existing:
+                    print(f"EMAIL: E-Mail bereits vorhanden, überspringe: {message_id}")
+                    continue
+                
+                # Zusätzliche Prüfung: Gleicher Absender + Betreff + Zeitstempel
+                existing_by_content = EmailMessage.query.filter_by(
+                    sender=sender,
+                    subject=subject,
+                    received_at=received_at
+                ).first()
+                if existing_by_content:
+                    print(f"EMAIL: E-Mail mit gleichem Inhalt bereits vorhanden, überspringe: {subject}")
                     continue
                 
                 # Parse body with HTML and attachments support
@@ -401,7 +412,7 @@ def sync_emails_from_server():
                         db.session.rollback()
                         continue
                 
-                # Sende Benachrichtigung für neue E-Mail (mit separater Session)
+                # Sende Benachrichtigung für neue E-Mail (in derselben Session)
                 try:
                     print(f"=== EMAIL: SENDE BENACHRICHTIGUNG FÜR NEUE E-MAIL ===")
                     print(f"EMAIL: Sende Benachrichtigung für E-Mail ID: {email_entry.id}")
@@ -410,11 +421,8 @@ def sync_emails_from_server():
                     print(f"EMAIL: E-Mail Empfänger: {email_entry.recipients}")
                     print(f"EMAIL: E-Mail Zeitstempel: {email_entry.received_at}")
                     
-                    # Verwende separate Session für Benachrichtigungen
-                    from app import create_app
-                    app = create_app()
-                    with app.app_context():
-                        send_email_notification(email_entry.id)
+                    # Verwende dieselbe Session für Benachrichtigungen
+                    send_email_notification(email_entry.id)
                     
                     print(f"EMAIL: E-Mail-Benachrichtigung erfolgreich gesendet für E-Mail ID: {email_entry.id}")
                     

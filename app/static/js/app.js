@@ -110,11 +110,9 @@ if ('serviceWorker' in navigator && 'PushManager' in window) {
             console.log('Service Worker bereit, registriere Push-Subscription');
             console.log('Service Worker Registration:', registration);
             
-            // Warte 3 Sekunden bevor Push-Subscription registriert wird
-            setTimeout(() => {
-                console.log('Starte Push-Notification Registrierung nach 3 Sekunden...');
-                registerPushNotifications();
-            }, 3000);
+            // Starte Push-Notification Registrierung sofort
+            console.log('Starte Push-Notification Registrierung sofort...');
+            registerPushNotifications();
         }).catch(function(error) {
             console.error('Fehler beim Warten auf Service Worker:', error);
         });
