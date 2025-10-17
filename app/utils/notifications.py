@@ -357,11 +357,15 @@ def send_email_notification(
     print(f"UTILS: E-Mail gefunden: {email.subject}")
     
     # Hole alle Benutzer mit aktivierten E-Mail-Benachrichtigungen
-    users = User.query.join(NotificationSettings).filter(
-        NotificationSettings.email_notifications_enabled == True
-    ).all()
-    
-    print(f"UTILS: {len(users)} Benutzer mit aktivierten E-Mail-Benachrichtigungen gefunden")
+    try:
+        users = User.query.join(NotificationSettings).filter(
+            NotificationSettings.email_notifications_enabled == True
+        ).all()
+        
+        print(f"UTILS: {len(users)} Benutzer mit aktivierten E-Mail-Benachrichtigungen gefunden")
+    except Exception as e:
+        print(f"UTILS: Fehler beim Laden der Benutzer: {e}")
+        return 0
     
     sent_count = 0
     
@@ -419,19 +423,25 @@ def send_email_notification(
             print(f"UTILS: Zusammengefasste E-Mail-Benachrichtigung erstellt für Benutzer {user.id}: {unread_count} E-Mails")
         except Exception as e:
             print(f"UTILS: Fehler beim Erstellen der E-Mail-Benachrichtigung: {e}")
+            # Rollback bei Fehler
+            db.session.rollback()
+            continue
         
         # ZUSÄTZLICH: Sende Push-Benachrichtigung (für geschlossene App)
-        push_success = send_push_notification(
-            user_id=user.id,
-            title=title,
-            body=body,
-            url="/email/"
-        )
-        
-        if push_success:
-            print(f"UTILS: Zusammengefasste E-Mail-Push-Benachrichtigung erfolgreich gesendet an Benutzer {user.id}")
-        else:
-            print(f"UTILS: Zusammengefasste E-Mail-Push-Benachrichtigung fehlgeschlagen für Benutzer {user.id}")
+        try:
+            push_success = send_push_notification(
+                user_id=user.id,
+                title=title,
+                body=body,
+                url="/email/"
+            )
+            
+            if push_success:
+                print(f"UTILS: Zusammengefasste E-Mail-Push-Benachrichtigung erfolgreich gesendet an Benutzer {user.id}")
+            else:
+                print(f"UTILS: Zusammengefasste E-Mail-Push-Benachrichtigung fehlgeschlagen für Benutzer {user.id}")
+        except Exception as e:
+            print(f"UTILS: Fehler beim Senden der Push-Benachrichtigung für Benutzer {user.id}: {e}")
         
         sent_count += 1
     

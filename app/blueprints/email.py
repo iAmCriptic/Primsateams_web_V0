@@ -357,7 +357,8 @@ def sync_emails_from_server():
                         filename = attachment_data['filename']
                         
                         # Store in database for smaller files, file system for larger ones
-                        if file_size > 10 * 1024 * 1024:  # 10MB threshold
+                        # MySQL max_allowed_packet is usually 16MB, but we use 1MB to be safe
+                        if file_size > 1 * 1024 * 1024:  # 1MB threshold (safer for MySQL)
                             # Store in file system
                             upload_dir = os.path.join(current_app.root_path, 'static', 'attachments')
                             os.makedirs(upload_dir, exist_ok=True)
@@ -393,11 +394,14 @@ def sync_emails_from_server():
                             )
                         
                         db.session.add(attachment)
+                        print(f"EMAIL: Anhang gespeichert: {filename} ({file_size} bytes)")
                     except Exception as e:
-                        print(f"ERROR: Fehler beim Speichern des Attachments {attachment_data['filename']}: {str(e)}")
+                        print(f"EMAIL: Fehler beim Speichern des Attachments {attachment_data['filename']}: {str(e)}")
+                        # Rollback für diesen Anhang
+                        db.session.rollback()
                         continue
                 
-                # Sende Benachrichtigung für neue E-Mail
+                # Sende Benachrichtigung für neue E-Mail (mit separater Session)
                 try:
                     print(f"=== EMAIL: SENDE BENACHRICHTIGUNG FÜR NEUE E-MAIL ===")
                     print(f"EMAIL: Sende Benachrichtigung für E-Mail ID: {email_entry.id}")
@@ -405,16 +409,29 @@ def sync_emails_from_server():
                     print(f"EMAIL: E-Mail Absender: {email_entry.sender}")
                     print(f"EMAIL: E-Mail Empfänger: {email_entry.recipients}")
                     print(f"EMAIL: E-Mail Zeitstempel: {email_entry.received_at}")
-                    send_email_notification(email_entry.id)
+                    
+                    # Verwende separate Session für Benachrichtigungen
+                    from app import create_app
+                    app = create_app()
+                    with app.app_context():
+                        send_email_notification(email_entry.id)
+                    
+                    print(f"EMAIL: E-Mail-Benachrichtigung erfolgreich gesendet für E-Mail ID: {email_entry.id}")
+                    
                 except Exception as e:
                     print(f"=== EMAIL: FEHLER BEI E-MAIL-BENACHRICHTIGUNG ===")
                     print(f"EMAIL: Fehler beim Senden der E-Mail-Benachrichtigung: {e}")
                     import traceback
                     print(f"EMAIL: Exception Stack: {traceback.format_exc()}")
+                    # Fehler bei Benachrichtigung soll E-Mail-Sync nicht stoppen
                 
                 synced_count += 1
+                print(f"EMAIL: E-Mail erfolgreich synchronisiert: {email_entry.subject}")
                 
             except Exception as e:
+                print(f"EMAIL: Fehler beim Synchronisieren der E-Mail: {e}")
+                # Rollback bei Fehler
+                db.session.rollback()
                 # Handle Unicode errors gracefully - try to process with fallbacks
                 error_msg = str(e)
                 if 'charmap' in error_msg or 'codec' in error_msg:
