@@ -70,11 +70,17 @@ def send_push_notification(
     
     print(f"Gefunden {len(subscriptions)} Push-Subscriptions für Benutzer {user_id}")
     
+    # Debug: Zeige alle Subscriptions
+    for i, sub in enumerate(subscriptions):
+        print(f"  Subscription {i+1}: {sub.endpoint[:50]}... - Active: {sub.is_active}")
+    
     success_count = 0
     total_count = len(subscriptions)
     
-    for subscription in subscriptions:
+    for i, subscription in enumerate(subscriptions):
         try:
+            print(f"Versuche Push-Benachrichtigung {i+1}/{total_count} für Benutzer {user_id}")
+            
             # Bereite Payload vor
             payload = {
                 "title": title,
@@ -136,6 +142,15 @@ def send_push_notification(
             db.session.rollback()
     
     print(f"Push-Benachrichtigung Ergebnis: {success_count}/{total_count} erfolgreich")
+    
+    # Commit alle Änderungen
+    try:
+        db.session.commit()
+        print(f"Push-Subscription Änderungen committed")
+    except Exception as e:
+        print(f"Fehler beim Committen der Push-Subscription Änderungen: {e}")
+        db.session.rollback()
+    
     return success_count > 0
 
 
@@ -516,7 +531,19 @@ def register_push_subscription(user_id: int, subscription_data: Dict) -> bool:
         
         db.session.commit()
         print(f"Push-Subscription erfolgreich registriert für Benutzer {user_id}")
-        return True
+        
+        # Verifiziere dass die Subscription gespeichert wurde
+        saved_subscription = PushSubscription.query.filter_by(
+            user_id=user_id,
+            endpoint=endpoint
+        ).first()
+        
+        if saved_subscription:
+            print(f"Push-Subscription erfolgreich verifiziert für Benutzer {user_id}")
+            return True
+        else:
+            print(f"Fehler: Push-Subscription konnte nicht verifiziert werden für Benutzer {user_id}")
+            return False
         
     except Exception as e:
         logging.error(f"Fehler beim Registrieren der Push-Subscription: {e}")

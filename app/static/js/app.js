@@ -96,14 +96,17 @@ let pushSubscription = null;
 
 // Prüfe ob Push-Benachrichtigungen unterstützt werden
 if ('serviceWorker' in navigator && 'PushManager' in window) {
+    console.log('Push-Benachrichtigungen werden unterstützt');
     // Warte bis Service Worker bereit ist, dann registriere Push-Subscription
     navigator.serviceWorker.ready.then(function(registration) {
         console.log('Service Worker bereit, registriere Push-Subscription');
-        // Warte 2 Sekunden bevor Push-Subscription registriert wird
+        // Warte 3 Sekunden bevor Push-Subscription registriert wird
         setTimeout(() => {
             registerPushNotifications();
-        }, 2000);
+        }, 3000);
     });
+} else {
+    console.log('Push-Benachrichtigungen werden NICHT unterstützt');
 }
 
 // Berechtigungs-Manager
@@ -487,6 +490,11 @@ async function registerPushNotifications() {
         
     } catch (error) {
         console.error('Fehler bei Push-Notification Registrierung:', error);
+        // Versuche es erneut nach 5 Sekunden
+        setTimeout(() => {
+            console.log('Versuche Push-Notification Registrierung erneut...');
+            registerPushNotifications();
+        }, 5000);
     }
 }
 
@@ -530,9 +538,19 @@ async function sendSubscriptionToServer(subscription) {
             console.error('Fehler beim Senden der Push-Subscription');
             const error = await response.text();
             console.error('Server-Fehler:', error);
+            // Versuche es erneut nach 3 Sekunden
+            setTimeout(() => {
+                console.log('Versuche Push-Subscription erneut zu senden...');
+                sendSubscriptionToServer(subscription);
+            }, 3000);
         }
     } catch (error) {
         console.error('Fehler beim Senden der Push-Subscription:', error);
+        // Versuche es erneut nach 3 Sekunden
+        setTimeout(() => {
+            console.log('Versuche Push-Subscription erneut zu senden...');
+            sendSubscriptionToServer(subscription);
+        }, 3000);
     }
 }
 

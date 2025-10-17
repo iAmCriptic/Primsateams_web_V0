@@ -276,14 +276,14 @@ def subscribe_push():
         
         if success:
             print(f"Push-Subscription erfolgreich registriert für Benutzer {current_user.id}")
-            return jsonify({'message': 'Push-Subscription erfolgreich registriert'})
+            return jsonify({'message': 'Push-Subscription erfolgreich registriert', 'success': True})
         else:
             print(f"Fehler bei der Push-Subscription Registrierung für Benutzer {current_user.id}")
-            return jsonify({'error': 'Fehler bei der Registrierung'}), 500
+            return jsonify({'error': 'Fehler bei der Registrierung', 'success': False}), 500
             
     except Exception as e:
         print(f"Exception bei Push-Subscription Registrierung: {e}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e), 'success': False}), 500
 
 
 @api_bp.route('/push/unsubscribe', methods=['POST'])
