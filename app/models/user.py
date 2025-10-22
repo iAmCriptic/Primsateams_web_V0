@@ -23,6 +23,7 @@ class User(UserMixin, db.Model):
     # Profile settings
     profile_picture = db.Column(db.String(255), nullable=True)
     accent_color = db.Column(db.String(7), default='#0d6efd')  # Bootstrap primary blue
+    accent_gradient = db.Column(db.String(255), nullable=True)  # CSS gradient string
     dark_mode = db.Column(db.Boolean, default=False)
     
     # Timestamps
@@ -64,6 +65,13 @@ class User(UserMixin, db.Model):
     def full_name(self):
         """Return user's full name."""
         return f"{self.first_name} {self.last_name}"
+    
+    @property
+    def accent_style(self):
+        """Return the user's accent color or gradient for CSS."""
+        if self.accent_gradient:
+            return self.accent_gradient
+        return self.accent_color
     
     def __repr__(self):
         return f'<User {self.email}>'

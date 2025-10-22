@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, url_for
 from flask_login import login_required, current_user
 from app import db
 from app.models.user import User
@@ -26,7 +26,7 @@ def get_users():
         'first_name': user.first_name,
         'last_name': user.last_name,
         'is_admin': user.is_admin,
-        'profile_picture': user.profile_picture
+        'profile_picture': url_for('settings.profile_picture', filename=user.profile_picture) if user.profile_picture else None
     } for user in users])
 
 
@@ -43,7 +43,7 @@ def get_user(user_id):
         'last_name': user.last_name,
         'phone': user.phone,
         'is_admin': user.is_admin,
-        'profile_picture': user.profile_picture,
+        'profile_picture': url_for('settings.profile_picture', filename=user.profile_picture) if user.profile_picture else None,
         'accent_color': user.accent_color,
         'dark_mode': user.dark_mode
     })

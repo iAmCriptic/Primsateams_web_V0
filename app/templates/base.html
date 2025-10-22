@@ -27,20 +27,158 @@
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Base CSS (always loaded) -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    
+    <!-- Page-specific CSS -->
+    {% if request.endpoint %}
+        {% if 'chat' in request.endpoint %}
+            <link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
+        {% elif 'calendar' in request.endpoint %}
+            <link rel="stylesheet" href="{{ url_for('static', filename='css/calendar.css') }}">
+        {% elif 'files' in request.endpoint %}
+            <link rel="stylesheet" href="{{ url_for('static', filename='css/files.css') }}">
+        {% elif 'email' in request.endpoint %}
+            <link rel="stylesheet" href="{{ url_for('static', filename='css/email.css') }}">
+        {% elif 'canvas' in request.endpoint %}
+            <link rel="stylesheet" href="{{ url_for('static', filename='css/canvas.css') }}">
+        {% elif 'auth' in request.endpoint %}
+            <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+        {% elif 'errors' in request.endpoint %}
+            <link rel="stylesheet" href="{{ url_for('static', filename='css/errors.css') }}">
+        {% elif 'dashboard' in request.endpoint %}
+            <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+        {% endif %}
+    {% endif %}
     
     {% if current_user.is_authenticated %}
     <style>
         :root {
             --accent-color: {{ current_user.accent_color }};
+            --accent-style: {{ current_user.accent_style }};
         }
         .btn-primary, .badge.bg-primary {
-            background-color: var(--accent-color) !important;
+            background: var(--accent-style) !important;
             border-color: var(--accent-color) !important;
+        }
+        .btn-outline-primary {
+            border-color: var(--accent-color) !important;
+            color: var(--accent-color) !important;
+        }
+        .btn-outline-primary:hover {
+            background: var(--accent-style) !important;
+            border-color: var(--accent-color) !important;
+            color: white !important;
+        }
+        
+        /* Outline Secondary Buttons */
+        .btn-outline-secondary {
+            border-color: var(--accent-color) !important;
+            color: var(--accent-color) !important;
+        }
+        .btn-outline-secondary:hover {
+            background: var(--accent-style) !important;
+            border-color: var(--accent-color) !important;
+            color: white !important;
+        }
+        
+        /* Secondary Buttons */
+        .btn-secondary {
+            background: var(--accent-style) !important;
+            border-color: var(--accent-color) !important;
+            color: white !important;
+        }
+        .btn-secondary:hover {
+            background: var(--accent-style) !important;
+            border-color: var(--accent-color) !important;
+            color: white !important;
+            opacity: 0.9;
+        }
+        
+        /* Outline Warning Buttons */
+        .btn-outline-warning {
+            border-color: var(--accent-color) !important;
+            color: var(--accent-color) !important;
+        }
+        .btn-outline-warning:hover {
+            background: var(--accent-style) !important;
+            border-color: var(--accent-color) !important;
+            color: white !important;
         }
         .text-primary {
             color: var(--accent-color) !important;
+        }
+        /* Override Bootstrap primary colors */
+        .btn-primary:hover, .btn-primary:focus, .btn-primary:active {
+            background: var(--accent-style) !important;
+            border-color: var(--accent-color) !important;
+            opacity: 0.9;
+        }
+        /* Navigation active states */
+        .nav-link.active {
+            color: var(--accent-color) !important;
+            background-color: transparent !important;
+        }
+        /* Mobile navigation active */
+        .mobile-nav .nav-link.active {
+            color: var(--accent-color) !important;
+            background-color: transparent !important;
+        }
+        
+        .mobile-nav .nav-link.active i {
+            background: var(--accent-style) !important;
+            -webkit-background-clip: text !important;
+            -webkit-text-fill-color: transparent !important;
+            background-clip: text !important;
+        }
+        /* Desktop sidebar active */
+        .sidebar .nav-link.active {
+            color: var(--accent-color) !important;
+            background-color: transparent !important;
+        }
+        
+        .sidebar .nav-link.active i,
+        .sidebar .nav-link.active {
+            background: var(--accent-style) !important;
+            -webkit-background-clip: text !important;
+            -webkit-text-fill-color: transparent !important;
+            background-clip: text !important;
+        }
+        /* Form controls */
+        .form-control:focus {
+            border-color: var(--accent-color) !important;
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25) !important;
+        }
+        .form-select:focus {
+            border-color: var(--accent-color) !important;
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25) !important;
+        }
+        /* Progress bars */
+        .progress-bar {
+            background: var(--accent-style) !important;
+        }
+        /* Pagination */
+        .page-link {
+            color: var(--accent-color) !important;
+        }
+        .page-link:hover {
+            background-color: var(--accent-color) !important;
+            border-color: var(--accent-color) !important;
+            color: white !important;
+        }
+        .page-item.active .page-link {
+            background: var(--accent-style) !important;
+            border-color: var(--accent-color) !important;
+        }
+        /* Gradient support for elements that should use gradients */
+        .accent-gradient {
+            background: var(--accent-style) !important;
+        }
+        .accent-gradient-text {
+            background: var(--accent-style);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
     </style>
     {% endif %}
@@ -50,29 +188,29 @@
 <body>
     {% if current_user.is_authenticated %}
     <!-- Mobile Bottom Navigation -->
-    <nav class="navbar navbar-light bg-light fixed-bottom d-md-none mobile-nav">
+    <nav class="navbar navbar-light bg-light fixed-bottom d-md-none mobile-nav {% if request.endpoint and 'chat.view_chat' in request.endpoint %}d-none{% endif %}">
         <div class="container-fluid">
             <div class="row w-100 text-center">
                 <div class="col">
-                    <a href="{{ url_for('dashboard.index') }}" class="nav-link {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
+                    <a href="{{ url_for('dashboard.index') }}" class="nav-link {% if request.endpoint and request.endpoint == 'dashboard.index' %}active{% endif %}">
                         <i class="bi bi-house-door fs-4"></i>
                         <div class="small">Dashboard</div>
                     </a>
                 </div>
                 <div class="col">
-                    <a href="{{ url_for('chat.index') }}" class="nav-link {% if 'chat' in request.endpoint %}active{% endif %}">
+                    <a href="{{ url_for('chat.index') }}" class="nav-link {% if request.endpoint and 'chat' in request.endpoint %}active{% endif %}">
                         <i class="bi bi-chat-dots fs-4"></i>
                         <div class="small">Chats</div>
                     </a>
                 </div>
                 <div class="col">
-                    <a href="{{ url_for('files.index') }}" class="nav-link {% if 'files' in request.endpoint %}active{% endif %}">
+                    <a href="{{ url_for('files.index') }}" class="nav-link {% if request.endpoint and 'files' in request.endpoint %}active{% endif %}">
                         <i class="bi bi-folder fs-4"></i>
                         <div class="small">Dateien</div>
                     </a>
                 </div>
                 <div class="col">
-                    <a href="{{ url_for('calendar.index') }}" class="nav-link {% if 'calendar' in request.endpoint %}active{% endif %}">
+                    <a href="{{ url_for('calendar.index') }}" class="nav-link {% if request.endpoint and 'calendar' in request.endpoint %}active{% endif %}">
                         <i class="bi bi-calendar-event fs-4"></i>
                         <div class="small">Termine</div>
                     </a>
@@ -98,55 +236,55 @@
         <hr>
         <ul class="nav nav-pills flex-column mb-auto">
             <li class="nav-item">
-                <a href="{{ url_for('dashboard.index') }}" class="nav-link {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
+                <a href="{{ url_for('dashboard.index') }}" class="nav-link {% if request.endpoint and request.endpoint == 'dashboard.index' %}active{% endif %}">
                     <i class="bi bi-house-door me-2"></i>
                     Dashboard
                 </a>
             </li>
             <li>
-                <a href="{{ url_for('chat.index') }}" class="nav-link {% if 'chat' in request.endpoint %}active{% endif %}">
+                <a href="{{ url_for('chat.index') }}" class="nav-link {% if request.endpoint and 'chat' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-chat-dots me-2"></i>
                     Chats
                 </a>
             </li>
             <li>
-                <a href="{{ url_for('files.index') }}" class="nav-link {% if 'files' in request.endpoint %}active{% endif %}">
+                <a href="{{ url_for('files.index') }}" class="nav-link {% if request.endpoint and 'files' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-folder me-2"></i>
                     Dateien
                 </a>
             </li>
             <li>
-                <a href="{{ url_for('calendar.index') }}" class="nav-link {% if 'calendar' in request.endpoint %}active{% endif %}">
+                <a href="{{ url_for('calendar.index') }}" class="nav-link {% if request.endpoint and 'calendar' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-calendar-event me-2"></i>
                     Termine
                 </a>
             </li>
             <li>
-                <a href="{{ url_for('email.index') }}" class="nav-link {% if 'email' in request.endpoint %}active{% endif %}">
+                <a href="{{ url_for('email.index') }}" class="nav-link {% if request.endpoint and 'email' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-envelope me-2"></i>
                     E-Mail
                 </a>
             </li>
             <li>
-                <a href="{{ url_for('credentials.index') }}" class="nav-link {% if 'credentials' in request.endpoint %}active{% endif %}">
+                <a href="{{ url_for('credentials.index') }}" class="nav-link {% if request.endpoint and 'credentials' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-key me-2"></i>
                     Zugangsdaten
                 </a>
             </li>
             <li>
-                <a href="{{ url_for('manuals.index') }}" class="nav-link {% if 'manuals' in request.endpoint %}active{% endif %}">
+                <a href="{{ url_for('manuals.index') }}" class="nav-link {% if request.endpoint and 'manuals' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-book me-2"></i>
                     Anleitungen
                 </a>
             </li>
             <li>
-                <a href="{{ url_for('canvas.index') }}" class="nav-link {% if 'canvas' in request.endpoint %}active{% endif %}">
+                <a href="{{ url_for('canvas.index') }}" class="nav-link {% if request.endpoint and 'canvas' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-palette me-2"></i>
                     Canvas
                 </a>
             </li>
             <li>
-                <a href="{{ url_for('settings.index') }}" class="nav-link {% if 'settings' in request.endpoint %}active{% endif %}">
+                <a href="{{ url_for('settings.index') }}" class="nav-link {% if request.endpoint and 'settings' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-gear me-2"></i>
                     Einstellungen
                 </a>
@@ -156,7 +294,7 @@
         <div class="dropdown">
             <a href="#" class="d-flex align-items-center link-dark text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
                 {% if current_user.profile_picture %}
-                <img src="{{ url_for('static', filename='../' + current_user.profile_picture) }}" alt="" width="32" height="32" class="rounded-circle me-2">
+                <img src="{{ url_for('settings.profile_picture', filename=current_user.profile_picture) }}" alt="" width="32" height="32" class="rounded-circle me-2">
                 {% else %}
                 <i class="bi bi-person-circle fs-4 me-2"></i>
                 {% endif %}
@@ -179,31 +317,31 @@
         <div class="offcanvas-body">
             <ul class="nav nav-pills flex-column">
                 <li class="nav-item">
-                    <a href="{{ url_for('email.index') }}" class="nav-link {% if 'email' in request.endpoint %}active{% endif %}">
+                    <a href="{{ url_for('email.index') }}" class="nav-link {% if request.endpoint and 'email' in request.endpoint %}active{% endif %}">
                         <i class="bi bi-envelope me-2"></i>
                         E-Mail
                     </a>
                 </li>
                 <li>
-                    <a href="{{ url_for('credentials.index') }}" class="nav-link {% if 'credentials' in request.endpoint %}active{% endif %}">
+                    <a href="{{ url_for('credentials.index') }}" class="nav-link {% if request.endpoint and 'credentials' in request.endpoint %}active{% endif %}">
                         <i class="bi bi-key me-2"></i>
                         Zugangsdaten
                     </a>
                 </li>
                 <li>
-                    <a href="{{ url_for('manuals.index') }}" class="nav-link {% if 'manuals' in request.endpoint %}active{% endif %}">
+                    <a href="{{ url_for('manuals.index') }}" class="nav-link {% if request.endpoint and 'manuals' in request.endpoint %}active{% endif %}">
                         <i class="bi bi-book me-2"></i>
                         Anleitungen
                     </a>
                 </li>
                 <li>
-                    <a href="{{ url_for('canvas.index') }}" class="nav-link {% if 'canvas' in request.endpoint %}active{% endif %}">
+                    <a href="{{ url_for('canvas.index') }}" class="nav-link {% if request.endpoint and 'canvas' in request.endpoint %}active{% endif %}">
                         <i class="bi bi-palette me-2"></i>
                         Canvas
                     </a>
                 </li>
                 <li>
-                    <a href="{{ url_for('settings.index') }}" class="nav-link {% if 'settings' in request.endpoint %}active{% endif %}">
+                    <a href="{{ url_for('settings.index') }}" class="nav-link {% if request.endpoint and 'settings' in request.endpoint %}active{% endif %}">
                         <i class="bi bi-gear me-2"></i>
                         Einstellungen
                     </a>

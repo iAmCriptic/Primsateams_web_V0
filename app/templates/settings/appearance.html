@@ -19,11 +19,104 @@
             <div class="card-body">
                 <form method="POST">
                     <div class="mb-4">
-                        <label for="accent_color" class="form-label">Akzentfarbe</label>
-                        <div class="d-flex align-items-center gap-3">
-                            <input type="color" class="form-control form-control-color" id="accent_color" name="accent_color" value="{{ user.accent_color }}" title="Wählen Sie eine Farbe">
-                            <span id="color-preview" class="badge" style="background-color: {{ user.accent_color }}; padding: 1rem 2rem;">Vorschau</span>
+                        <label class="form-label">Akzentfarbe & Farbverlauf</label>
+                        
+                        <!-- Color Type Selection -->
+                        <div class="mb-3">
+                            <div class="btn-group" role="group" aria-label="Farbe oder Verlauf">
+                                <input type="radio" class="btn-check" name="color_type" id="color_solid" value="solid" {% if not user.accent_gradient %}checked{% endif %}>
+                                <label class="btn btn-outline-primary" for="color_solid">
+                                    <i class="bi bi-palette"></i> Einfarbig
+                                </label>
+                                
+                                <input type="radio" class="btn-check" name="color_type" id="color_gradient" value="gradient" {% if user.accent_gradient %}checked{% endif %}>
+                                <label class="btn btn-outline-primary" for="color_gradient">
+                                    <i class="bi bi-palette2"></i> Farbverlauf
+                                </label>
+                            </div>
                         </div>
+                        
+                        <!-- Solid Color Input -->
+                        <div id="solid-color-section" class="mb-3">
+                            <label for="accent_color" class="form-label">Akzentfarbe</label>
+                            <div class="d-flex align-items-center gap-3">
+                                <input type="color" class="form-control form-control-color" id="accent_color" name="accent_color" value="{{ user.accent_color }}" title="Wählen Sie eine Farbe">
+                                <span id="color-preview" class="badge" style="background-color: {{ user.accent_color }}; padding: 1rem 2rem;">Vorschau</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Gradient Input -->
+                        <div id="gradient-section" class="mb-3" style="display: none;">
+                            <label for="gradient_start" class="form-label">Farbverlauf</label>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="gradient_start" class="form-label">Startfarbe</label>
+                                    <input type="color" class="form-control form-control-color" id="gradient_start" name="gradient_start" value="#667eea">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="gradient_end" class="form-label">Endfarbe</label>
+                                    <input type="color" class="form-control form-control-color" id="gradient_end" name="gradient_end" value="#764ba2">
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <label for="gradient_direction" class="form-label">Richtung</label>
+                                <select class="form-select" id="gradient_direction" name="gradient_direction">
+                                    <option value="135deg">Diagonal (↗)</option>
+                                    <option value="90deg">Horizontal (→)</option>
+                                    <option value="180deg">Vertikal (↓)</option>
+                                    <option value="45deg">Diagonal (↖)</option>
+                                </select>
+                            </div>
+                            <div class="mt-2">
+                                <span id="gradient-preview" class="badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 1rem 2rem;">Vorschau</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Preset Gradients -->
+                        <div class="mb-3">
+                            <label class="form-label">Vordefinierte Farbverläufe</label>
+                            <div class="row g-2">
+                                <div class="col-md-4">
+                                    <button type="button" class="btn btn-outline-secondary w-100 preset-gradient" data-start="#667eea" data-end="#764ba2">
+                                        <div class="preset-preview" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 20px; border-radius: 4px; margin-bottom: 4px;"></div>
+                                        Lila-Blau
+                                    </button>
+                                </div>
+                                <div class="col-md-4">
+                                    <button type="button" class="btn btn-outline-secondary w-100 preset-gradient" data-start="#f093fb" data-end="#f5576c">
+                                        <div class="preset-preview" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); height: 20px; border-radius: 4px; margin-bottom: 4px;"></div>
+                                        Pink-Rot
+                                    </button>
+                                </div>
+                                <div class="col-md-4">
+                                    <button type="button" class="btn btn-outline-secondary w-100 preset-gradient" data-start="#4facfe" data-end="#00f2fe">
+                                        <div class="preset-preview" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); height: 20px; border-radius: 4px; margin-bottom: 4px;"></div>
+                                        Blau-Cyan
+                                    </button>
+                                </div>
+                                <div class="col-md-4">
+                                    <button type="button" class="btn btn-outline-secondary w-100 preset-gradient" data-start="#43e97b" data-end="#38f9d7">
+                                        <div class="preset-preview" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); height: 20px; border-radius: 4px; margin-bottom: 4px;"></div>
+                                        Grün-Türkis
+                                    </button>
+                                </div>
+                                <div class="col-md-4">
+                                    <button type="button" class="btn btn-outline-secondary w-100 preset-gradient" data-start="#fa709a" data-end="#fee140">
+                                        <div class="preset-preview" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); height: 20px; border-radius: 4px; margin-bottom: 4px;"></div>
+                                        Pink-Gelb
+                                    </button>
+                                </div>
+                                <div class="col-md-4">
+                                    <button type="button" class="btn btn-outline-secondary w-100 preset-gradient" data-start="#a8edea" data-end="#fed6e3">
+                                        <div class="preset-preview" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); height: 20px; border-radius: 4px; margin-bottom: 4px;"></div>
+                                        Pastell
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Hidden field for gradient -->
+                        <input type="hidden" id="accent_gradient" name="accent_gradient" value="{{ user.accent_gradient or '' }}">
                     </div>
                     
                     <div class="mb-4">
@@ -49,9 +142,66 @@
 
 {% block extra_js %}
 <script>
+// Color type switching
+document.getElementById('color_solid').addEventListener('change', function() {
+    if (this.checked) {
+        document.getElementById('solid-color-section').style.display = 'block';
+        document.getElementById('gradient-section').style.display = 'none';
+        document.getElementById('accent_gradient').value = '';
+    }
+});
+
+document.getElementById('color_gradient').addEventListener('change', function() {
+    if (this.checked) {
+        document.getElementById('solid-color-section').style.display = 'none';
+        document.getElementById('gradient-section').style.display = 'block';
+        updateGradientPreview();
+    }
+});
+
+// Solid color preview
 document.getElementById('accent_color').addEventListener('input', function(e) {
     document.getElementById('color-preview').style.backgroundColor = e.target.value;
 });
+
+// Gradient preview
+function updateGradientPreview() {
+    const start = document.getElementById('gradient_start').value;
+    const end = document.getElementById('gradient_end').value;
+    const direction = document.getElementById('gradient_direction').value;
+    const gradient = `linear-gradient(${direction}, ${start} 0%, ${end} 100%)`;
+    
+    document.getElementById('gradient-preview').style.background = gradient;
+    document.getElementById('accent_gradient').value = gradient;
+}
+
+document.getElementById('gradient_start').addEventListener('input', updateGradientPreview);
+document.getElementById('gradient_end').addEventListener('input', updateGradientPreview);
+document.getElementById('gradient_direction').addEventListener('change', updateGradientPreview);
+
+// Preset gradients
+document.querySelectorAll('.preset-gradient').forEach(button => {
+    button.addEventListener('click', function() {
+        const start = this.dataset.start;
+        const end = this.dataset.end;
+        
+        document.getElementById('gradient_start').value = start;
+        document.getElementById('gradient_end').value = end;
+        updateGradientPreview();
+        
+        // Switch to gradient mode
+        document.getElementById('color_gradient').checked = true;
+        document.getElementById('solid-color-section').style.display = 'none';
+        document.getElementById('gradient-section').style.display = 'block';
+    });
+});
+
+// Initialize based on current user settings
+{% if user.accent_gradient %}
+document.getElementById('color_gradient').checked = true;
+document.getElementById('solid-color-section').style.display = 'none';
+document.getElementById('gradient-section').style.display = 'block';
+{% endif %}
 </script>
 {% endblock %}
 

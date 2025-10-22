@@ -51,6 +51,10 @@ class Config:
     
     # File Versioning
     MAX_FILE_VERSIONS = 3
+    
+    # VAPID Keys for Push Notifications
+    VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY')
+    VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY')
 
 
 class DevelopmentConfig(Config):

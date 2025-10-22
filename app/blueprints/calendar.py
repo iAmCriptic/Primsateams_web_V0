@@ -24,10 +24,14 @@ def index():
         ).first()
         participations[event.id] = participation
     
+    # Get current month for display
+    current_month = datetime.now()
+    
     return render_template(
         'calendar/index.html',
         events=events,
-        participations=participations
+        participations=participations,
+        current_month=current_month
     )
 
 
@@ -250,7 +254,7 @@ def get_events_for_month(year, month):
             'url': url_for('calendar.view_event', event_id=event.id)
         })
     
-        return jsonify(events_data)
+    return jsonify(events_data)
 
 
 @calendar_bp.route('/api/events/range/<start_date>/<end_date>')

@@ -3,72 +3,108 @@
 {% block title %}Chats - Team Portal{% endblock %}
 
 {% block content %}
-<div class="row mb-3">
-    <div class="col">
-        <h1><i class="bi bi-chat-dots"></i> Chats</h1>
-    </div>
-    <div class="col-auto">
-        <a href="{{ url_for('chat.create_chat') }}" class="btn btn-accent">
-            <i class="bi bi-plus-circle"></i> Neuer Chat
-        </a>
+<div class="chats-page-header">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="chats-title">
+                <i class="bi bi-chat-dots me-2"></i> 
+                Chats
+            </h1>
+            <p class="chats-subtitle text-muted">Verwalten Sie Ihre Team-Chats und Direktnachrichten</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('chat.create_chat') }}" class="btn btn-accent btn-lg">
+                <i class="bi bi-plus-circle me-2"></i> 
+                Neuer Chat
+            </a>
+        </div>
     </div>
 </div>
 
 <!-- Main Chat -->
 {% if main_chat %}
-<div class="card mb-3">
-    <div class="card-body">
-        <h5 class="card-title">
-            <i class="bi bi-people-fill text-primary"></i>
-            {{ main_chat.name }}
-            <span class="badge bg-primary">Haupt-Chat</span>
-        </h5>
-        <p class="card-text text-muted">Team-weiter Chat für alle Mitglieder</p>
-        <a href="{{ url_for('chat.view_chat', chat_id=main_chat.id) }}" class="btn btn-outline-primary">
-            <i class="bi bi-arrow-right-circle"></i> Öffnen
-        </a>
+<div class="chat-card main-chat-card">
+    <div class="chat-card-header">
+        <div class="chat-card-avatar">
+            <img src="{{ url_for('static', filename='img/logo.png') }}" 
+                 alt="Team Logo" 
+                 class="chat-card-avatar-img">
+        </div>
+        <div class="chat-card-info">
+            <h5 class="chat-card-title">
+                {{ main_chat.name }}
+                <span class="badge bg-primary ms-2">Haupt-Chat</span>
+            </h5>
+            <p class="chat-card-description">Team-weiter Chat für alle Mitglieder</p>
+        </div>
+        <div class="chat-card-actions">
+            <a href="{{ url_for('chat.view_chat', chat_id=main_chat.id) }}" class="btn btn-primary">
+                <i class="bi bi-arrow-right-circle me-1"></i> 
+                Öffnen
+            </a>
+        </div>
     </div>
 </div>
 {% endif %}
 
 <!-- Group Chats -->
 {% if group_chats %}
-<h4 class="mt-4 mb-3">Gruppen-Chats</h4>
-<div class="row g-3">
-    {% for chat in group_chats %}
-    <div class="col-12 col-md-6 col-lg-4">
-        <div class="card h-100">
-            <div class="card-body">
-                <h5 class="card-title">
-                    <i class="bi bi-chat-left-text"></i>
-                    {{ chat.name }}
-                </h5>
-                <p class="card-text text-muted">{{ chat.members|length }} Mitglieder</p>
-                <a href="{{ url_for('chat.view_chat', chat_id=chat.id) }}" class="btn btn-outline-primary btn-sm">
-                    Öffnen
-                </a>
+<div class="chats-section">
+    <h4 class="section-title">
+        <i class="bi bi-people-fill me-2"></i>
+        Gruppen-Chats
+    </h4>
+    <div class="row g-4">
+        {% for chat in group_chats %}
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="chat-card group-chat-card">
+                <div class="chat-card-header">
+                    <div class="chat-card-avatar">
+                        <div class="chat-card-avatar-group">
+                            <i class="bi bi-people-fill"></i>
+                        </div>
+                    </div>
+                    <div class="chat-card-info">
+                        <h5 class="chat-card-title">{{ chat.name }}</h5>
+                        <p class="chat-card-description">{{ chat.members|length }} Mitglieder</p>
+                    </div>
+                    <div class="chat-card-actions">
+                        <a href="{{ url_for('chat.view_chat', chat_id=chat.id) }}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-arrow-right-circle me-1"></i>
+                            Öffnen
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
+        {% endfor %}
     </div>
-    {% endfor %}
 </div>
 {% endif %}
 
 <!-- Direct Messages -->
 {% if direct_chats %}
-<h4 class="mt-4 mb-3">Direktnachrichten</h4>
-<div class="list-group">
-    {% for chat in direct_chats %}
-    <a href="{{ url_for('chat.view_chat', chat_id=chat.id) }}" class="list-group-item list-group-item-action">
-        <div class="d-flex w-100 justify-content-between align-items-center">
-            <h6 class="mb-0">
+<div class="chats-section">
+    <h4 class="section-title">
+        <i class="bi bi-person-circle me-2"></i>
+        Direktnachrichten
+    </h4>
+    <div class="direct-messages-list">
+        {% for chat in direct_chats %}
+        <a href="{{ url_for('chat.view_chat', chat_id=chat.id) }}" class="direct-message-item">
+            <div class="direct-message-avatar">
                 <i class="bi bi-person-circle"></i>
-                {{ chat.name }}
-            </h6>
-            <i class="bi bi-chevron-right"></i>
-        </div>
-    </a>
-    {% endfor %}
+            </div>
+            <div class="direct-message-info">
+                <h6 class="direct-message-name">{{ chat.name }}</h6>
+                <small class="direct-message-status text-muted">Direktnachricht</small>
+            </div>
+            <div class="direct-message-arrow">
+                <i class="bi bi-chevron-right"></i>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
 </div>
 {% endif %}
 

@@ -8,22 +8,22 @@
         <h1><i class="bi bi-calendar-event"></i> Termine</h1>
     </div>
     <div class="col-auto">
-        <div class="btn-group me-3" role="group">
+        <div class="btn-group me-3 mb-2" role="group">
             <button type="button" class="btn btn-accent active" id="monthViewBtn">
-                <i class="bi bi-calendar-month"></i> Monatsansicht
+                <i class="bi bi-calendar-month"></i> <span class="d-none d-md-inline">Monatsansicht</span>
             </button>
             <button type="button" class="btn btn-outline-accent" id="weekViewBtn">
-                <i class="bi bi-calendar-week"></i> Wochenansicht
+                <i class="bi bi-calendar-week"></i> <span class="d-none d-md-inline">Wochenansicht</span>
             </button>
             <button type="button" class="btn btn-outline-accent" id="dayViewBtn">
-                <i class="bi bi-calendar-day"></i> Tagesansicht
+                <i class="bi bi-calendar-day"></i> <span class="d-none d-md-inline">Tagesansicht</span>
             </button>
             <button type="button" class="btn btn-outline-accent" id="listViewBtn">
-                <i class="bi bi-list-ul"></i> Terminübersicht
+                <i class="bi bi-list-ul"></i> <span class="d-none d-md-inline">Terminübersicht</span>
             </button>
         </div>
         <a href="{{ url_for('calendar.create_event') }}" class="btn btn-accent">
-            <i class="bi bi-plus-circle"></i> Neuer Termin
+            <i class="bi bi-plus-circle"></i> <span class="d-none d-md-inline">Neuer Termin</span>
         </a>
     </div>
 </div>
@@ -66,43 +66,38 @@
 <!-- Terminübersicht -->
 <div id="listView" class="calendar-view" style="display: none;">
     {% if events %}
-    <div class="row g-3">
+    <div class="list-group">
         {% for event in events %}
-        <div class="col-12 col-md-6 col-lg-4">
-            <div class="card event-card h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <h5 class="card-title mb-0">{{ event.title }}</h5>
-                        {% set participation = participations.get(event.id) %}
-                        {% if participation %}
-                            {% if participation.status == 'accepted' %}
-                            <span class="badge bg-success">Zugesagt</span>
-                            {% elif participation.status == 'declined' %}
-                            <span class="badge bg-danger">Abgesagt</span>
-                            {% elif participation.status == 'removed' %}
-                            <span class="badge bg-secondary">Entfernt</span>
-                            {% else %}
-                            <span class="badge bg-warning">Ausstehend</span>
-                            {% endif %}
-                        {% endif %}
-                    </div>
-                    
-                    {% if event.description %}
-                    <p class="card-text text-truncate-2">{{ event.description }}</p>
-                    {% endif %}
-                    
-                    <div class="mb-2">
-                        <small class="text-muted">
-                            <i class="bi bi-calendar"></i> {{ event.start_time.strftime('%d.%m.%Y') }}<br>
-                            <i class="bi bi-clock"></i> {{ event.start_time.strftime('%H:%M') }} - {{ event.end_time.strftime('%H:%M') }} Uhr
-                        </small>
+        <div class="list-group-item list-group-item-action event-list-item">
+            <div class="d-flex w-100 justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                    <h5 class="mb-1">{{ event.title }}</h5>
+                    <p class="mb-1">
+                        <i class="bi bi-calendar"></i> {{ event.start_time.strftime('%d.%m.%Y') }}
+                        <i class="bi bi-clock ms-2"></i> {{ event.start_time.strftime('%H:%M') }} - {{ event.end_time.strftime('%H:%M') }} Uhr
                         {% if event.location %}
-                        <br><small class="text-muted"><i class="bi bi-geo-alt"></i> {{ event.location }}</small>
+                        <i class="bi bi-geo-alt ms-2"></i> {{ event.location }}
                         {% endif %}
-                    </div>
-                    
-                    <a href="{{ url_for('calendar.view_event', event_id=event.id) }}" class="btn btn-sm btn-outline-accent">
-                        Details anzeigen
+                    </p>
+                    {% if event.description %}
+                    <p class="mb-1 text-muted">{{ event.description }}</p>
+                    {% endif %}
+                </div>
+                <div class="ms-3">
+                    {% set participation = participations.get(event.id) %}
+                    {% if participation %}
+                        {% if participation.status == 'accepted' %}
+                        <span class="badge bg-success">Zugesagt</span>
+                        {% elif participation.status == 'declined' %}
+                        <span class="badge bg-danger">Abgesagt</span>
+                        {% elif participation.status == 'removed' %}
+                        <span class="badge bg-secondary">Entfernt</span>
+                        {% else %}
+                        <span class="badge bg-warning">Ausstehend</span>
+                        {% endif %}
+                    {% endif %}
+                    <a href="{{ url_for('calendar.view_event', event_id=event.id) }}" class="btn btn-sm btn-outline-accent ms-2">
+                        Details
                     </a>
                 </div>
             </div>
@@ -192,6 +187,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     monthViewBtn.addEventListener('click', function() {
         switchView(monthView, monthViewBtn);
+        updateCalendar(); // Regenerate calendar when switching back
     });
     
     weekViewBtn.addEventListener('click', function() {
@@ -304,45 +300,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    async function addEventsToDay(dayCell, year, month, day) {
-        try {
-            const response = await fetch(`/calendar/api/events/${year}/${month + 1}`);
-            if (response.ok) {
-                const events = await response.json();
-                const dayEvents = events.filter(event => event.day === day);
-                
-                dayEvents.forEach(event => {
-                    const eventElement = document.createElement('div');
-                    eventElement.className = 'calendar-event';
-                    
-                    // Add status-based styling
-                    if (event.participation_status === 'accepted') {
-                        eventElement.classList.add('accepted');
-                    } else if (event.participation_status === 'declined') {
-                        eventElement.classList.add('declined');
-                    } else if (event.participation_status === 'removed') {
-                        eventElement.classList.add('removed');
-                    } else {
-                        eventElement.classList.add('pending');
-                    }
-                    
-                    eventElement.textContent = event.title;
-                    eventElement.title = `${event.title} - ${event.time}${event.location ? ' - ' + event.location : ''}`;
-                    
-                    // Make event clickable
-                    eventElement.style.cursor = 'pointer';
-                    eventElement.addEventListener('click', function() {
-                        window.location.href = event.url;
-                    });
-                    
-                    dayCell.appendChild(eventElement);
-                });
-            }
-        } catch (error) {
-            console.error('Error loading events:', error);
-        }
-    }
-    
     document.getElementById('prevMonth').addEventListener('click', function() {
         currentDate.setMonth(currentDate.getMonth() - 1);
         updateCalendar();
@@ -355,7 +312,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initial calendar generation
     updateCalendar();
-    }
     
     // Week View Functions
     let currentWeekDate = new Date();
@@ -378,11 +334,11 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Generate week grid
         const days = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
-        const hours = Array.from({length: 24}, (_, i) => i);
+        const hours = Array.from({length: 24}, (_, i) => i); // 00:00 bis 23:00
         
         let html = '<div class="week-grid">';
         html += '<div class="week-header">';
-        html += '<div class="time-column"></div>';
+        html += '<div class="time-column">Zeit</div>';
         
         for (let i = 0; i < 7; i++) {
             const date = new Date(startOfWeek);
@@ -428,6 +384,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         eventElement.innerHTML = `
                             <strong>${event.time}</strong><br>
                             ${event.title}
+                            ${event.location ? `<br><small><i class="bi bi-geo-alt"></i> ${event.location}</small>` : ''}
                         `;
                         eventElement.onclick = () => window.location.href = event.url;
                         timeSlot.appendChild(eventElement);
@@ -450,7 +407,7 @@ document.addEventListener('DOMContentLoaded', function() {
         dayTitle.textContent = currentDayDate.toLocaleDateString('de-DE', options);
         
         // Generate day grid
-        const hours = Array.from({length: 24}, (_, i) => i);
+        const hours = Array.from({length: 24}, (_, i) => i); // 00:00 bis 23:00
         
         let html = '<div class="day-grid">';
         
@@ -485,7 +442,9 @@ document.addEventListener('DOMContentLoaded', function() {
                             <strong>${event.time}</strong><br>
                             ${event.title}
                             ${event.location ? `<br><small><i class="bi bi-geo-alt"></i> ${event.location}</small>` : ''}
-                        `;
+                        `
+
+;
                         eventElement.onclick = () => window.location.href = event.url;
                         timeSlot.appendChild(eventElement);
                     }

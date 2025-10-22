@@ -152,6 +152,14 @@ def sync_emails_from_server():
                 if not message_id:
                     continue
                 
+                # Parse date first (needed for duplicate check)
+                received_at = datetime.utcnow()
+                try:
+                    from email.utils import parsedate_to_datetime
+                    received_at = parsedate_to_datetime(date_str)
+                except:
+                    pass
+                
                 # Check if email already exists (mit besserer Duplikat-Prüfung)
                 existing = EmailMessage.query.filter_by(message_id=message_id).first()
                 if existing:
@@ -167,6 +175,9 @@ def sync_emails_from_server():
                 if existing_by_content:
                     print(f"EMAIL: E-Mail mit gleichem Inhalt bereits vorhanden, überspringe: {subject}")
                     continue
+                
+                # Only process attachments if email is new
+                print(f"EMAIL: Verarbeite neue E-Mail: {subject}")
                 
                 # Parse body with HTML and attachments support
                 body_text = ""
@@ -201,10 +212,10 @@ def sync_emails_from_server():
                             # Get file content with size limit
                             file_content = part.get_payload(decode=True)
                             if file_content:
-                                # Limit attachment size to 25MB for central email access
-                                max_size = 25 * 1024 * 1024  # 25MB
+                                # Limit attachment size to 100MB for central email access
+                                max_size = 100 * 1024 * 1024  # 100MB
                                 if len(file_content) > max_size:
-                                    print(f"WARNING: Attachment zu groß ({len(file_content)} bytes): {filename} - wird übersprungen (Max: 25MB)")
+                                    print(f"WARNING: Attachment zu groß ({len(file_content)} bytes): {filename} - wird übersprungen (Max: 100MB)")
                                     continue
                                 
                                 attachments_data.append({
@@ -329,13 +340,7 @@ def sync_emails_from_server():
                     body_html = re.sub(r'[ \t]+', ' ', body_html)  # Multiple spaces to single
                     body_html = re.sub(r'\n\s*\n', '\n\n', body_html)  # Preserve paragraph breaks
                 
-                # Parse date
-                received_at = datetime.utcnow()
-                try:
-                    from email.utils import parsedate_to_datetime
-                    received_at = parsedate_to_datetime(date_str)
-                except:
-                    pass
+                # received_at already parsed above
                 
                 # Create database entry
                 email_entry = EmailMessage(
@@ -368,8 +373,8 @@ def sync_emails_from_server():
                         filename = attachment_data['filename']
                         
                         # Store in database for smaller files, file system for larger ones
-                        # MySQL max_allowed_packet is usually 16MB, but we use 1MB to be safe
-                        if file_size > 1 * 1024 * 1024:  # 1MB threshold (safer for MySQL)
+                        # MySQL max_allowed_packet is usually 16MB, but we use 10MB to be safe
+                        if file_size > 10 * 1024 * 1024:  # 10MB threshold (safer for MySQL)
                             # Store in file system
                             upload_dir = os.path.join(current_app.root_path, 'static', 'attachments')
                             os.makedirs(upload_dir, exist_ok=True)

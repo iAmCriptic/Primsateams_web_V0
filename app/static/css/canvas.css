@@ -1,0 +1,32 @@
+/* Canvas Styles */
+
+/* Canvas */
+.canvas-container {
+    position: relative;
+    width: 100%;
+    min-height: 600px;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    overflow: auto;
+}
+
+[data-bs-theme="dark"] .canvas-container {
+    background-color: #2b3035;
+    border-color: #495057;
+}
+
+.canvas-text-field {
+    position: absolute;
+    border: 1px solid #dee2e6;
+    padding: 0.5rem;
+    cursor: move;
+    resize: both;
+    overflow: auto;
+    min-width: 100px;
+    min-height: 50px;
+}
+
+.canvas-text-field:hover {
+    border-color: var(--accent-color);
+}

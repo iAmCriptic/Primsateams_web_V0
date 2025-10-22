@@ -529,4 +529,72 @@ def delete_folder(folder_id):
         return redirect(url_for('files.index'))
 
 
+@files_bp.route('/api/file-details/<int:file_id>')
+@login_required
+def get_file_details(file_id):
+    """Get file details for the side menu."""
+    file = File.query.get_or_404(file_id)
+    
+    # Get file versions
+    versions = FileVersion.query.filter_by(file_id=file.id).order_by(
+        FileVersion.version_number.desc()
+    ).all()
+    
+    # Format file size
+    if file.file_size > 1024*1024:
+        file_size_str = f"{file.file_size / (1024*1024):.1f} MB"
+    else:
+        file_size_str = f"{file.file_size / 1024:.1f} KB"
+    
+    # Get file type
+    file_ext = os.path.splitext(file.original_name)[1].lower()
+    if file_ext == '.md':
+        file_type = 'Markdown'
+    elif file_ext == '.txt':
+        file_type = 'Text'
+    elif file_ext == '.pdf':
+        file_type = 'PDF'
+    elif file_ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']:
+        file_type = 'Bild'
+    else:
+        file_type = 'Datei'
+    
+    # Check if file is editable
+    editable_extensions = {'.txt', '.md', '.markdown', '.json', '.xml', '.csv', '.log'}
+    is_editable = file_ext in editable_extensions
+    
+    # Check if file is viewable
+    viewable_extensions = {'.txt', '.md', '.markdown', '.json', '.xml', '.csv', '.log'}
+    is_viewable = file_ext in viewable_extensions
+    
+    return jsonify({
+        'success': True,
+        'file': {
+            'id': file.id,
+            'name': file.original_name,
+            'size': file_size_str,
+            'type': file_type,
+            'uploader': file.uploader.full_name,
+            'created_at': file.created_at.strftime('%d.%m.%Y %H:%M'),
+            'version': file.version_number,
+            'is_editable': is_editable,
+            'is_viewable': is_viewable
+        },
+        'versions': [
+            {
+                'id': version.id,
+                'version_number': version.version_number,
+                'is_current': version.version_number == file.version_number,
+                'download_url': url_for('files.download_version', version_id=version.id)
+            }
+            for version in versions
+        ],
+        'actions': {
+            'download_url': url_for('files.download_file', file_id=file.id),
+            'view_url': url_for('files.view_file', file_id=file.id) if is_viewable else None,
+            'edit_url': url_for('files.edit_file', file_id=file.id) if is_editable else None
+        }
+    })
+
+
 

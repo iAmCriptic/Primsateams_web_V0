@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, send_from_directory, abort, current_app
 from flask_login import login_required, current_user
 from app import db
 from app.models.user import User
@@ -44,19 +44,49 @@ def profile():
         if 'profile_picture' in request.files:
             file = request.files['profile_picture']
             if file and file.filename:
+                # Validate file type
                 allowed_extensions = {'png', 'jpg', 'jpeg', 'gif'}
                 if '.' in file.filename and file.filename.rsplit('.', 1)[1].lower() in allowed_extensions:
+                    # Validate file size (5MB limit)
+                    file.seek(0, 2)  # Seek to end
+                    file_size = file.tell()
+                    file.seek(0)  # Reset to beginning
+                    
+                    max_size = 5 * 1024 * 1024  # 5MB in bytes
+                    if file_size > max_size:
+                        flash(f'Profilbild ist zu groß. Maximale Größe: 5MB. Ihre Datei: {file_size / (1024*1024):.1f}MB', 'danger')
+                        return render_template('settings/profile.html', user=current_user)
+                    
+                    # Create filename with timestamp
                     filename = secure_filename(file.filename)
                     timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
                     filename = f"{current_user.id}_{timestamp}_{filename}"
-                    filepath = os.path.join('uploads', 'profile_pics', filename)
+                    
+                    # Ensure upload directory exists (absolute path)
+                    project_root = os.path.dirname(current_app.root_path)
+                    upload_dir = os.path.join(project_root, current_app.config['UPLOAD_FOLDER'], 'profile_pics')
+                    os.makedirs(upload_dir, exist_ok=True)
+                    
+                    # Save file
+                    filepath = os.path.join(upload_dir, filename)
                     file.save(filepath)
                     
-                    # Delete old profile picture
-                    if current_user.profile_picture and os.path.exists(current_user.profile_picture):
-                        os.remove(current_user.profile_picture)
+                    # Delete old profile picture if it exists
+                    if current_user.profile_picture:
+                        try:
+                            old_path = os.path.join(project_root, current_app.config['UPLOAD_FOLDER'], 'profile_pics', current_user.profile_picture)
+                            if os.path.exists(old_path):
+                                os.remove(old_path)
+                        except OSError:
+                            pass  # Ignore if file doesn't exist
                     
-                    current_user.profile_picture = filepath
+                    # Update user profile picture path
+                    # Store only the filename in DB (avoid OS-specific separators)
+                    current_user.profile_picture = filename
+                    flash('Profilbild wurde erfolgreich hochgeladen.', 'success')
+                else:
+                    flash('Ungültiger Dateityp. Nur PNG, JPG, JPEG und GIF Dateien sind erlaubt.', 'danger')
+                    return render_template('settings/profile.html', user=current_user)
         
         # Handle notification settings
         current_user.notifications_enabled = 'notifications_enabled' in request.form
@@ -68,6 +98,53 @@ def profile():
         return redirect(url_for('settings.profile'))
     
     return render_template('settings/profile.html', user=current_user)
+
+
+@settings_bp.route('/profile/remove-picture', methods=['POST'])
+@login_required
+def remove_profile_picture():
+    """Remove user's profile picture."""
+    if current_user.profile_picture:
+        try:
+            project_root = os.path.dirname(current_app.root_path)
+            upload_dir = os.path.join(project_root, current_app.config['UPLOAD_FOLDER'], 'profile_pics')
+            file_path = os.path.join(upload_dir, current_user.profile_picture)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        except OSError:
+            pass  # Ignore if file doesn't exist
+    
+    current_user.profile_picture = None
+    db.session.commit()
+    flash('Profilbild wurde entfernt.', 'success')
+    return redirect(url_for('settings.profile'))
+
+
+@settings_bp.route('/profile-picture/<path:filename>')
+@login_required
+def profile_picture(filename):
+    """Serve profile pictures."""
+    try:
+        from urllib.parse import unquote
+        # URL-decode den Dateinamen
+        filename = unquote(filename)
+        
+        project_root = os.path.dirname(current_app.root_path)
+        directory = os.path.join(project_root, current_app.config['UPLOAD_FOLDER'], 'profile_pics')
+        full_path = os.path.join(directory, filename)
+        
+        if current_app.debug:
+            print(f"[PROFILE PIC] Requested filename: {filename}")
+            print(f"[PROFILE PIC] Full path: {full_path}")
+            print(f"[PROFILE PIC] File exists: {os.path.isfile(full_path)}")
+            print(f"[PROFILE PIC] Directory contents: {os.listdir(directory) if os.path.exists(directory) else 'Directory not found'}")
+        
+        if not os.path.isfile(full_path):
+            abort(404)
+            
+        return send_from_directory(directory, filename)
+    except FileNotFoundError:
+        abort(404)
 
 
 @settings_bp.route('/notifications', methods=['GET', 'POST'])
@@ -148,11 +225,19 @@ def notifications():
 def appearance():
     """Edit appearance settings."""
     if request.method == 'POST':
+        color_type = request.form.get('color_type', 'solid')
         accent_color = request.form.get('accent_color', '#0d6efd')
+        accent_gradient = request.form.get('accent_gradient', '').strip()
         dark_mode = request.form.get('dark_mode') == 'on'
         
         current_user.accent_color = accent_color
         current_user.dark_mode = dark_mode
+        
+        # Handle gradient vs solid color
+        if color_type == 'gradient' and accent_gradient:
+            current_user.accent_gradient = accent_gradient
+        else:
+            current_user.accent_gradient = None
         
         db.session.commit()
         flash('Darstellungseinstellungen wurden aktualisiert.', 'success')
@@ -269,8 +354,12 @@ def delete_user(user_id):
     user = User.query.get_or_404(user_id)
     
     # Delete profile picture
-    if user.profile_picture and os.path.exists(user.profile_picture):
-        os.remove(user.profile_picture)
+    if user.profile_picture:
+        project_root = os.path.dirname(current_app.root_path)
+        upload_dir = os.path.join(project_root, current_app.config['UPLOAD_FOLDER'], 'profile_pics')
+        old_path = os.path.join(upload_dir, user.profile_picture)
+        if os.path.exists(old_path):
+            os.remove(old_path)
     
     db.session.delete(user)
     db.session.commit()

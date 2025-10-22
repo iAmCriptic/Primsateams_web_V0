@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_mail import Mail
@@ -163,6 +163,58 @@ def create_app(config_name='default'):
             current_app.logger.error(f"Markdown processing error: {e}")
             return text.replace('\n', '<br>')
 
+    # Error handlers
+    @app.errorhandler(400)
+    def bad_request(error):
+        return render_template('errors/400.html'), 400
+    
+    @app.errorhandler(403)
+    def forbidden(error):
+        return render_template('errors/403.html'), 403
+    
+    @app.errorhandler(404)
+    def not_found(error):
+        # Log 404 errors for debugging
+        app.logger.warning(f"404 Not Found: {request.url}")
+        return render_template('errors/404.html'), 404
+    
+    @app.errorhandler(429)
+    def too_many_requests(error):
+        return render_template('errors/429.html'), 429
+    
+    @app.errorhandler(500)
+    def internal_error(error):
+        # Log the error
+        app.logger.error(f"500 Internal Server Error: {error}", exc_info=True)
+        # Rollback any database transactions
+        db.session.rollback()
+        return render_template('errors/500.html'), 500
+    
+    @app.errorhandler(Exception)
+    def handle_exception(e):
+        # Log the error
+        app.logger.error(f"Unhandled exception: {e}", exc_info=True)
+        
+        # Rollback any database transactions
+        db.session.rollback()
+        
+        # Return 500 error page
+        return render_template('errors/500.html'), 500
+    
+    # Custom error handler for application-specific errors
+    @app.errorhandler(ValueError)
+    def handle_value_error(e):
+        app.logger.warning(f"Value error: {e}")
+        return render_template('errors/generic.html', 
+                             error_code='400',
+                             error_title='Ungültige Eingabe',
+                             error_message=str(e)), 400
+    
+    @app.errorhandler(PermissionError)
+    def handle_permission_error(e):
+        app.logger.warning(f"Permission error: {e}")
+        return render_template('errors/403.html'), 403
+
     # Register blueprints
     from app.blueprints.auth import auth_bp
     from app.blueprints.dashboard import dashboard_bp
@@ -175,6 +227,7 @@ def create_app(config_name='default'):
     from app.blueprints.canvas import canvas_bp
     from app.blueprints.settings import settings_bp
     from app.blueprints.api import api_bp
+    from app.blueprints.errors import errors_bp
     
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
@@ -187,6 +240,7 @@ def create_app(config_name='default'):
     app.register_blueprint(canvas_bp, url_prefix='/canvas')
     app.register_blueprint(settings_bp, url_prefix='/settings')
     app.register_blueprint(api_bp, url_prefix='/api')
+    app.register_blueprint(errors_bp, url_prefix='/test')
     
     # PWA Manifest Route
     @app.route('/manifest.json')

@@ -24,34 +24,105 @@
         padding: 1rem;
     }
     
+    /* Mobile Layout für Header */
+    @media (max-width: 768px) {
+        .file-viewer-header {
+            padding: 1rem 0.75rem;
+        }
+        
+        .file-viewer-header .d-flex {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 1rem;
+        }
+        
+        .file-viewer-header .btn-group {
+            width: 100%;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        
+        .file-viewer-header .btn-group .btn {
+            flex: 1;
+            min-width: 120px;
+        }
+    }
+    
     .file-viewer-content {
         padding: 2rem;
         max-width: 1200px;
         margin: 0 auto;
+        overflow-x: hidden;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
     }
     
     .markdown-content {
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         line-height: 1.6;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        max-width: 100%;
+        overflow-x: hidden;
     }
     
     .markdown-content h1, .markdown-content h2, .markdown-content h3 {
         margin-top: 2rem;
         margin-bottom: 1rem;
         font-weight: 600;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        max-width: 100%;
     }
     
-    .markdown-content h1 { font-size: 2rem; border-bottom: 2px solid var(--bs-border-color); padding-bottom: 0.5rem; }
-    .markdown-content h2 { font-size: 1.5rem; border-bottom: 1px solid var(--bs-border-color); padding-bottom: 0.25rem; }
-    .markdown-content h3 { font-size: 1.25rem; }
+    .markdown-content h1 { 
+        font-size: 2rem; 
+        border-bottom: 2px solid var(--bs-border-color); 
+        padding-bottom: 0.5rem;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        max-width: 100%;
+    }
+    .markdown-content h2 { 
+        font-size: 1.5rem; 
+        border-bottom: 1px solid var(--bs-border-color); 
+        padding-bottom: 0.25rem;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        max-width: 100%;
+    }
+    .markdown-content h3 { 
+        font-size: 1.25rem;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        max-width: 100%;
+    }
     
-    .markdown-content p { margin-bottom: 1rem; }
+    .markdown-content p { 
+        margin-bottom: 1rem;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        max-width: 100%;
+    }
     
     .markdown-content code {
         background: var(--bs-secondary-bg);
         padding: 0.2rem 0.4rem;
         border-radius: 0.25rem;
         font-family: 'Courier New', monospace;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        white-space: pre-wrap;
+        max-width: 100%;
+        display: inline-block;
     }
     
     .markdown-content pre {
@@ -60,6 +131,18 @@
         border-radius: 0.5rem;
         overflow-x: auto;
         margin-bottom: 1rem;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        white-space: pre-wrap;
+        max-width: 100%;
+    }
+    
+    .markdown-content pre code {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        max-width: 100%;
+        display: block;
     }
     
     .markdown-content blockquote {
@@ -68,6 +151,10 @@
         margin: 1rem 0;
         font-style: italic;
         color: var(--bs-secondary);
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        max-width: 100%;
     }
     
     .markdown-content table {
@@ -137,26 +224,139 @@
     .markdown-content ul, .markdown-content ol {
         margin-bottom: 1rem;
         padding-left: 2rem;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        max-width: 100%;
     }
     
     .markdown-content li {
         margin-bottom: 0.5rem;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        max-width: 100%;
     }
     
     .text-content {
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         line-height: 1.6;
         white-space: pre-wrap;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        max-width: 100%;
+        overflow-x: hidden;
     }
     
     @media (max-width: 768px) {
+        .file-viewer {
+            overflow-x: hidden;
+        }
+        
         .file-viewer-content {
             padding: 1rem;
+            overflow-x: hidden;
+            max-width: 100vw;
         }
         
         .file-viewer-header {
             padding: 0.75rem;
         }
+        
+        .markdown-content, .text-content {
+            font-size: 16px;
+            line-height: 1.5;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            hyphens: auto;
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+        
+        .markdown-content h1 {
+            font-size: 1.5rem;
+        }
+        
+        .markdown-content h2 {
+            font-size: 1.25rem;
+        }
+        
+        .markdown-content h3 {
+            font-size: 1.1rem;
+        }
+        
+        .markdown-content pre {
+            font-size: 14px;
+            padding: 0.75rem;
+        }
+        
+        .markdown-content code {
+            font-size: 14px;
+        }
+    }
+    
+    /* Akzentfarben für Outline-Buttons im File Viewer */
+    .file-viewer .btn-outline-primary {
+        border-color: var(--accent-color) !important;
+        color: var(--accent-color) !important;
+        background: transparent !important;
+    }
+    
+    .file-viewer .btn-outline-primary:hover {
+        background: var(--accent-style) !important;
+        border-color: var(--accent-color) !important;
+        color: white !important;
+    }
+    
+    .file-viewer .btn-outline-primary:focus {
+        background: var(--accent-style) !important;
+        border-color: var(--accent-color) !important;
+        color: white !important;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25) !important;
+    }
+    
+    .file-viewer .btn-outline-secondary {
+        border-color: var(--accent-color) !important;
+        color: var(--accent-color) !important;
+        background: transparent !important;
+    }
+    
+    .file-viewer .btn-outline-secondary:hover {
+        background: var(--accent-style) !important;
+        border-color: var(--accent-color) !important;
+        color: white !important;
+    }
+    
+    .file-viewer .btn-outline-secondary:focus {
+        background: var(--accent-style) !important;
+        border-color: var(--accent-color) !important;
+        color: white !important;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25) !important;
+    }
+    
+    /* Dark Mode Support für File Viewer Buttons */
+    [data-bs-theme="dark"] .file-viewer .btn-outline-primary {
+        border-color: var(--accent-color) !important;
+        color: var(--accent-color) !important;
+        background: transparent !important;
+    }
+    
+    [data-bs-theme="dark"] .file-viewer .btn-outline-primary:hover {
+        background: var(--accent-style) !important;
+        border-color: var(--accent-color) !important;
+        color: white !important;
+    }
+    
+    [data-bs-theme="dark"] .file-viewer .btn-outline-secondary {
+        border-color: var(--accent-color) !important;
+        color: var(--accent-color) !important;
+        background: transparent !important;
+    }
+    
+    [data-bs-theme="dark"] .file-viewer .btn-outline-secondary:hover {
+        background: var(--accent-style) !important;
+        border-color: var(--accent-color) !important;
+        color: white !important;
     }
 </style>
 {% endblock %}

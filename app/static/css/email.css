@@ -1,0 +1,259 @@
+/* Email Styles */
+
+/* Email Content Styles */
+.email-html-content {
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    background: var(--bs-body-bg);
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.email-html-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.25rem;
+    margin: 0.5rem 0;
+}
+
+.email-html-content table {
+    max-width: 100%;
+    overflow-x: auto;
+    display: block;
+    white-space: nowrap;
+}
+
+.email-html-content table th,
+.email-html-content table td {
+    border: 1px solid var(--bs-border-color);
+    padding: 0.5rem;
+}
+
+.email-html-content a {
+    color: var(--accent-color);
+    text-decoration: underline;
+}
+
+.email-html-content a:hover {
+    color: var(--accent-color);
+    opacity: 0.8;
+}
+
+.email-text-content {
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    background: var(--bs-body-bg);
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.email-content-header {
+    border-bottom: 1px solid var(--bs-border-color);
+    padding-bottom: 0.5rem;
+}
+
+/* Attachment Styles */
+.attachments-section .list-group-item {
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+}
+
+.attachments-section .list-group-item:first-child {
+    border-top-left-radius: 0.375rem;
+    border-top-right-radius: 0.375rem;
+}
+
+.attachments-section .list-group-item:last-child {
+    border-bottom-left-radius: 0.375rem;
+    border-bottom-right-radius: 0.375rem;
+}
+
+/* Dark mode email styles */
+[data-bs-theme="dark"] .email-html-content,
+[data-bs-theme="dark"] .email-text-content {
+    background: var(--bs-dark);
+    border-color: var(--bs-border-color);
+}
+
+[data-bs-theme="dark"] .email-html-content table th,
+[data-bs-theme="dark"] .email-html-content table td {
+    border-color: var(--bs-border-color);
+}
+
+/* Email Mobile Styles */
+.email-item {
+    padding: 0.75rem;
+}
+
+.d-md-none .email-item {
+    padding: 1rem;
+}
+
+/* Text overflow fixes - AGGRESSIVE */
+.email-sender {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
+    word-wrap: break-word !important;
+    word-break: break-word !important;
+}
+
+.email-subject {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
+    word-wrap: break-word !important;
+    word-break: break-word !important;
+}
+
+.email-preview {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
+    display: block !important;
+    word-wrap: break-word !important;
+    word-break: break-word !important;
+}
+
+/* Mobile specific text handling - FORCE NO SCROLLING */
+@media (max-width: 767.98px) {
+    .email-sender {
+        max-width: 60% !important;
+        font-size: 0.9rem !important;
+    }
+    
+    .email-subject {
+        max-width: 60% !important;
+        font-size: 0.85rem !important;
+    }
+    
+    .email-preview {
+        max-width: 60% !important;
+        font-size: 0.8rem !important;
+    }
+    
+    /* Force all text to stay within bounds */
+    * {
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+        word-wrap: break-word !important;
+        word-break: break-word !important;
+    }
+}
+
+/* Email Content Styling */
+.email-html-content,
+.email-text-content {
+    max-width: 100%;
+    overflow-x: hidden;
+    word-wrap: break-word;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.6;
+    padding: 1rem;
+    background-color: #ffffff;
+    border-radius: 0.375rem;
+    border: 1px solid #dee2e6;
+}
+
+[data-bs-theme="dark"] .email-html-content,
+[data-bs-theme="dark"] .email-text-content {
+    background-color: #2d3748;
+    border-color: #4a5568;
+    color: #e2e8f0;
+}
+
+.email-html-content img {
+    max-width: 100% !important;
+    height: auto !important;
+    display: block;
+    margin: 0.5rem 0;
+    border-radius: 4px;
+}
+
+.email-html-content table {
+    max-width: 100% !important;
+    table-layout: fixed;
+    word-wrap: break-word;
+    border-collapse: collapse;
+}
+
+.email-html-content p,
+.email-html-content div,
+.email-html-content span {
+    max-width: 100%;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    margin-bottom: 1rem;
+}
+
+/* Link styling for HTML emails */
+.email-html-content a {
+    color: var(--accent-color, #007bff);
+    text-decoration: underline;
+    word-break: break-all;
+}
+
+.email-html-content a:hover {
+    color: var(--accent-color, #0056b3);
+    text-decoration: none;
+}
+
+/* Preserve email formatting */
+.email-html-content ul,
+.email-html-content ol {
+    padding-left: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.email-html-content li {
+    margin-bottom: 0.25rem;
+}
+
+.email-html-content blockquote {
+    border-left: 4px solid #dee2e6;
+    padding-left: 1rem;
+    margin-left: 0;
+    font-style: italic;
+    color: #6c757d;
+}
+
+/* Ensure email content doesn't break layout */
+.email-html-content * {
+    max-width: 100% !important;
+    box-sizing: border-box;
+}
+
+/* Email Attachments Styling */
+.attachments-section {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+}
+
+[data-bs-theme="dark"] .attachments-section {
+    border-color: #495057;
+    background-color: #212529;
+}
+
+.attachments-section .list-group-item {
+    border: none;
+    border-bottom: 1px solid #dee2e6;
+    padding: 0.75rem 0;
+}
+
+.attachments-section .list-group-item:last-child {
+    border-bottom: none;
+}
+
+[data-bs-theme="dark"] .attachments-section .list-group-item {
+    border-bottom-color: #495057;
+    background-color: transparent;
+}

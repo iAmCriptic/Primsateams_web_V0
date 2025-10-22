@@ -4,53 +4,63 @@
 
 {% block content %}
 <!-- Desktop Header -->
-<div class="row mb-3 d-none d-md-flex">
-    <div class="col">
-        <nav aria-label="breadcrumb">
+<div class="desktop-chat-header d-none d-md-flex">
+    <div class="desktop-chat-info">
+        <nav aria-label="breadcrumb" class="mb-2">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('chat.index') }}">Chats</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('chat.index') }}"><i class="bi bi-arrow-left me-1"></i>Chats</a></li>
                 <li class="breadcrumb-item active">{{ chat.name }}</li>
             </ol>
         </nav>
-        <h2>{{ chat.name }}</h2>
-        <p class="text-muted">{{ members|length }} Mitglieder</p>
-    </div>
-</div>
-
-<!-- Mobile Header -->
-<div class="mobile-chat-header d-md-none">
-    <div class="d-flex align-items-center">
-        <a href="{{ url_for('chat.index') }}" class="btn btn-link p-2 me-2">
-            <i class="bi bi-arrow-left fs-4"></i>
-        </a>
         
-        <!-- Group Avatar -->
-        <div class="me-3">
-            {% if chat.is_main_chat %}
-                <img src="{{ url_for('static', filename='img/logo.png') }}" 
-                     class="rounded-circle" 
-                     style="width: 40px; height: 40px; object-fit: cover;" 
-                     alt="Team Logo">
-            {% else %}
-                <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center" 
-                     style="width: 40px; height: 40px;">
-                    <i class="bi bi-people-fill text-white fs-5"></i>
+        <div class="desktop-chat-title-section">
+            <div class="chat-avatar-section">
+                {% if chat.is_main_chat %}
+                    <img src="{{ url_for('static', filename='img/logo.png') }}" 
+                         class="chat-avatar" 
+                         alt="Team Logo">
+                {% else %}
+                    <div class="chat-avatar chat-avatar-group">
+                        <i class="bi bi-people-fill"></i>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="chat-title-info">
+                <h2 class="chat-title">{{ chat.name }}</h2>
+                <div class="chat-members-info">
+                    <span class="member-count">{{ members|length }} Mitglieder</span>
+                    <div class="member-avatars">
+                        {% for member in members[:4] %}
+                        <div class="member-avatar" title="{{ member.full_name }}">
+                            {% if member.profile_picture %}
+                                <img src="{{ url_for('static', filename='../' + member.profile_picture) }}" 
+                                     alt="{{ member.full_name }}" 
+                                     class="rounded-circle">
+                            {% else %}
+                                <div class="member-avatar-initial">{{ member.full_name[0].upper() }}</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                        {% if members|length > 4 %}
+                        <div class="member-avatar member-avatar-more">
+                            +{{ members|length - 4 }}
+                        </div>
+                        {% endif %}
+                    </div>
                 </div>
-            {% endif %}
+            </div>
         </div>
-        
-        <div class="flex-grow-1">
-            <h5 class="mb-0 fw-bold">{{ chat.name }}</h5>
-            <small class="text-muted">{{ members|length }} Mitglieder</small>
-        </div>
-        
+    </div>
+    
+    <div class="desktop-chat-actions">
         <div class="dropdown">
-            <button class="btn btn-link p-2" data-bs-toggle="dropdown">
-                <i class="bi bi-three-dots-vertical fs-5"></i>
+            <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="dropdown">
+                <i class="bi bi-three-dots-vertical"></i>
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
                 <li><a class="dropdown-item" href="#" onclick="toggleNotifications()">
-                    <i class="bi bi-bell" id="notification-icon"></i>
+                    <i class="bi bi-bell me-2" id="notification-icon"></i>
                     <span id="notification-text">Benachrichtigungen stummschalten</span>
                 </a></li>
                 <li><a class="dropdown-item" href="#"><i class="bi bi-info-circle me-2"></i>Chat-Info</a></li>
@@ -60,8 +70,84 @@
     </div>
 </div>
 
+<!-- Mobile Header - New Design -->
+<div class="mobile-chat-header d-md-none">
+    <a href="{{ url_for('chat.index') }}" class="btn btn-link text-white p-1 me-2">
+        <i class="bi bi-arrow-left fs-4"></i>
+    </a>
+    
+    <!-- Chat Info -->
+    <div class="d-flex align-items-center flex-grow-1">
+        {% if chat.is_main_chat %}
+            <img src="{{ url_for('static', filename='img/logo.png') }}" 
+                 class="rounded-circle me-2" 
+                 style="width: 32px; height: 32px; object-fit: cover;" 
+                 alt="Team Logo">
+        {% else %}
+            <div class="rounded-circle bg-white bg-opacity-20 d-flex align-items-center justify-content-center me-2" 
+                 style="width: 32px; height: 32px;">
+                <i class="bi bi-people-fill text-white fs-6"></i>
+            </div>
+        {% endif %}
+        
+        <div>
+            <h6 class="mb-0 fw-bold text-white">{{ chat.name }}</h6>
+            <small class="text-white-50">{{ members|length }} Mitglieder</small>
+        </div>
+    </div>
+    
+    <!-- Actions -->
+    <div class="dropdown">
+        <button class="btn btn-link text-white p-1" data-bs-toggle="dropdown">
+            <i class="bi bi-three-dots-vertical fs-5"></i>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="#" onclick="toggleNotifications()">
+                <i class="bi bi-bell me-2" id="notification-icon"></i>
+                <span id="notification-text">Benachrichtigungen stummschalten</span>
+            </a></li>
+            <li><a class="dropdown-item" href="#"><i class="bi bi-info-circle me-2"></i>Chat-Info</a></li>
+            <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>Einstellungen</a></li>
+        </ul>
+    </div>
+</div>
+
 <!-- Messages Container -->
 <div class="chat-container">
+    <div class="desktop-chat-sidebar d-none d-md-block">
+        <div class="sidebar-header">
+            <h6 class="sidebar-title">Mitglieder</h6>
+        </div>
+        <div class="sidebar-members">
+            {% for member in members %}
+            <div class="sidebar-member">
+                <div class="member-info">
+                    {% if member.profile_picture %}
+                        <img src="{{ url_for('static', filename='../' + member.profile_picture) }}" 
+                             alt="{{ member.full_name }}" 
+                             class="member-avatar-small">
+                    {% else %}
+                        <div class="member-avatar-small member-avatar-initial">{{ member.full_name[0].upper() }}</div>
+                    {% endif %}
+                    <div class="member-details">
+                        <span class="member-name">{{ member.full_name }}</span>
+                        <small class="member-role text-muted">
+                            {% if member.id == chat.created_by %}
+                                Admin
+                            {% else %}
+                                Mitglied
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+                <div class="member-status">
+                    <span class="status-indicator online"></span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
     <div class="messages-area" id="messages-container">
         {% for message in messages %}
         <div class="chat-message {% if message.sender_id == current_user.id %}own{% else %}other{% endif %}">
@@ -78,48 +164,72 @@
                     </small>
                 </div>
             {% elif message.message_type == 'image' %}
+                <div class="message-header">
+                    <strong>{% if message.sender_id == current_user.id %}Du{% else %}{{ message.sender.full_name }}{% endif %}</strong>
+                </div>
                 <img src="{{ url_for('static', filename='../' + message.media_url) }}" class="img-fluid rounded" style="max-width: 300px;">
                 {% if message.content %}
                 <p class="mt-2 mb-0">{{ message.content }}</p>
                 {% endif %}
+                <div class="message-time">
+                    <small class="text-muted" style="font-size: 0.7rem; opacity: 0.7;">
+                        {{ message.created_at | localtime('%H:%M') }}
+                    </small>
+                </div>
             {% elif message.message_type == 'video' %}
+                <div class="message-header">
+                    <strong>{% if message.sender_id == current_user.id %}Du{% else %}{{ message.sender.full_name }}{% endif %}</strong>
+                </div>
                 <video controls class="rounded" style="max-width: 300px;">
                     <source src="{{ url_for('static', filename='../' + message.media_url) }}">
                 </video>
                 {% if message.content %}
                 <p class="mt-2 mb-0">{{ message.content }}</p>
                 {% endif %}
+                <div class="message-time">
+                    <small class="text-muted" style="font-size: 0.7rem; opacity: 0.7;">
+                        {{ message.created_at | localtime('%H:%M') }}
+                    </small>
+                </div>
             {% elif message.message_type == 'voice' %}
+                <div class="message-header">
+                    <strong>{% if message.sender_id == current_user.id %}Du{% else %}{{ message.sender.full_name }}{% endif %}</strong>
+                </div>
                 <audio controls>
                     <source src="{{ url_for('static', filename='../' + message.media_url) }}">
                 </audio>
                 {% if message.content %}
                 <p class="mt-2 mb-0">{{ message.content }}</p>
                 {% endif %}
+                <div class="message-time">
+                    <small class="text-muted" style="font-size: 0.7rem; opacity: 0.7;">
+                        {{ message.created_at | localtime('%H:%M') }}
+                    </small>
+                </div>
             {% endif %}
         </div>
         {% endfor %}
     </div>
 </div>
 
-<!-- Message Input -->
+<!-- Mobile Message Input - New Design -->
 <div class="chat-input-container d-md-none">
     <form id="message-form" method="POST" action="{{ url_for('chat.send_message', chat_id=chat.id) }}" enctype="multipart/form-data">
-        <div class="input-group mobile-input-group">
-            <button class="btn btn-link p-2" type="button" onclick="document.getElementById('file-upload').click()">
-                <i class="bi bi-paperclip fs-5"></i>
+        <div class="mobile-input-group">
+            <button class="btn" type="button" onclick="document.getElementById('file-upload').click()" title="Datei anhängen">
+                <i class="bi bi-paperclip"></i>
             </button>
-            <button class="btn btn-link p-2" type="button" data-request-microphone onclick="startVoiceRecording()">
-                <i class="bi bi-mic fs-5" id="mic-icon"></i>
+            <button class="btn" type="button" data-request-microphone onclick="startVoiceRecording()" title="Sprachnachricht">
+                <i class="bi bi-mic" id="mic-icon"></i>
             </button>
             <input type="file" id="file-upload" name="file" class="d-none" accept="image/*,video/*,audio/*">
-            <input type="text" id="message-input" class="form-control border-0" name="content" 
-                   placeholder="Nachricht schreiben..." autocomplete="off" style="background: transparent;">
-            <button class="btn btn-link p-2" type="submit" id="send-button">
-                <i class="bi bi-send-fill fs-5 text-primary"></i>
+            <input type="text" id="message-input" class="form-control" name="content" 
+                   placeholder="Nachricht schreiben..." autocomplete="off">
+            <button class="btn" type="submit" id="send-button" title="Senden">
+                <i class="bi bi-send-fill"></i>
             </button>
         </div>
-        <div class="file-info" id="file-info" style="display: none;">
+        <div class="file-info mt-2" id="file-info" style="display: none;">
             <small class="text-muted" id="file-name"></small>
         </div>
     </form>
@@ -244,6 +354,9 @@
             `;
         } else if (message.message_type === 'image') {
             contentHtml = `
+                <div class="message-header">
+                    <strong>${parseInt(message.sender_id) === parseInt(currentUserId) ? 'Du' : escapeHtml(message.sender)}</strong>
+                </div>
                 <img src="/static/../${message.media_url}" class="img-fluid rounded" style="max-width: 300px;">
                 ${message.content ? `<p class="mt-2 mb-0">${escapeHtml(message.content)}</p>` : ''}
                 <div class="message-time">
@@ -254,6 +367,9 @@
             `;
         } else if (message.message_type === 'video') {
             contentHtml = `
+                <div class="message-header">
+                    <strong>${parseInt(message.sender_id) === parseInt(currentUserId) ? 'Du' : escapeHtml(message.sender)}</strong>
+                </div>
                 <video controls class="rounded" style="max-width: 300px;"><source src="/static/../${message.media_url}"></video>
                 ${message.content ? `<p class="mt-2 mb-0">${escapeHtml(message.content)}</p>` : ''}
                 <div class="message-time">
@@ -264,6 +380,9 @@
             `;
         } else if (message.message_type === 'voice') {
             contentHtml = `
+                <div class="message-header">
+                    <strong>${parseInt(message.sender_id) === parseInt(currentUserId) ? 'Du' : escapeHtml(message.sender)}</strong>
+                </div>
                 <audio controls><source src="/static/../${message.media_url}"></audio>
                 ${message.content ? `<p class="mt-2 mb-0">${escapeHtml(message.content)}</p>` : ''}
                 <div class="message-time">

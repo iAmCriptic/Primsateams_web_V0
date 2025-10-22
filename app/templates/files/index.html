@@ -165,17 +165,10 @@
                                 <i class="bi bi-pencil"></i> Bearbeiten
                             </a></li>
                             {% endif %}
-                            {% if file.versions %}
                             <li><hr class="dropdown-divider"></li>
-                            <li><h6 class="dropdown-header">Versionen</h6></li>
-                            {% for version in file.versions %}
-                            <li>
-                                <a class="dropdown-item" href="{{ url_for('files.download_version', version_id=version.id) }}">
-                                    <i class="bi bi-clock-history"></i> Version {{ version.version_number }}
-                                </a>
-                            </li>
-                            {% endfor %}
-                            {% endif %}
+                            <li><a class="dropdown-item" href="#" onclick="openFileDetails({{ file.id }})">
+                                <i class="bi bi-info-circle"></i> Details & Versionen
+                            </a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <form method="POST" action="{{ url_for('files.delete_file', file_id=file.id) }}" class="d-inline">
@@ -248,33 +241,6 @@
                     <i class="bi bi-three-dots-vertical"></i>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end">
-                    <li><h6 class="dropdown-header">Details</h6></li>
-                    <li><span class="dropdown-item-text">
-                        <strong>Größe:</strong> 
-                        {% if file.file_size > 1024*1024 %}
-                            {{ (file.file_size / (1024*1024))|round(1) }} MB
-                        {% else %}
-                            {{ (file.file_size / 1024)|round(1) }} KB
-                        {% endif %}
-                    </span></li>
-                    <li><span class="dropdown-item-text">
-                        <strong>Hochgeladen von:</strong> {{ file.uploader.full_name }}
-                    </span></li>
-                    <li><span class="dropdown-item-text">
-                        <strong>Datum:</strong> {{ file.created_at.strftime('%d.%m.%Y %H:%M') }}
-                    </span></li>
-                    {% if file.versions %}
-                    <li><hr class="dropdown-divider"></li>
-                    <li><h6 class="dropdown-header">Versionen</h6></li>
-                    {% for version in file.versions %}
-                    <li>
-                        <a class="dropdown-item" href="{{ url_for('files.download_version', version_id=version.id) }}">
-                            <i class="bi bi-clock-history"></i> Version {{ version.version_number }}
-                        </a>
-                    </li>
-                    {% endfor %}
-                    {% endif %}
-                    <li><hr class="dropdown-divider"></li>
                     <li><a class="dropdown-item" href="{{ url_for('files.download_file', file_id=file.id) }}">
                         <i class="bi bi-download"></i> Herunterladen
                     </a></li>
@@ -286,6 +252,10 @@
                         <i class="bi bi-pencil"></i> Bearbeiten
                     </a></li>
                     {% endif %}
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="#" onclick="openFileDetails({{ file.id }})">
+                        <i class="bi bi-info-circle"></i> Details & Versionen
+                    </a></li>
                     <li><hr class="dropdown-divider"></li>
                     <li>
                         <form method="POST" action="{{ url_for('files.delete_file', file_id=file.id) }}" class="d-inline">
@@ -451,6 +421,20 @@
     </div>
 </div>
 
+<!-- Side Menu für Datei-Details -->
+<div class="side-menu-backdrop" id="sideMenuBackdrop" onclick="closeFileDetails()"></div>
+<div class="side-menu" id="sideMenu">
+    <div class="side-menu-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0" id="sideMenuTitle">Datei-Details</h5>
+            <button type="button" class="btn-close" onclick="closeFileDetails()"></button>
+        </div>
+    </div>
+    <div class="side-menu-content" id="sideMenuContent">
+        <!-- Inhalt wird dynamisch geladen -->
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // View mode toggle
@@ -537,7 +521,195 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 200);
         });
     }
+    
+    // Mobile Optimierungen
+    if (window.innerWidth <= 768) {
+        // Größere Touch-Targets für mobile Geräte
+        const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
+        dropdownToggles.forEach(toggle => {
+            toggle.style.minWidth = '44px';
+            toggle.style.minHeight = '44px';
+            toggle.style.padding = '8px 12px';
+        });
+        
+        // Bessere Scroll-Performance auf mobilen Geräten
+        document.body.style.webkitOverflowScrolling = 'touch';
+        
+        // Verhindere Zoom bei Doppel-Tap auf Buttons
+        const buttons = document.querySelectorAll('button, .btn');
+        buttons.forEach(button => {
+            button.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+            });
+        });
+        
+        // Dropdown Fix für mobile
+        const dropdowns = document.querySelectorAll('.dropdown');
+        dropdowns.forEach(dropdown => {
+            const toggle = dropdown.querySelector('.dropdown-toggle');
+            const menu = dropdown.querySelector('.dropdown-menu');
+            
+            if (toggle && menu) {
+                // Verhindere Bootstrap's Standard-Verhalten
+                toggle.setAttribute('data-bs-toggle', '');
+                toggle.setAttribute('data-bs-auto-close', 'false');
+                
+                toggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // Kleine Verzögerung um Event-Konflikte zu vermeiden
+                    setTimeout(() => {
+                        // Schließe alle anderen Dropdowns
+                        document.querySelectorAll('.dropdown-menu.show').forEach(openMenu => {
+                            if (openMenu !== menu) {
+                                openMenu.classList.remove('show');
+                            }
+                        });
+                        
+                        // Toggle aktuelles Dropdown
+                        menu.classList.toggle('show');
+                    }, 10);
+                });
+                
+                // Verhindere dass das Dropdown-Menü selbst das Schließen auslöst
+                menu.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+            }
+        });
+        
+        // Schließe alle Dropdowns bei Klick außerhalb (nur einmal registriert)
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.dropdown')) {
+                document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+                    menu.classList.remove('show');
+                });
+            }
+        });
+    }
 });
+
+// Side Menu Funktionen
+function openFileDetails(fileId) {
+    const sideMenu = document.getElementById('sideMenu');
+    const backdrop = document.getElementById('sideMenuBackdrop');
+    const content = document.getElementById('sideMenuContent');
+    const title = document.getElementById('sideMenuTitle');
+    
+    // Zeige Loading-Status
+    content.innerHTML = `
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Lade...</span>
+            </div>
+            <p class="mt-2 text-muted">Lade Datei-Details...</p>
+        </div>
+    `;
+    
+    // Zeige das Side-Menü
+    sideMenu.classList.add('show');
+    backdrop.classList.add('show');
+    document.body.style.overflow = 'hidden';
+    
+    // Lade echte Datei-Details
+    fetch(`/files/api/file-details/${fileId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const file = data.file;
+                const versions = data.versions;
+                const actions = data.actions;
+                
+                // Erstelle HTML für Datei-Informationen
+                content.innerHTML = `
+                    <div class="mb-4">
+                        <h6>Datei-Informationen</h6>
+                        <div class="card">
+                            <div class="card-body">
+                                <p><strong>Name:</strong> ${file.name}</p>
+                                <p><strong>Größe:</strong> ${file.size}</p>
+                                <p><strong>Typ:</strong> ${file.type}</p>
+                                <p><strong>Hochgeladen von:</strong> ${file.uploader}</p>
+                                <p><strong>Erstellt:</strong> ${file.created_at}</p>
+                                <p><strong>Version:</strong> ${file.version}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6>Versionen</h6>
+                        <div id="versionsList">
+                            ${versions.length > 0 ? `
+                                <div class="list-group">
+                                    ${versions.map(version => `
+                                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <i class="bi bi-clock-history me-2"></i>
+                                                Version ${version.version_number}${version.is_current ? ' (aktuell)' : ''}
+                                            </div>
+                                            <a href="${version.download_url}" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-download"></i> Download
+                                            </a>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : `
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle"></i>
+                                    Keine Versionen verfügbar
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6>Aktionen</h6>
+                        <div class="d-grid gap-2">
+                            <a href="${actions.download_url}" class="btn btn-outline-primary">
+                                <i class="bi bi-download"></i> Herunterladen
+                            </a>
+                            ${actions.view_url ? `
+                                <a href="${actions.view_url}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-eye"></i> Anzeigen
+                                </a>
+                            ` : ''}
+                            ${actions.edit_url ? `
+                                <a href="${actions.edit_url}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-pencil"></i> Bearbeiten
+                                </a>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            } else {
+                content.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Fehler beim Laden der Datei-Details
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading file details:', error);
+            content.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Fehler beim Laden der Datei-Details: ${error.message}
+                </div>
+            `;
+        });
+}
+
+function closeFileDetails() {
+    const sideMenu = document.getElementById('sideMenu');
+    const backdrop = document.getElementById('sideMenuBackdrop');
+    
+    sideMenu.classList.remove('show');
+    backdrop.classList.remove('show');
+    document.body.style.overflow = '';
+}
 </script>
 {% endblock %}
 

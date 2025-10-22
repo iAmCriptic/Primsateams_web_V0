@@ -1,0 +1,159 @@
+/* Error Pages Styling */
+.error-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 2rem 1rem;
+}
+
+[data-bs-theme="dark"] .error-page {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d3748 100%);
+}
+
+.error-container {
+    max-width: 600px;
+    width: 100%;
+    text-align: center;
+    background: var(--bs-body-bg);
+    border-radius: 1rem;
+    padding: 3rem 2rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--bs-border-color);
+}
+
+[data-bs-theme="dark"] .error-container {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    border-color: #495057;
+}
+
+.error-icon {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+    display: block;
+}
+
+.error-code {
+    font-size: 4rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    line-height: 1;
+}
+
+.error-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--bs-body-color);
+}
+
+.error-description {
+    font-size: 1.1rem;
+    color: var(--bs-secondary);
+    margin-bottom: 2rem;
+    line-height: 1.6;
+}
+
+.error-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+}
+
+@media (min-width: 576px) {
+    .error-actions {
+        flex-direction: row;
+        justify-content: center;
+    }
+}
+
+.error-btn {
+    min-width: 200px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.error-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.error-help {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--bs-border-color);
+}
+
+.error-help small {
+    color: var(--bs-secondary);
+    font-size: 0.9rem;
+}
+
+/* Mobile optimizations for error pages */
+@media (max-width: 767.98px) {
+    .error-page {
+        padding: 1rem;
+        min-height: calc(100vh - 60px); /* Account for mobile nav */
+    }
+    
+    .error-container {
+        padding: 2rem 1.5rem;
+        margin: 0;
+    }
+    
+    .error-code {
+        font-size: 3rem;
+    }
+    
+    .error-icon {
+        font-size: 3rem;
+    }
+    
+    .error-title {
+        font-size: 1.25rem;
+    }
+    
+    .error-description {
+        font-size: 1rem;
+    }
+    
+    .error-btn {
+        width: 100%;
+        min-width: auto;
+    }
+}
+
+/* Specific error page animations */
+.error-page .error-icon {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Error page loading states */
+.error-page.loading .error-icon {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}

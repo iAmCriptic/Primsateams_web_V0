@@ -2,36 +2,285 @@
 
 {% block title %}{{ file.name }} bearbeiten - Dateien{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/files.css') }}">
+{% endblock %}
+
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('files.index') }}">Dateien</a></li>
-                <li class="breadcrumb-item"><a href="{{ url_for('files.browse_folder', folder_id=file.folder_id) if file.folder_id else url_for('files.index') }}">{{ file.folder.name if file.folder else 'Root' }}</a></li>
-                <li class="breadcrumb-item active">{{ file.name }}</li>
-            </ol>
-        </nav>
+<div class="markdown-editor-fullscreen">
+    <div class="markdown-editor-toolbar">
+        <button type="button" class="btn btn-outline-secondary" onclick="goBack()" id="backBtn">
+            <i class="bi bi-arrow-left"></i> Zurück
+        </button>
+        <button type="button" class="btn btn-accent" onclick="saveFile()" id="saveBtn">
+            <i class="bi bi-check-lg"></i> Speichern
+        </button>
         
-        <div class="card">
-            <div class="card-header">
-                <h4 class="mb-0">{{ file.name }} bearbeiten</h4>
+        <div class="vr"></div>
+        
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-secondary" onclick="formatText('bold')" title="Fett">
+                <i class="bi bi-type-bold"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" onclick="formatText('italic')" title="Kursiv">
+                <i class="bi bi-type-italic"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" onclick="formatText('strikethrough')" title="Durchgestrichen">
+                <i class="bi bi-type-strikethrough"></i>
+            </button>
+        </div>
+        
+        <div class="vr"></div>
+        
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-secondary" onclick="formatText('heading1')" title="Überschrift 1">
+                <i class="bi bi-type-h1"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" onclick="formatText('heading2')" title="Überschrift 2">
+                <i class="bi bi-type-h2"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" onclick="formatText('heading3')" title="Überschrift 3">
+                <i class="bi bi-type-h3"></i>
+            </button>
+        </div>
+        
+        <div class="vr"></div>
+        
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-secondary" onclick="formatText('link')" title="Link">
+                <i class="bi bi-link-45deg"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" onclick="formatText('code')" title="Code">
+                <i class="bi bi-code"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" onclick="formatText('list')" title="Liste">
+                <i class="bi bi-list-ul"></i>
+            </button>
+        </div>
+        
+        <div class="ms-auto">
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-outline-secondary" onclick="togglePreview()" id="previewBtn">
+                    <i class="bi bi-eye"></i> Vorschau
+                </button>
             </div>
-            <div class="card-body">
-                <form method="POST">
-                    <div class="mb-3">
-                        <textarea class="form-control font-monospace" name="content" rows="20" style="font-size: 0.875rem;">{{ content }}</textarea>
-                    </div>
-                    
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-accent">Speichern</button>
-                        <a href="{{ url_for('files.browse_folder', folder_id=file.folder_id) if file.folder_id else url_for('files.index') }}" class="btn btn-outline-secondary">Abbrechen</a>
-                    </div>
+        </div>
+    </div>
+    
+    <div class="markdown-editor-content">
+        <div class="row g-0 h-100">
+            <div class="col-12" id="editorColumn">
+                <form method="POST" id="editForm">
+                    <textarea 
+                        class="markdown-editor-textarea" 
+                        name="content" 
+                        id="markdownEditor"
+                        placeholder="Beginnen Sie mit dem Schreiben...">{{ content }}</textarea>
                 </form>
+            </div>
+            <div class="col-12" id="previewColumn" style="display: none;">
+                <div class="markdown-editor-preview" id="markdownPreview">
+                    <!-- Vorschau wird hier angezeigt -->
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+let isPreviewMode = false;
+let hasUnsavedChanges = false;
+
+document.addEventListener('DOMContentLoaded', function() {
+    const editor = document.getElementById('markdownEditor');
+    const form = document.getElementById('editForm');
+    
+    // Auto-save functionality
+    let autoSaveTimeout;
+    editor.addEventListener('input', function() {
+        hasUnsavedChanges = true;
+        
+        // Auto-save nach 30 Sekunden Inaktivität
+        clearTimeout(autoSaveTimeout);
+        autoSaveTimeout = setTimeout(() => {
+            if (hasUnsavedChanges) {
+                saveFile(true); // Silent save
+            }
+        }, 30000);
+    });
+    
+    // Warnung vor Verlassen bei ungespeicherten Änderungen
+    window.addEventListener('beforeunload', function(e) {
+        if (hasUnsavedChanges) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
+    
+    // Keyboard shortcuts
+    editor.addEventListener('keydown', function(e) {
+        // Ctrl+S oder Cmd+S zum Speichern
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            saveFile();
+        }
+        
+        // Ctrl+Z oder Cmd+Z für Undo (Browser default)
+        // Ctrl+Y oder Cmd+Y für Redo (Browser default)
+    });
+    
+    // Focus auf Editor
+    editor.focus();
+});
+
+function goBack() {
+    if (hasUnsavedChanges) {
+        if (confirm('Sie haben ungespeicherte Änderungen. Möchten Sie wirklich zurückgehen?')) {
+            window.location.href = '{{ url_for("files.browse_folder", folder_id=file.folder_id) if file.folder_id else url_for("files.index") }}';
+        }
+    } else {
+        window.location.href = '{{ url_for("files.browse_folder", folder_id=file.folder_id) if file.folder_id else url_for("files.index") }}';
+    }
+}
+
+function saveFile(silent = false) {
+    const form = document.getElementById('editForm');
+    const saveBtn = document.getElementById('saveBtn');
+    
+    if (!silent) {
+        saveBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Speichere...';
+        saveBtn.disabled = true;
+    }
+    
+    // Submit form
+    fetch(form.action, {
+        method: 'POST',
+        body: new FormData(form)
+    })
+    .then(response => {
+        if (response.ok) {
+            hasUnsavedChanges = false;
+            if (!silent) {
+                saveBtn.innerHTML = '<i class="bi bi-check-lg"></i> Gespeichert!';
+                setTimeout(() => {
+                    saveBtn.innerHTML = '<i class="bi bi-check-lg"></i> Speichern';
+                }, 2000);
+            }
+        } else {
+            throw new Error('Fehler beim Speichern');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        if (!silent) {
+            alert('Fehler beim Speichern der Datei. Bitte versuchen Sie es erneut.');
+        }
+    })
+    .finally(() => {
+        if (!silent) {
+            saveBtn.disabled = false;
+        }
+    });
+}
+
+function formatText(type) {
+    const editor = document.getElementById('markdownEditor');
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
+    const selectedText = editor.value.substring(start, end);
+    
+    let replacement = '';
+    
+    switch(type) {
+        case 'bold':
+            replacement = `**${selectedText || 'Text'}**`;
+            break;
+        case 'italic':
+            replacement = `*${selectedText || 'Text'}*`;
+            break;
+        case 'strikethrough':
+            replacement = `~~${selectedText || 'Text'}~~`;
+            break;
+        case 'heading1':
+            replacement = `# ${selectedText || 'Überschrift'}`;
+            break;
+        case 'heading2':
+            replacement = `## ${selectedText || 'Überschrift'}`;
+            break;
+        case 'heading3':
+            replacement = `### ${selectedText || 'Überschrift'}`;
+            break;
+        case 'link':
+            replacement = `[${selectedText || 'Link-Text'}](URL)`;
+            break;
+        case 'code':
+            replacement = `\`${selectedText || 'Code'}\``;
+            break;
+        case 'list':
+            replacement = `- ${selectedText || 'Listenpunkt'}`;
+            break;
+    }
+    
+    // Ersetze den ausgewählten Text
+    editor.value = editor.value.substring(0, start) + replacement + editor.value.substring(end);
+    
+    // Setze Cursor nach dem eingefügten Text
+    const newCursorPos = start + replacement.length;
+    editor.setSelectionRange(newCursorPos, newCursorPos);
+    editor.focus();
+    
+    // Trigger input event für Auto-save
+    editor.dispatchEvent(new Event('input'));
+}
+
+function togglePreview() {
+    const editorColumn = document.getElementById('editorColumn');
+    const previewColumn = document.getElementById('previewColumn');
+    const previewBtn = document.getElementById('previewBtn');
+    
+    if (isPreviewMode) {
+        // Zurück zum Editor
+        editorColumn.style.display = 'block';
+        previewColumn.style.display = 'none';
+        previewBtn.innerHTML = '<i class="bi bi-eye"></i> Vorschau';
+        isPreviewMode = false;
+    } else {
+        // Zeige Vorschau
+        updatePreview();
+        editorColumn.style.display = 'none';
+        previewColumn.style.display = 'block';
+        previewBtn.innerHTML = '<i class="bi bi-pencil"></i> Bearbeiten';
+        isPreviewMode = true;
+    }
+}
+
+function updatePreview() {
+    const editor = document.getElementById('markdownEditor');
+    const preview = document.getElementById('markdownPreview');
+    
+    // Einfache Markdown-zu-HTML Konvertierung
+    let html = editor.value
+        .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+        .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+        .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+        .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/gim, '<em>$1</em>')
+        .replace(/~~(.*?)~~/gim, '<del>$1</del>')
+        .replace(/`(.*?)`/gim, '<code>$1</code>')
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/gim, '<a href="$2">$1</a>')
+        .replace(/^- (.*$)/gim, '<li>$1</li>')
+        .replace(/\n/gim, '<br>');
+    
+    preview.innerHTML = html;
+}
+
+// Escape key zum Schließen
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
 {% endblock %}
 
 
