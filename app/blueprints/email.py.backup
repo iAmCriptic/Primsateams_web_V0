@@ -200,15 +200,6 @@ def sync_emails_from_folder(folder_name):
                     pass
                 if status != 'OK':
                     logging.error(f"IMAP folder selection failed for '{folder_name}': {messages}")
-                    # Entferne lokal nicht vorhandenen Ordner, um künftige Fehlversuche zu vermeiden
-                    try:
-                        db_folder = EmailFolder.query.filter_by(name=folder_name).first()
-                        if db_folder:
-                            db.session.delete(db_folder)
-                            db.session.commit()
-                            logging.info(f"Removed non-existent folder '{folder_name}' from local database")
-                    except Exception as _cleanup_err:
-                        db.session.rollback()
                     return False, f"Ordner '{folder_name}' konnte nicht geöffnet werden: {messages[0].decode() if messages else 'Unbekannter Fehler'}"
         except Exception as e:
             logging.error(f"Exception while selecting folder '{folder_name}': {e}")
@@ -262,7 +253,7 @@ def sync_emails_from_folder(folder_name):
                         email_obj.last_imap_sync = datetime.utcnow()
                         stats['deleted_emails'] += 1
         
-        max_emails = 100 if folder_name not in ['INBOX', 'Sent', 'Drafts', 'Trash', 'Spam', 'Archive'] else 30
+        max_emails = 200 if folder_name not in ['INBOX', 'Sent', 'Drafts', 'Trash', 'Spam', 'Archive'] else 50
         emails_to_process = email_ids[-max_emails:] if len(email_ids) > max_emails else email_ids
         logging.info(f"Processing {len(emails_to_process)} emails from folder '{folder_name}' (max: {max_emails})")
         
@@ -361,14 +352,16 @@ def sync_emails_from_folder(folder_name):
                         else:
                             raise update_error
                 
-                # Prüfe global nach message_id und bewege ggf. in den aktuellen Ordner
+                # Check if email with same message_id already exists anywhere
+                # This prevents duplicate entry errors (message_id is unique in DB)
                 existing_by_message_id = EmailMessage.query.filter_by(message_id=message_id).first()
                 if existing_by_message_id:
+                    # If it's in the same folder, just update sync timestamp
                     if existing_by_message_id.folder == folder_name:
                         try:
                             existing_by_message_id.last_imap_sync = datetime.utcnow()
                             existing_by_message_id.is_deleted_imap = False
-                            existing_by_message_id.imap_uid = imap_uid_str
+                            existing_by_message_id.imap_uid = imap_uid_str  # Update UID in case it changed
                             stats['updated_emails'] += 1
                             db.session.commit()
                             continue
@@ -390,33 +383,44 @@ def sync_emails_from_folder(folder_name):
                             else:
                                 raise update_error
                     else:
-                        # Mail wurde verschoben – ordne sie diesem Ordner zu
-                        try:
-                            existing_by_message_id.folder = folder_name
-                            existing_by_message_id.imap_uid = imap_uid_str
-                            existing_by_message_id.last_imap_sync = datetime.utcnow()
-                            existing_by_message_id.is_deleted_imap = False
-                            stats['moved_emails'] += 1
-                            db.session.commit()
-                            continue
-                        except Exception as move_error:
-                            if "MySQL server has gone away" in str(move_error) or "ConnectionResetError" in str(move_error):
-                                logging.warning("Database connection lost during move, attempting to reconnect...")
-                                db.session.rollback()
-                                db.session.close()
-                                db.session = db.create_scoped_session()
-                                existing_by_message_id = EmailMessage.query.filter_by(message_id=message_id).first()
-                                if existing_by_message_id:
-                                    existing_by_message_id.folder = folder_name
-                                    existing_by_message_id.imap_uid = imap_uid_str
-                                    existing_by_message_id.last_imap_sync = datetime.utcnow()
-                                    existing_by_message_id.is_deleted_imap = False
-                                    stats['moved_emails'] += 1
-                                    db.session.commit()
-                                    logging.info("Database reconnection successful for move")
+                        # Email exists in different folder - update folder if it was moved
+                        # But only if it doesn't exist in this folder yet
+                        existing_in_this_folder = EmailMessage.query.filter_by(
+                            message_id=message_id,
+                            folder=folder_name
+                        ).first()
+                        if not existing_in_this_folder:
+                            # Email was moved to this folder
+                            try:
+                                existing_by_message_id.folder = folder_name
+                                existing_by_message_id.imap_uid = imap_uid_str
+                                existing_by_message_id.last_imap_sync = datetime.utcnow()
+                                existing_by_message_id.is_deleted_imap = False
+                                stats['moved_emails'] += 1
+                                db.session.commit()
                                 continue
-                            else:
-                                raise move_error
+                            except Exception as update_error:
+                                if "MySQL server has gone away" in str(update_error) or "ConnectionResetError" in str(update_error):
+                                    logging.warning("Database connection lost during move, attempting to reconnect...")
+                                    db.session.rollback()
+                                    db.session.close()
+                                    db.session = db.create_scoped_session()
+                                    existing_by_message_id = EmailMessage.query.filter_by(message_id=message_id).first()
+                                    if existing_by_message_id and existing_by_message_id.folder != folder_name:
+                                        existing_by_message_id.folder = folder_name
+                                        existing_by_message_id.imap_uid = imap_uid_str
+                                        existing_by_message_id.last_imap_sync = datetime.utcnow()
+                                        existing_by_message_id.is_deleted_imap = False
+                                        stats['moved_emails'] += 1
+                                        db.session.commit()
+                                        logging.info("Database reconnection successful for move")
+                                    continue
+                                else:
+                                    raise update_error
+                        else:
+                            # Duplicate exists - skip
+                            stats['skipped_emails'] += 1
+                            continue
                 
                 # If we reach here, the email doesn't exist in the database yet
                 
@@ -788,34 +792,33 @@ def sync_emails_from_server():
     if not folder_success:
         logging.warning(f"Ordner-Sync-Warnung: {folder_message}")
     
-    folder_rows = db.session.query(EmailFolder.name, EmailFolder.display_name).all()
-    if not folder_rows:
-        folder_rows = [('INBOX', 'Posteingang')]
+    folders = EmailFolder.query.all()
+    if not folders:
+        folders = [EmailFolder(name='INBOX', display_name='Posteingang', folder_type='standard', is_system=True)]
     
-    logging.info(f"Syncing emails from {len(folder_rows)} folders: {[name for (name, _) in folder_rows]}")
+    logging.info(f"Syncing emails from {len(folders)} folders: {[f.name for f in folders]}")
     
     total_synced = 0
     folder_results = []
     
-    for (folder_name, display_name) in folder_rows:
-        logging.info(f"Syncing folder: '{folder_name}' ({display_name})")
-        success, message = sync_emails_from_folder(folder_name)
+    for folder in folders:
+        logging.info(f"Syncing folder: '{folder.name}' ({folder.display_name})")
+        success, message = sync_emails_from_folder(folder.name)
         if success:
             import re
             match = re.search(r'(\d+) E-Mails', message)
             if match:
                 count = int(match.group(1))
                 total_synced += count
-            folder_results.append(f"{display_name}: {message}")
+            folder_results.append(f"{folder.display_name}: {message}")
         else:
-            logging.warning(f"Failed to sync folder '{folder_name}': {message}")
-            folder_results.append(f"{display_name}: Fehler - {message}")
+            logging.warning(f"Failed to sync folder '{folder.name}': {message}")
+            folder_results.append(f"{folder.display_name}: Fehler - {message}")
     
     if total_synced > 0:
-        return True, f"{total_synced} E-Mails aus {len(folder_rows)} Ordnern synchronisiert"
+        return True, f"{total_synced} E-Mails aus {len(folders)} Ordnern synchronisiert"
     else:
-        # Kein Fehlerzustand – nur keine Änderungen
-        return True, "Keine E-Mails synchronisiert"
+        return False, "Keine E-Mails synchronisiert"
 
 
 def check_email_permission(permission_type='read'):

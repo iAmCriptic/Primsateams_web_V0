@@ -368,6 +368,45 @@ def delete_user(user_id):
     return redirect(url_for('settings.admin_users'))
 
 
+@settings_bp.route('/admin/email-footer', methods=['GET', 'POST'])
+@login_required
+def admin_email_footer():
+    """Configure email footer template (admin only)."""
+    if not current_user.is_admin:
+        flash('Nur Administratoren haben Zugriff auf diese Seite.', 'danger')
+        return redirect(url_for('settings.index'))
+    
+    if request.method == 'POST':
+        footer_template = request.form.get('footer_template', '').strip()
+        
+        # Save or update footer template
+        existing = SystemSettings.query.filter_by(key='email_footer_template').first()
+        if existing:
+            existing.value = footer_template
+        else:
+            new_setting = SystemSettings(key='email_footer_template', value=footer_template)
+            db.session.add(new_setting)
+        
+        db.session.commit()
+        flash('E-Mail-Footer wurde erfolgreich gespeichert.', 'success')
+        return redirect(url_for('settings.admin_email_footer'))
+    
+    # Get current footer template
+    footer_template = SystemSettings.query.filter_by(key='email_footer_template').first()
+    current_template = footer_template.value if footer_template else ''
+    
+    # Set default template if none exists
+    if not current_template:
+        current_template = """Mit freundlichen Grüßen
+Ihr Team
+
+---
+Gesendet von <user> (<email>)
+<app_name> - <date> um <time>"""
+    
+    return render_template('settings/admin_email_footer.html', footer_template=current_template)
+
+
 @settings_bp.route('/admin/email-permissions')
 @login_required
 def admin_email_permissions():

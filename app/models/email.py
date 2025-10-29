@@ -55,6 +55,7 @@ class EmailAttachment(db.Model):
     file_path = db.Column(db.String(500), nullable=True)  # Path to file on disk
     is_inline = db.Column(db.Boolean, default=False)  # True if inline image
     content_id = db.Column(db.String(255), nullable=True)  # Content-ID for inline images
+    is_large_file = db.Column(db.Boolean, default=False)  # Flag for files stored on disk
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     

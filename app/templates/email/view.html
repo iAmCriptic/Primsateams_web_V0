@@ -11,16 +11,29 @@
 </nav>
 
 <div class="card">
-    <div class="card-header">
-        <h4 class="mb-2">{{ email.subject|decode_email_header }}</h4>
-        <div class="text-muted small">
+    <div class="card-header d-flex justify-content-between align-items-start gap-2">
+        <h4 class="mb-0">{{ email.subject|decode_email_header }}</h4>
+        <div class="d-flex align-items-center gap-2">
+            <div class="btn-group" role="group">
+                <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('email.reply', email_id=email.id) }}" title="Antworten">
+                    <i class="bi bi-reply"></i>
+                </a>
+                <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('email.reply_all', email_id=email.id) }}" title="Allen antworten">
+                    <i class="bi bi-reply-all"></i>
+                </a>
+                <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('email.forward', email_id=email.id) }}" title="Weiterleiten">
+                    <i class="bi bi-forward"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="px-3 pt-2 text-muted small">
             <strong>Von:</strong> {{ email.sender|decode_email_header }}<br>
             <strong>An:</strong> {{ email.recipients|decode_email_header }}<br>
             {% if email.cc %}
             <strong>CC:</strong> {{ email.cc|decode_email_header }}<br>
             {% endif %}
             <strong>Datum:</strong> {{ email.received_at.strftime('%d.%m.%Y %H:%M') if email.received_at else email.sent_at.strftime('%d.%m.%Y %H:%M') }}
-        </div>
     </div>
     <div class="card-body">
         {% if email.attachments %}

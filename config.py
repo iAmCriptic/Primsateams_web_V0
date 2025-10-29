@@ -21,8 +21,8 @@ class Config:
         'max_overflow': 20,
         'connect_args': {
             'connect_timeout': 10,
-            'read_timeout': 30,
-            'write_timeout': 30,
+            'read_timeout': 300,  # 5 minutes for large attachments
+            'write_timeout': 300,  # 5 minutes for large attachments
         }
     }
     
@@ -39,6 +39,7 @@ class Config:
     MAIL_USE_SSL = os.environ.get('MAIL_USE_SSL', 'False').lower() == 'true'
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
+    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER') or os.environ.get('MAIL_USERNAME')
     
     # IMAP
     IMAP_SERVER = os.environ.get('IMAP_SERVER')

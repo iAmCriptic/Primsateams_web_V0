@@ -42,12 +42,13 @@ def index():
     # Sort by newest first and limit to 5
     unread_messages = sorted(unread_messages, key=lambda x: x.created_at, reverse=True)[:5]
     
-    # Get recent emails
+    # Get recent emails from INBOX only
     recent_emails = []
     email_perm = EmailPermission.query.filter_by(user_id=current_user.id).first()
     if email_perm and email_perm.can_read:
         recent_emails = EmailMessage.query.filter_by(
-            is_sent=False
+            is_sent=False,
+            folder='INBOX'
         ).order_by(EmailMessage.received_at.desc()).limit(5).all()
     
     # Prüfe ob Setup gerade abgeschlossen wurde

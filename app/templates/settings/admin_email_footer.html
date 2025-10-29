@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}E-Mail-Footer konfigurieren - Einstellungen{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('settings.index') }}">Einstellungen</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('settings.admin') }}">Administration</a></li>
+        <li class="breadcrumb-item active">E-Mail-Footer</li>
+    </ol>
+</nav>
+
+<div class="card">
+    <div class="card-header">
+        <h4 class="mb-0">
+            <i class="bi bi-envelope-paper"></i> E-Mail-Footer konfigurieren
+        </h4>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i>
+            <strong>Verfügbare Variablen:</strong>
+            <ul class="mb-0 mt-2">
+                <li><code>&lt;user&gt;</code> - Vollständiger Name des Benutzers</li>
+                <li><code>&lt;email&gt;</code> - E-Mail-Adresse des Benutzers</li>
+                <li><code>&lt;app_name&gt;</code> - Name der Anwendung</li>
+                <li><code>&lt;date&gt;</code> - Aktuelles Datum (DD.MM.YYYY)</li>
+                <li><code>&lt;time&gt;</code> - Aktuelle Uhrzeit (HH:MM)</li>
+            </ul>
+        </div>
+
+        <form method="POST">
+            <div class="mb-3">
+                <label for="footer_template" class="form-label">
+                    <strong>Footer-Template</strong>
+                </label>
+                <textarea 
+                    class="form-control" 
+                    id="footer_template" 
+                    name="footer_template" 
+                    rows="8" 
+                    placeholder="Geben Sie hier Ihren E-Mail-Footer ein. Verwenden Sie die Variablen oben für dynamische Inhalte."
+                >{{ footer_template }}</textarea>
+                <div class="form-text">
+                    Der Footer wird automatisch an jede gesendete E-Mail angehängt. Verwenden Sie Zeilenumbrüche für mehrzeilige Footer.
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <h6>Vorschau:</h6>
+                <div class="border rounded p-3 bg-light">
+                    <pre id="preview" style="white-space: pre-wrap; font-family: inherit; margin: 0;">{{ footer_template.replace('<user>', 'Max Mustermann').replace('<email>', 'max@example.com').replace('<app_name>', 'Team Portal').replace('<date>', '29.10.2025').replace('<time>', '19:15') }}</pre>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save"></i> Speichern
+                </button>
+                <a href="{{ url_for('settings.admin') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Zurück
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const textarea = document.getElementById('footer_template');
+    const preview = document.getElementById('preview');
+    
+    function updatePreview() {
+        let content = textarea.value;
+        // Replace variables with sample data for preview
+        content = content.replace(/<user>/g, 'Max Mustermann');
+        content = content.replace(/<email>/g, 'max@example.com');
+        content = content.replace(/<app_name>/g, 'Team Portal');
+        content = content.replace(/<date>/g, '29.10.2025');
+        content = content.replace(/<time>/g, '19:15');
+        preview.textContent = content;
+    }
+    
+    textarea.addEventListener('input', updatePreview);
+    updatePreview(); // Initial preview
+});
+</script>
+{% endblock %}

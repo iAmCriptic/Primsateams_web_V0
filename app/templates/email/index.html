@@ -171,6 +171,15 @@
                             <li><a class="dropdown-item" href="{{ url_for('email.view_email', email_id=email.id) }}">
                                 <i class="bi bi-eye me-2"></i>Anzeigen
                             </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('email.reply', email_id=email.id) }}">
+                                <i class="bi bi-reply me-2"></i>Antworten
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('email.reply_all', email_id=email.id) }}">
+                                <i class="bi bi-reply-all me-2"></i>Allen antworten
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('email.forward', email_id=email.id) }}">
+                                <i class="bi bi-forward me-2"></i>Weiterleiten
+                            </a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <form method="POST" action="{{ url_for('email.move_email', email_id=email.id) }}" class="d-inline">
