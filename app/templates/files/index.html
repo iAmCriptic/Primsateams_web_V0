@@ -535,13 +535,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Bessere Scroll-Performance auf mobilen Geräten
         document.body.style.webkitOverflowScrolling = 'touch';
         
-        // Verhindere Zoom bei Doppel-Tap auf Buttons
-        const buttons = document.querySelectorAll('button, .btn');
-        buttons.forEach(button => {
-            button.addEventListener('touchstart', function(e) {
-                e.preventDefault();
-            });
-        });
+        // Hinweis: Kein globales preventDefault auf Buttons –
+        // das blockiert Click/Modal-Trigger auf mobilen Geräten.
+        // Doppeltap-Zoom wird stattdessen über CSS `touch-action: manipulation` gelöst.
         
         // Mobile Dropdown - Komplett Custom Implementation
         const dropdowns = document.querySelectorAll('.dropdown');

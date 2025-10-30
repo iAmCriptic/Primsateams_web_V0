@@ -41,7 +41,7 @@
                              data-member-picture="{{ member.profile_picture or '' }}"
                              onclick="showMemberModal(this)">
                             {% if member.profile_picture %}
-                                <img src="{{ url_for('static', filename='../' + member.profile_picture) }}" 
+                                <img src="{{ url_for('settings.profile_picture', filename=member.profile_picture) }}" 
                                      alt="{{ member.full_name }}" 
                                      class="rounded-circle">
                             {% else %}
@@ -136,7 +136,7 @@
                  onclick="showMemberModal(this)">
                 <div class="member-info">
                     {% if member.profile_picture %}
-                        <img src="{{ url_for('static', filename='../' + member.profile_picture) }}" 
+                        <img src="{{ url_for('settings.profile_picture', filename=member.profile_picture) }}" 
                              alt="{{ member.full_name }}" 
                              class="member-avatar-small">
                     {% else %}
@@ -695,7 +695,7 @@
                          onclick="showMemberModal(this)">
                         <div class="member-card-avatar">
                             {% if member.profile_picture %}
-                                <img src="{{ url_for('static', filename='../' + member.profile_picture) }}" 
+                                <img src="{{ url_for('settings.profile_picture', filename=member.profile_picture) }}" 
                                      alt="{{ member.full_name }}" 
                                      class="rounded-circle">
                             {% else %}
@@ -741,7 +741,8 @@ function showMemberModal(element) {
     const avatarInitial = document.getElementById('modal-member-initial');
     
     if (memberPicture) {
-        avatarImg.src = '/static/' + memberPicture;
+        // Verwende die richtige Route zum Ausliefern der Profilbilder
+        avatarImg.src = "{{ url_for('settings.profile_picture', filename='__FILENAME__') }}".replace('__FILENAME__', encodeURIComponent(memberPicture));
         avatarImg.style.display = 'block';
         avatarInitial.style.display = 'none';
     } else {

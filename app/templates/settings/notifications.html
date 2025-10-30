@@ -44,6 +44,16 @@
                         <button type="button" class="btn btn-outline-secondary" id="test-push-btn">
                             Test senden
                         </button>
+                        <!-- Cooldown Progress Bar -->
+                        <div id="cooldown-container" style="display: none; margin-top: 10px;">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <small class="text-muted">Cooldown aktiv</small>
+                                <small class="text-muted" id="cooldown-timer">2:00</small>
+                            </div>
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar bg-warning" id="cooldown-progress" role="progressbar" style="width: 0%"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
@@ -110,6 +120,13 @@
                     <strong>Serverbasierte Benachrichtigungen:</strong> 
                     Sie erhalten Push-Benachrichtigungen auch wenn der Browser geschlossen ist. 
                     Das System funktioniert über den Server und ist nicht auf lokales Polling angewiesen.
+                </div>
+                
+                <div class="alert alert-warning" id="https-warning" style="display: none;">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>Wichtig:</strong> 
+                    Push-Benachrichtigungen funktionieren nur über HTTPS. 
+                    Über HTTP sind sie nicht verfügbar.
                 </div>
                 
                 <div class="alert alert-warning" id="push-setup-alert" style="display: none;">
@@ -572,6 +589,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialisiere Berechtigungsstatus
     updatePermissionStatus();
+    
+    // Prüfe ob HTTPS verwendet wird
+    if (window.location.protocol !== 'https:') {
+        const httpsWarning = document.getElementById('https-warning');
+        if (httpsWarning) {
+            httpsWarning.style.display = 'block';
+        }
+    }
 });
 </script>
 {% endblock %}

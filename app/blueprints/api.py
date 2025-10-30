@@ -548,8 +548,31 @@ def test_push_notification():
                 'message': 'VAPID Keys sind nicht konfiguriert. Bitte `VAPID_PUBLIC_KEY` und `VAPID_PRIVATE_KEY` in .env setzen oder `vapid_keys.json` bereitstellen.',
                 'action_required': 'configure_vapid'
             }), 400
-        from app.utils.notifications import send_push_notification
+        
+        # Cooldown-Check: Verhindere zu häufige Tests (max. alle 2 Minuten)
+        from flask import session
+        import time
+        current_time = time.time()
+        last_test_time = session.get('last_push_test_time', 0)
+        cooldown_duration = 120  # 2 Minuten in Sekunden
+        
+        if current_time - last_test_time < cooldown_duration:
+            remaining_time = int(cooldown_duration - (current_time - last_test_time))
+            return jsonify({
+                'success': False,
+                'message': f'Bitte warten Sie {remaining_time} Sekunden vor dem nächsten Test.',
+                'cooldown': True,
+                'remaining_seconds': remaining_time,
+                'total_cooldown': cooldown_duration
+            }), 429  # Too Many Requests
+        
+        # Update last test time
+        session['last_push_test_time'] = current_time
+        
+        # Bereinige fehlgeschlagene Subscriptions vor dem Test
+        from app.utils.notifications import cleanup_failed_subscriptions, send_push_notification
         from app.models.notification import PushSubscription
+        cleanup_failed_subscriptions()
         
         # Prüfe ob User Push-Subscriptions hat
         subscriptions = PushSubscription.query.filter_by(
@@ -565,24 +588,32 @@ def test_push_notification():
             }), 400
         
         # Sende Test-Push-Benachrichtigung
-        success = send_push_notification(
-            user_id=current_user.id,
-            title="Test-Benachrichtigung",
-            body="Dies ist eine Test-Push-Benachrichtigung vom Team Portal.",
-            url="/dashboard/",
-            data={'type': 'test', 'timestamp': datetime.utcnow().isoformat()}
-        )
-        
-        if success:
+        try:
+            success = send_push_notification(
+                user_id=current_user.id,
+                title="Test-Benachrichtigung",
+                body="Dies ist eine Test-Push-Benachrichtigung vom Team Portal.",
+                url="/dashboard/",
+                data={'type': 'test', 'timestamp': datetime.utcnow().isoformat()}
+            )
+            
+            if success:
+                return jsonify({
+                    'success': True, 
+                    'message': f'Test-Benachrichtigung erfolgreich gesendet an {len(subscriptions)} Gerät(e)'
+                })
+            else:
+                return jsonify({
+                    'success': False, 
+                    'message': 'Test-Benachrichtigung konnte nicht gesendet werden. Bitte prüfen Sie Ihre Push-Subscriptions.'
+                }), 400
+                
+        except Exception as push_error:
+            logging.error(f"Push-Send-Fehler: {push_error}")
             return jsonify({
-                'success': True, 
-                'message': f'Test-Benachrichtigung erfolgreich gesendet an {len(subscriptions)} Gerät(e)'
-            })
-        else:
-            return jsonify({
-                'success': False, 
-                'message': 'Fehler beim Senden der Test-Benachrichtigung. Bitte prüfen Sie VAPID-Keys und Browser-Subscription.'
-            }), 400
+                'success': False,
+                'message': f'Fehler beim Senden: {str(push_error)[:100]}...'
+            }), 500
             
     except Exception as e:
         print(f"Test-Push Fehler: {e}")

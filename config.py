@@ -28,7 +28,7 @@ class Config:
     
     # Session
     PERMANENT_SESSION_LIFETIME = timedelta(days=30)
-    SESSION_COOKIE_SECURE = True  # HTTPS aktiviert
+    SESSION_COOKIE_SECURE = False  # HTTP für Entwicklung im Netzwerk
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
     
@@ -61,25 +61,9 @@ class Config:
     # File Versioning
     MAX_FILE_VERSIONS = 3
     
-    # VAPID Keys for Push Notifications
+    # VAPID Keys for Push Notifications (base64url format)
     VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY')
     VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY')
-
-    # Fallback: vapid_keys.json im Projektverzeichnis (z. B. durch Generator-Script erstellt)
-    if not VAPID_PRIVATE_KEY or not VAPID_PUBLIC_KEY:
-        try:
-            import json
-            # Suche Datei relativ zum Projektwurzelverzeichnis
-            project_root = os.path.abspath(os.path.dirname(__file__))
-            json_path = os.path.join(project_root, '..', 'vapid_keys.json')
-            with open(json_path, 'r', encoding='utf-8') as f:
-                keys = json.load(f)
-                # Unterstütze verschiedene Feldnamen gängiger Generatoren
-                VAPID_PUBLIC_KEY = VAPID_PUBLIC_KEY or keys.get('public_key') or keys.get('publicKey') or keys.get('VAPID_PUBLIC_KEY')
-                VAPID_PRIVATE_KEY = VAPID_PRIVATE_KEY or keys.get('private_key') or keys.get('privateKey') or keys.get('VAPID_PRIVATE_KEY')
-        except Exception:
-            # still missing -> bleibt None; API meldet es verständlich an den Client
-            pass
     
     # Email HTML Storage Configuration
     EMAIL_HTML_MAX_LENGTH = int(os.environ.get('EMAIL_HTML_MAX_LENGTH', 0))  # 0 = unlimited
@@ -97,7 +81,7 @@ class ProductionConfig(Config):
     """Production configuration."""
     DEBUG = False
     TESTING = False
-    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = False  # HTTP für Netzwerkzugriff
 
 
 class TestingConfig(Config):

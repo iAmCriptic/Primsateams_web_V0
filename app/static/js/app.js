@@ -570,6 +570,13 @@ class ServerPushManager {
     }
     
     async testPushNotification() {
+        const testBtn = document.getElementById('test-push-btn');
+        const originalText = testBtn.innerHTML;
+        
+        // Button deaktivieren und Loading-State anzeigen
+        testBtn.disabled = true;
+        testBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Teste...';
+        
         try {
             const response = await fetch('/api/push/test', {
                 method: 'POST',
@@ -582,11 +589,16 @@ class ServerPushManager {
             const data = await response.json();
             
             if (response.ok && data.success) {
-                // Erfolgreich gesendet
+                // Erfolgreich gesendet - starte 2-Minuten-Cooldown
                 this.showTestResult('success', data.message);
+                this.startCooldownTimer(testBtn, originalText, 120); // 2 Minuten
             } else {
                 // Fehler beim Senden
-                if (data && data.action_required === 'subscribe') {
+                if (data && data.cooldown) {
+                    // Cooldown-Fehler: Button für verbleibende Zeit deaktivieren
+                    this.showTestResult('warning', data.message);
+                    this.startCooldownTimer(testBtn, originalText, data.remaining_seconds);
+                } else if (data && data.action_required === 'subscribe') {
                     console.warn('Test-Push: Keine aktive Subscription. Versuche automatische Registrierung...');
                     this.showTestResult('warning', data.message || 'Keine aktive Subscription. Registrierung wird gestartet...');
                     const registered = await this.registerPushNotifications();
@@ -596,14 +608,118 @@ class ServerPushManager {
                         setTimeout(() => {
                             this.testPushNotification();
                         }, 500);
+                        return; // Verhindere Button-Reset
                     }
                 } else {
                     this.showTestResult('error', (data && data.message) || 'Unbekannter Fehler beim Senden der Test-Benachrichtigung');
                 }
+                // Button nach Fehler sofort wieder aktivieren (außer bei Cooldown)
+                if (!data || !data.cooldown) {
+                    this.resetTestButton(testBtn, originalText);
+                }
             }
         } catch (error) {
             this.showTestResult('error', 'Netzwerk-Fehler: ' + error.message);
+            // Button nach Fehler sofort wieder aktivieren
+            this.resetTestButton(testBtn, originalText);
         }
+    }
+    
+    resetTestButton(button, originalText) {
+        console.log('Button wird reaktiviert');
+        button.disabled = false;
+        button.classList.remove('disabled');
+        button.innerHTML = originalText;
+    }
+    
+    // Cooldown-Management mit LocalStorage
+    isCooldownActive() {
+        const cooldownEnd = localStorage.getItem('pushTestCooldownEnd');
+        if (!cooldownEnd) return false;
+        
+        const now = Date.now();
+        const endTime = parseInt(cooldownEnd);
+        return now < endTime;
+    }
+    
+    getCooldownRemaining() {
+        const cooldownEnd = localStorage.getItem('pushTestCooldownEnd');
+        if (!cooldownEnd) return 0;
+        
+        const now = Date.now();
+        const endTime = parseInt(cooldownEnd);
+        const remaining = Math.max(0, Math.ceil((endTime - now) / 1000));
+        return remaining;
+    }
+    
+    setCooldown(durationSeconds) {
+        const endTime = Date.now() + (durationSeconds * 1000);
+        localStorage.setItem('pushTestCooldownEnd', endTime.toString());
+    }
+    
+    clearCooldown() {
+        localStorage.removeItem('pushTestCooldownEnd');
+    }
+    
+    startCooldownTimer(button, originalText, remainingSeconds) {
+        console.log(`Starte Cooldown-Timer für ${remainingSeconds} Sekunden`);
+        
+        // Setze Cooldown in LocalStorage
+        this.setCooldown(remainingSeconds);
+        
+        // Zeige Cooldown-Container
+        const cooldownContainer = document.getElementById('cooldown-container');
+        const cooldownProgress = document.getElementById('cooldown-progress');
+        const cooldownTimer = document.getElementById('cooldown-timer');
+        
+        if (cooldownContainer) {
+            cooldownContainer.style.display = 'block';
+        }
+        
+        // Button definitiv deaktivieren
+        button.disabled = true;
+        button.classList.add('disabled');
+        
+        const updateTimer = () => {
+            const remaining = this.getCooldownRemaining();
+            console.log(`Cooldown verbleibend: ${remaining} Sekunden`);
+            
+            if (remaining > 0) {
+                // Update Timer Display
+                const minutes = Math.floor(remaining / 60);
+                const seconds = remaining % 60;
+                const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                
+                if (cooldownTimer) {
+                    cooldownTimer.textContent = timeString;
+                }
+                
+                // Update Progress Bar
+                const totalCooldown = 120; // 2 Minuten
+                const progress = ((totalCooldown - remaining) / totalCooldown) * 100;
+                
+                if (cooldownProgress) {
+                    cooldownProgress.style.width = `${progress}%`;
+                }
+                
+                // Update Button - Button bleibt deaktiviert
+                button.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Warten... (${timeString})`;
+                button.disabled = true;
+                
+                setTimeout(updateTimer, 1000);
+            } else {
+                // Cooldown beendet
+                console.log('Cooldown beendet - Button wird reaktiviert');
+                this.clearCooldown();
+                this.resetTestButton(button, originalText);
+                
+                if (cooldownContainer) {
+                    cooldownContainer.style.display = 'none';
+                }
+            }
+        };
+        
+        updateTimer();
     }
     
     showTestResult(type, message) {
@@ -652,6 +768,17 @@ if ('serviceWorker' in navigator) {
         console.log('Service Worker bereit für Server-Push-Benachrichtigungen');
     });
 }
+
+// Initialisiere Cooldown-Status beim Laden der Seite
+document.addEventListener('DOMContentLoaded', function() {
+    const testBtn = document.getElementById('test-push-btn');
+    if (testBtn && serverPushManager.isCooldownActive()) {
+        const remaining = serverPushManager.getCooldownRemaining();
+        if (remaining > 0) {
+            serverPushManager.startCooldownTimer(testBtn, 'Test senden', remaining);
+        }
+    }
+});
 
 // Legacy-Funktionen entfernt - verwende ServerPushManager
 
@@ -843,6 +970,7 @@ function formatFileSize(bytes) {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
 }
+
 
 
 

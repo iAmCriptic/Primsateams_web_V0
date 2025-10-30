@@ -10,10 +10,10 @@
         <div class="d-flex align-items-center">
             <h1 class="h4 mb-0 me-2"><i class="bi bi-envelope"></i> E-Mail</h1>
             <div class="dropdown">
-                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
+                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-display="static" data-bs-auto-close="outside" data-mobile-modal="dropdown">
                     <i class="bi bi-three-dots-vertical"></i>
                 </button>
-                <ul class="dropdown-menu">
+                <ul class="dropdown-menu dropdown-menu-end">
                     {% for folder in folders %}
                     <li><a class="dropdown-item" href="{{ url_for('email.folder_view', folder_name=folder.name) }}">
                         {% if folder.folder_type == 'standard' %}
@@ -58,10 +58,10 @@
         <div class="d-flex align-items-center">
             <h1 class="mb-0 me-3"><i class="bi bi-envelope"></i> E-Mail</h1>
             <div class="dropdown">
-                <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-display="static" data-bs-auto-close="outside" data-mobile-modal="dropdown">
                     <i class="bi bi-folder me-2"></i><span id="currentFolder">{{ folder_display_name or 'Posteingang' }}</span>
                 </button>
-                <ul class="dropdown-menu">
+                <ul class="dropdown-menu dropdown-menu-end">
                     {% for folder in folders %}
                     <li><a class="dropdown-item" href="{{ url_for('email.folder_view', folder_name=folder.name) }}">
                         {% if folder.folder_type == 'standard' %}
@@ -164,10 +164,10 @@
                     
                     <!-- Action Buttons -->
                     <div class="dropdown ms-2">
-                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-display="static" data-bs-auto-close="outside" data-mobile-modal="dropdown">
                             <i class="bi bi-three-dots-vertical"></i>
                         </button>
-                        <ul class="dropdown-menu">
+                        <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="{{ url_for('email.view_email', email_id=email.id) }}">
                                 <i class="bi bi-eye me-2"></i>Anzeigen
                             </a></li>
@@ -219,6 +219,56 @@
 </div>
 
 <!-- Ordner-Navigation ist jetzt vollständig implementiert -->
+<!-- Mobile Actions Modal -->
+<div class="modal fade" id="emailActionsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Optionen</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+            </div>
+            <div class="modal-body" id="emailActionsContent">
+            </div>
+        </div>
+    </div>
+    </div>
+
+{% block extra_js %}
+<script>
+// Mobile: zeige Dropdown-Inhalte als zentriertes Modal
+document.addEventListener('click', function(e) {
+    const toggleBtn = e.target.closest('[data-mobile-modal="dropdown"]');
+    if (!toggleBtn) return;
+    const isMobile = window.matchMedia('(max-width: 767.98px)').matches;
+    if (!isMobile) return; // Desktop weiter normales Dropdown
+
+    const dropdown = toggleBtn.parentElement && toggleBtn.parentElement.querySelector('.dropdown-menu');
+    if (!dropdown) return;
+    e.preventDefault(); // verhindere Dropdown-Öffnung
+
+    // Inhalte in Modal übernehmen
+    const modalEl = document.getElementById('emailActionsModal');
+    const contentEl = document.getElementById('emailActionsContent');
+    if (!modalEl || !contentEl) return;
+
+    contentEl.innerHTML = dropdown.innerHTML;
+
+    // Verbesserte Klickflächen im Modal
+    contentEl.querySelectorAll('.dropdown-item').forEach(function(item){
+        item.classList.add('py-2');
+    });
+
+    // Falls Formulare im Menü sind (z. B. Move-to-Ordner), sicherstellen, dass full width
+    contentEl.querySelectorAll('select.form-select').forEach(function(sel){
+        sel.classList.add('w-100');
+    });
+
+    // Modal anzeigen
+    const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl, { backdrop: true, focus: true, keyboard: true });
+    bsModal.show();
+});
+</script>
+{% endblock %}
 {% endblock %}
 
 

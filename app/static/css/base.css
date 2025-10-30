@@ -57,6 +57,60 @@ body {
     color: var(--accent-color);
 }
 
+/* Verhindere kurzes Dunkel-Flackern in der mobilen Bottom-Navigation */
+.mobile-nav .nav-link,
+.mobile-nav .nav-link:hover,
+.mobile-nav .nav-link:focus,
+.mobile-nav .nav-link:active {
+    background-color: transparent !important;
+    transition: none !important;
+}
+
+/* Aktive Zustände mobil: nur Text einfärben, kein Hintergrund */
+.mobile-nav .nav-pills .nav-link.active,
+.mobile-nav .nav-link.active,
+[data-bs-theme="dark"] .mobile-nav .nav-pills .nav-link.active,
+[data-bs-theme="dark"] .mobile-nav .nav-link.active {
+    background-color: transparent !important;
+}
+
+/* Entfernt das Tap-Highlight auf mobilen WebKit-Browsern */
+.mobile-nav a,
+.mobile-nav .nav-link {
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Global: Pills-Links nie mit Hintergrund rendern (verhindert Kurz-Aufblitzen) */
+.nav-pills .nav-link,
+.nav-pills .nav-link:hover,
+.nav-pills .nav-link:focus,
+.nav-pills .nav-link:active,
+.nav .nav-link:active {
+    background-color: transparent !important;
+    transition: none !important;
+}
+
+/* Desktop Sidebar: alle Zustände hart auf transparent setzen */
+.sidebar .nav-link,
+.sidebar .nav-link:hover,
+.sidebar .nav-link:focus,
+.sidebar .nav-link:active,
+.sidebar .nav-pills .nav-link,
+.sidebar .nav-pills .nav-link:hover,
+.sidebar .nav-pills .nav-link:focus,
+.sidebar .nav-pills .nav-link:active,
+[data-bs-theme="dark"] .sidebar .nav-link,
+[data-bs-theme="dark"] .sidebar .nav-link:hover,
+[data-bs-theme="dark"] .sidebar .nav-link:focus,
+[data-bs-theme="dark"] .sidebar .nav-link:active,
+[data-bs-theme="dark"] .sidebar .nav-pills .nav-link,
+[data-bs-theme="dark"] .sidebar .nav-pills .nav-link:hover,
+[data-bs-theme="dark"] .sidebar .nav-pills .nav-link:focus,
+[data-bs-theme="dark"] .sidebar .nav-pills .nav-link:active {
+    background-color: transparent !important;
+    transition: none !important;
+}
+
 .mobile-nav .nav-link i {
     display: block;
     font-size: 1.2rem; /* Kleinere Icons */
@@ -178,6 +232,23 @@ body {
     background-color: rgba(255, 255, 255, 0.1);
 }
 
+/* Verhindere kurzes Dunkel-Flackern aller Sidebar-Links beim Seitenwechsel
+   (Browser rendert kurz Bootstrap-Active/Focus-Styles, bevor unsere Inline-Styles greifen). */
+.sidebar .nav-link,
+.sidebar .nav-link:hover,
+.sidebar .nav-link:focus,
+.sidebar .nav-link:active {
+    background-color: transparent !important;
+}
+
+/* Auch aktive Zustände in der Sidebar immer ohne Hintergrund – nur Text farbig */
+.sidebar .nav-pills .nav-link.active,
+.sidebar .nav-link.active,
+[data-bs-theme="dark"] .sidebar .nav-pills .nav-link.active,
+[data-bs-theme="dark"] .sidebar .nav-link.active {
+    background-color: transparent !important;
+}
+
 /* Main Content */
 .main-content {
     padding-bottom: 70px; /* Reduzierte Space für mobile nav */
@@ -275,6 +346,21 @@ body {
         word-wrap: break-word !important;
         word-break: break-word !important;
     }
+}
+
+/* Email content responsive constraints */
+.email-content img,
+.email-content table,
+.email-content pre,
+.email-content code {
+    max-width: 100% !important;
+}
+
+.email-content pre,
+.email-content code,
+.email-content table {
+    overflow-x: auto;
+    display: block;
 }
 
 @media (min-width: 768px) {
@@ -397,6 +483,11 @@ body.offline-mode {
     border-color: var(--accent-color) !important;
     color: white !important;
     box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* Mobile: Verhindert unerwünschten Doppeltap-Zoom, ohne Events zu blockieren */
+button, .btn {
+    touch-action: manipulation;
 }
 
 /* Primary Buttons - Use accent color */
@@ -537,6 +628,23 @@ body.offline-mode {
     background-clip: text !important;
 }
 
+/* Offcanvas Mehr – aktiver Link in Akzent */
+.offcanvas-accent .nav-link.active {
+    color: var(--accent-color) !important;
+    background-color: transparent !important;
+}
+.offcanvas-accent .nav-link.active i {
+    background: var(--accent-style) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+}
+
+/* Offcanvas Mehr – bessere Tap-Ziele */
+.offcanvas-accent .nav-link {
+    padding: 0.75rem 0.5rem;
+}
+
 /* Form Controls */
 .form-control:focus {
     border-color: var(--accent-color) !important;
@@ -581,6 +689,23 @@ body.offline-mode {
 .badge.bg-primary {
     background: var(--accent-style) !important;
 }
+
+/* Ensure dropdowns appear above fixed mobile nav/offcanvas */
+.dropdown-menu {
+    z-index: 1060; /* above offcanvas (1045) and mobile nav (1001) */
+}
+
+/* Email list items must not clip dropdowns */
+.email-content .list-group-item {
+    overflow: visible !important;
+}
+
+/* Modal: Dropdown-Items besser bedienbar auf Mobile */
+.modal .dropdown-item {
+    display: block;
+    white-space: normal;
+}
+.modal .dropdown-divider { margin: 0.25rem 0; }
 
 /* Avatars */
 .avatar {

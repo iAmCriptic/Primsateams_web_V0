@@ -1,5 +1,5 @@
 // Service Worker für Team Portal PWA - Serverbasiertes Push-System
-const CACHE_NAME = 'team-portal-v4';
+const CACHE_NAME = 'team-portal-v5';
 const urlsToCache = [
   '/',
   '/static/css/style.css',
@@ -59,88 +59,43 @@ self.addEventListener('fetch', function(event) {
     return;
   }
 
+  // Für HTML-Dokumente: Network-First, damit dynamische Seiten (z. B. Termine)
+  // nach Aktionen wie Zusagen/Absagen sofort aktualisiert werden.
+  if (event.request.destination === 'document') {
+    event.respondWith(
+      fetch(event.request)
+        .then(function(networkResponse) {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then(function(cache) {
+            cache.put(event.request, responseToCache);
+          });
+          return networkResponse;
+        })
+        .catch(function() {
+          return caches.match(event.request);
+        })
+    );
+    return;
+  }
+
+  // Für andere GET-Requests: Cache-First Strategie
   event.respondWith(
     caches.match(event.request)
       .then(function(response) {
-        // Cache hit - return cached version
         if (response) {
           console.log('Service Worker: Cache hit für:', event.request.url);
           return response;
         }
-
-        // Cache miss - fetch from network
         console.log('Service Worker: Cache miss für:', event.request.url);
-        return fetch(event.request).then(function(response) {
-          // Prüfe ob die Antwort gültig ist
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
+        return fetch(event.request).then(function(networkResponse) {
+          if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+            return networkResponse;
           }
-
-          // Cache die Antwort für zukünftige Requests
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME)
-            .then(function(cache) {
-              cache.put(event.request, responseToCache);
-            });
-
-          return response;
-        }).catch(function(error) {
-          console.log('Service Worker: Fetch fehlgeschlagen:', error);
-          
-          // Für HTML-Seiten, zeige Offline-Seite mit freundlicher Nachricht
-          if (event.request.destination === 'document') {
-            return caches.match('/').then(function(cachedResponse) {
-              if (cachedResponse) {
-                // Modifiziere die gecachte Seite um Offline-Banner hinzuzufügen
-                return cachedResponse.text().then(function(html) {
-                  const modifiedHtml = html.replace(
-                    '<body>',
-                    '<body><div class="alert alert-warning alert-dismissible fade show" role="alert" style="margin: 0; border-radius: 0; position: fixed; top: 0; left: 0; right: 0; z-index: 9999;"><i class="bi bi-wifi-off me-2"></i><strong>Offline-Modus:</strong> Sie sind derzeit offline. Einige Funktionen sind möglicherweise eingeschränkt.<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div><div style="margin-top: 60px;">'
-                  ).replace('</body>', '</div></body>');
-                  
-                  return new Response(modifiedHtml, {
-                    headers: { 'Content-Type': 'text/html' }
-                  });
-                });
-              } else {
-                // Fallback Offline-Seite
-                return new Response(
-                  `<!DOCTYPE html>
-                  <html lang="de">
-                  <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>Offline - Team Portal</title>
-                    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-                    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-                  </head>
-                  <body class="bg-light">
-                    <div class="container mt-5">
-                      <div class="row justify-content-center">
-                        <div class="col-md-6">
-                          <div class="card shadow">
-                            <div class="card-body text-center">
-                              <i class="bi bi-wifi-off text-warning" style="font-size: 4rem;"></i>
-                              <h2 class="mt-3">Offline-Modus</h2>
-                              <p class="text-muted">Sie sind derzeit offline. Bitte überprüfen Sie Ihre Internetverbindung.</p>
-                              <button class="btn btn-primary" onclick="window.location.reload()">
-                                <i class="bi bi-arrow-clockwise me-2"></i>Erneut versuchen
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </body>
-                  </html>`,
-                  { headers: { 'Content-Type': 'text/html' } }
-                );
-              }
-            });
-          }
-          
-          // Für andere Ressourcen, gib eine leere Antwort zurück
-          return new Response('', { status: 404, statusText: 'Not Found' });
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then(function(cache) {
+            cache.put(event.request, responseToCache);
+          });
+          return networkResponse;
         });
       })
   );

@@ -34,51 +34,43 @@ def get_vapid_keys():
         logging.warning("VAPID Keys nicht konfiguriert. Push-Benachrichtigungen deaktiviert.")
         return None, None, None
     
-    # Normalisiere verschiedene Private-Key-Formate auf PEM (PKCS8, P-256)
+    # DEBUG: Logge die ursprünglichen Keys
+    logging.info(f"VAPID Private Key (erste 20 Zeichen): {private_key[:20]}...")
+    logging.info(f"VAPID Public Key (erste 20 Zeichen): {public_key[:20]}...")
+    
+    # Konvertiere base64url Private Key zu PEM (SEC1 Format für pywebpush)
+    converted_private_key = private_key
+    
     try:
-        # Ersetze literale \n in echten Zeilenumbruch (falls .env die PEM-Zeilen als einzeilige Zeichenfolge enthält)
-        if isinstance(private_key, str) and '\\n' in private_key:
-            private_key = private_key.replace('\\n', '\n')
-
-        key_clean = private_key.strip()
-        # 1) base64url-RAW (43 Zeichen)
-        if re.fullmatch(r"[A-Za-z0-9_-]{43}", key_clean):
-            raw = private_key.strip().replace('-', '+').replace('_', '/')
-            raw += '=' * ((4 - len(raw) % 4) % 4)
-            raw_bytes = base64.b64decode(raw)
-            if len(raw_bytes) == 32:
-                priv_int = int.from_bytes(raw_bytes, 'big')
+        if private_key and not private_key.startswith('-----BEGIN'):
+            # base64url zu base64 konvertieren
+            b64 = private_key.replace('-', '+').replace('_', '/')
+            b64 += '=' * ((4 - len(b64) % 4) % 4)
+            
+            # Dekodiere zu RAW (32 Bytes für EC Private Key)
+            raw = base64.b64decode(b64)
+            if len(raw) == 32:
+                # Erstelle EC Private Key aus RAW
+                priv_int = int.from_bytes(raw, 'big')
                 priv_obj = ec.derive_private_key(priv_int, ec.SECP256R1())
-                # Erzeuge klassisches EC PRIVATE KEY (SEC1), einige Libraries bevorzugen dieses Format
-                private_key = priv_obj.private_bytes(
+                # Verwende SEC1 Format (TraditionalOpenSSL) - das funktioniert!
+                converted_private_key = priv_obj.private_bytes(
                     encoding=serialization.Encoding.PEM,
                     format=serialization.PrivateFormat.TraditionalOpenSSL,
                     encryption_algorithm=serialization.NoEncryption()
                 ).decode('ascii')
-        # 2) base64url DER PKCS8 (z. B. lange Zeichenkette aus Generatoren)
-        elif re.fullmatch(r"[A-Za-z0-9_-]{60,}", key_clean) and 'BEGIN' not in key_clean:
-            der_b64 = key_clean.replace('-', '+').replace('_', '/')
-            der_b64 += '=' * ((4 - len(der_b64) % 4) % 4)
-            der_bytes = base64.b64decode(der_b64)
-            try:
-                priv_obj = serialization.load_der_private_key(der_bytes, password=None)
-                private_key = priv_obj.private_bytes(
-                    encoding=serialization.Encoding.PEM,
-                    format=serialization.PrivateFormat.TraditionalOpenSSL,
-                    encryption_algorithm=serialization.NoEncryption()
-                ).decode('ascii')
-            except Exception:
-                pass
-        # 3) Falls PEM bereits vorhanden: nichts tun
+                logging.info("VAPID Private Key erfolgreich zu SEC1 PEM konvertiert")
+            else:
+                logging.error(f"VAPID Private Key hat unerwartete Länge: {len(raw)} Bytes (erwartet: 32)")
     except Exception as e:
-        logging.error(f"VAPID Private Key Umwandlung fehlgeschlagen: {e}")
-        # Fallback: verwende Originalwert – pywebpush wird sonst selbst Fehler werfen
+        logging.error(f"VAPID Private Key Konvertierung fehlgeschlagen: {e}")
+        # Verwende Original-Key als Fallback
 
     vapid_claims = {
         "sub": "mailto:admin@yourdomain.com"  # E-Mail des Administrators
     }
     
-    return private_key, public_key, vapid_claims
+    return converted_private_key, public_key, vapid_claims
 
 
 def send_push_notification(
@@ -162,11 +154,13 @@ def send_push_notification(
                 sub_info['keys']['p256dh'] = ensure_padded_base64url(sub_info['keys'].get('p256dh'))
                 sub_info['keys']['auth'] = ensure_padded_base64url(sub_info['keys'].get('auth'))
 
-            # Sende Push-Benachrichtigung
+            # Sende Push-Benachrichtigung - verwende base64url-Key direkt
+            # pywebpush kann base64url-Keys direkt verarbeiten
+            original_private_key = current_app.config.get('VAPID_PRIVATE_KEY')
             webpush(
                 subscription_info=sub_info,
                 data=json.dumps(payload),
-                vapid_private_key=vapid_private_key,
+                vapid_private_key=original_private_key,
                 vapid_claims=vapid_claims,
                 ttl=86400  # 24 Stunden TTL
             )
@@ -184,37 +178,14 @@ def send_push_notification(
             if e.response and e.response.status_code in [410, 404, 400]:
                 subscription.is_active = False
                 logging.info(f"Push-Subscription {subscription.id} deaktiviert (Status: {e.response.status_code})")
+                # Sofort in Datenbank speichern
+                try:
+                    db.session.commit()
+                except Exception as commit_error:
+                    logging.error(f"Fehler beim Speichern der Subscription-Deaktivierung: {commit_error}")
             
         except Exception as e:
             logging.error(f"Unerwarteter Fehler beim Senden der Push-Benachrichtigung: {e}")
-            # Fallback: Wenn das Deserialisieren des Keys scheitert, versuche PEM-Rebuild aus base64url erneut
-            try:
-                if isinstance(vapid_private_key, str) and not vapid_private_key.startswith('-----BEGIN'):
-                    raw = vapid_private_key.strip().replace('-', '+').replace('_', '/')
-                    raw += '=' * ((4 - len(raw) % 4) % 4)
-                    raw_bytes = base64.b64decode(raw)
-                    if len(raw_bytes) == 32:
-                        priv_int = int.from_bytes(raw_bytes, 'big')
-                        priv_obj = ec.derive_private_key(priv_int, ec.SECP256R1())
-                        pem = priv_obj.private_bytes(
-                            encoding=serialization.Encoding.PEM,
-                            format=serialization.PrivateFormat.PKCS8,
-                            encryption_algorithm=serialization.NoEncryption()
-                        ).decode('ascii')
-                        # Beim Fallback ebenfalls Keys korrekt padden
-                        sub_info_fallback = sub_info
-                        webpush(
-                            subscription_info=subscription.to_dict(),
-                            data=json.dumps(payload),
-                            vapid_private_key=pem,
-                            vapid_claims=vapid_claims,
-                            ttl=86400
-                        )
-                        subscription.last_used = datetime.utcnow()
-                        success_count += 1
-                        continue
-            except Exception as e2:
-                logging.error(f"Fallback PEM-Rebuild fehlgeschlagen: {e2}")
     
     # Logge das Ergebnis nur bei erfolgreichen Push-Benachrichtigungen
     if success_count > 0:
@@ -736,3 +707,38 @@ def cleanup_inactive_subscriptions():
     
     db.session.commit()
     logging.info(f"{len(inactive_subscriptions)} inaktive Push-Subscriptions deaktiviert")
+
+
+def cleanup_failed_subscriptions():
+    """Bereinigt fehlgeschlagene Push-Subscriptions basierend auf WebPush-Fehlern."""
+    try:
+        # Deaktiviere alle Subscriptions die alt sind (älter als 1 Stunde)
+        # Diese werden beim nächsten Test automatisch neu erstellt
+        old_subscriptions = PushSubscription.query.filter_by(is_active=True).all()
+        
+        deactivated_count = 0
+        for subscription in old_subscriptions:
+            # Prüfe ob Subscription alt ist (älter als 1 Stunde)
+            if subscription.created_at < datetime.utcnow() - timedelta(hours=1):
+                subscription.is_active = False
+                deactivated_count += 1
+        
+        if deactivated_count > 0:
+            db.session.commit()
+            logging.info(f"{deactivated_count} alte Push-Subscriptions deaktiviert")
+            
+    except Exception as e:
+        logging.error(f"Fehler beim Bereinigen alter Subscriptions: {e}")
+
+def deactivate_failed_subscription(subscription_id, error_type="410"):
+    """Deaktiviert eine spezifische fehlgeschlagene Subscription."""
+    try:
+        subscription = PushSubscription.query.get(subscription_id)
+        if subscription and subscription.is_active:
+            subscription.is_active = False
+            db.session.commit()
+            logging.info(f"Push-Subscription {subscription_id} deaktiviert (Fehler: {error_type})")
+            return True
+    except Exception as e:
+        logging.error(f"Fehler beim Deaktivieren der Subscription {subscription_id}: {e}")
+    return False

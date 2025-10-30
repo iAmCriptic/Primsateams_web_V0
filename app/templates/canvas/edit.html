@@ -25,14 +25,14 @@
 
 <div class="card">
     <div class="card-body p-0">
-        <div class="canvas-container" id="canvas-area" style="min-height: 800px;">
+        <div class="canvas-container" id="canvas-area" style="min-height: 800px; position: relative;">
             {% for field in text_fields %}
             <div class="canvas-text-field" 
                  id="field-{{ field.id }}" 
                  data-field-id="{{ field.id }}"
-                 style="left: {{ field.pos_x }}px; top: {{ field.pos_y }}px; width: {{ field.width }}px; height: {{ field.height }}px; color: {{ field.color }}; background-color: {{ field.background_color }}; font-size: {{ field.font_size }}px;">
+                 style="position: absolute; left: {{ field.pos_x }}px; top: {{ field.pos_y }}px; width: {{ field.width }}px; height: {{ field.height }}px; color: {{ field.color }}; background-color: {{ field.background_color }}; font-size: {{ field.font_size }}px; padding: 4px;">
                 <textarea class="form-control border-0 h-100" style="resize: none; background: transparent; color: inherit; font-size: inherit;">{{ field.content }}</textarea>
-                <button class="btn btn-sm btn-danger position-absolute top-0 end-0" onclick="deleteField({{ field.id }})">
+                <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0" onclick="deleteField({{ field.id }})">
                     <i class="bi bi-x"></i>
                 </button>
             </div>
