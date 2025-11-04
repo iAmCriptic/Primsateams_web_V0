@@ -137,3 +137,5 @@ def save_qr_code_image(qr_data, save_path):
         current_app.logger.error(f"Fehler beim Speichern des QR-Codes: {e}")
         return False
 
+
+
