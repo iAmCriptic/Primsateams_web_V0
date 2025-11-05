@@ -123,11 +123,16 @@ def create_app(config_name='default'):
         if app_logo and app_logo.startswith('static/'):
             app_logo = app_logo[7:]  # Remove 'static/' prefix
         
+        # Add ONLYOFFICE availability function
+        from app.utils.onlyoffice import is_onlyoffice_enabled
+        onlyoffice_available = is_onlyoffice_enabled()
+        
         return {
             'app_name': app_name,
             'app_logo': app_logo,
             'color_gradient': color_gradient,
-            'portal_logo_filename': portal_logo_filename
+            'portal_logo_filename': portal_logo_filename,
+            'onlyoffice_available': onlyoffice_available
         }
     
     # Email header decoder filter
@@ -380,8 +385,42 @@ def create_app(config_name='default'):
     with app.app_context():
         try:
             # Erstelle alle Tabellen (nur neue werden hinzugefügt)
+            # Die Felder is_dropbox, dropbox_token, dropbox_password_hash werden automatisch erstellt,
+            # da sie im Folder-Modell definiert sind (app/models/file.py)
             db.create_all()
             print("[OK] Datenbank-Tabellen erfolgreich erstellt/aktualisiert")
+            
+            # Führe Migration für bestehende Installationen aus (falls Felder fehlen)
+            try:
+                from sqlalchemy import inspect
+                inspector = inspect(db.engine)
+                if 'folders' in inspector.get_table_names():
+                    columns = {col['name']: col for col in inspector.get_columns('folders')}
+                    if 'is_dropbox' not in columns or 'dropbox_token' not in columns or 'dropbox_password_hash' not in columns:
+                        print("[INFO] Führe Migration zu Version 1.5.2 aus...")
+                        # Führe Migration direkt aus (ohne Import, da Python-Module mit Punkten nicht importierbar sind)
+                        import subprocess
+                        import os
+                        migrations_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'migrations', 'Migrate_to_1.5.2.py')
+                        if os.path.exists(migrations_path):
+                            try:
+                                result = subprocess.run([sys.executable, migrations_path], 
+                                                       capture_output=True, text=True, timeout=30)
+                                if result.returncode == 0:
+                                    print("[OK] Migration erfolgreich ausgeführt")
+                                else:
+                                    print(f"[WARNUNG] Migration gab Fehler zurück: {result.stderr}")
+                                    print("[INFO] Bitte führen Sie manuell aus: python migrations/Migrate_to_1.5.2.py")
+                            except subprocess.TimeoutExpired:
+                                print("[WARNUNG] Migration dauerte zu lange. Bitte manuell ausführen.")
+                            except Exception as e:
+                                print(f"[WARNUNG] Migration konnte nicht ausgeführt werden: {e}")
+                                print("[INFO] Bitte führen Sie manuell aus: python migrations/Migrate_to_1.5.2.py")
+                        else:
+                            print("[WARNUNG] Migrationsdatei nicht gefunden. Bitte manuell ausführen: python migrations/Migrate_to_1.5.2.py")
+            except Exception as migration_error:
+                print(f"[WARNUNG] Migration konnte nicht automatisch ausgeführt werden: {migration_error}")
+                print("[INFO] Bitte führen Sie manuell aus: python migrations/Migrate_to_1.5.2.py")
             
             # CRITICAL: Ensure standard email folders always exist
             from app.models.email import EmailFolder

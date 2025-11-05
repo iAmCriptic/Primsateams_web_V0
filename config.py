@@ -69,6 +69,11 @@ class Config:
     EMAIL_HTML_MAX_LENGTH = int(os.environ.get('EMAIL_HTML_MAX_LENGTH', 0))  # 0 = unlimited
     EMAIL_TEXT_MAX_LENGTH = int(os.environ.get('EMAIL_TEXT_MAX_LENGTH', 10000))  # 10KB for text
     EMAIL_HTML_STORAGE_TYPE = os.environ.get('EMAIL_HTML_STORAGE_TYPE', 'TEXT')  # TEXT, MEDIUMTEXT, LONGTEXT
+    
+    # ONLYOFFICE Configuration
+    ONLYOFFICE_ENABLED = os.environ.get('ONLYOFFICE_ENABLED', 'False').lower() == 'true'
+    ONLYOFFICE_DOCUMENT_SERVER_URL = os.environ.get('ONLYOFFICE_DOCUMENT_SERVER_URL', '/onlyoffice')
+    ONLYOFFICE_SECRET_KEY = os.environ.get('ONLYOFFICE_SECRET_KEY', '')
 
 
 class DevelopmentConfig(Config):

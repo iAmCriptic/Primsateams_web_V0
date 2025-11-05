@@ -1,14 +1,17 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file, jsonify, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file, jsonify, current_app, session
 from flask_login import login_required, current_user
 from app import db
 from app.models.file import File, FileVersion, Folder
 from app.models.user import User
 from app.utils.notifications import send_file_notification
 from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 import os
 import shutil
 import logging
+import secrets
+import requests
 
 files_bp = Blueprint('files', __name__)
 
@@ -148,15 +151,113 @@ def create_file():
 @files_bp.route('/upload', methods=['POST'])
 @login_required
 def upload_file():
-    """Upload a file."""
+    """Upload a file or folder."""
+    folder_id = request.form.get('folder_id')
+    folder_id = int(folder_id) if folder_id else None
+    
+    max_size = 100 * 1024 * 1024  # 100MB in bytes
+    
+    # Check for folder upload
+    if 'folder_upload' in request.files:
+        folder_files = request.files.getlist('folder_upload')
+        if folder_files and folder_files[0].filename:
+            uploaded_count = 0
+            skipped_count = 0
+            skipped_files = []
+            
+            for file in folder_files:
+                if not file.filename:
+                    continue
+                
+                # Check file size
+                file.seek(0, 2)  # Seek to end
+                file_size = file.tell()
+                file.seek(0)  # Reset to beginning
+                
+                if file_size > max_size:
+                    skipped_count += 1
+                    skipped_files.append(file.filename)
+                    continue
+                
+                # Process file path to maintain folder structure
+                file_path_parts = file.filename.replace('\\', '/').split('/')
+                file_name = secure_filename(file_path_parts[-1])
+                
+                # Determine target folder - create subfolders if needed
+                target_folder_id = folder_id
+                if len(file_path_parts) > 1:
+                    # Create folder structure
+                    current_parent_id = folder_id
+                    for folder_name in file_path_parts[:-1]:
+                        folder_name_clean = secure_filename(folder_name)
+                        if not folder_name_clean:
+                            continue
+                        
+                        # Check if folder exists
+                        existing_folder = Folder.query.filter_by(
+                            name=folder_name_clean,
+                            parent_id=current_parent_id
+                        ).first()
+                        
+                        if not existing_folder:
+                            # Create new folder
+                            new_folder = Folder(
+                                name=folder_name_clean,
+                                parent_id=current_parent_id,
+                                created_by=current_user.id
+                            )
+                            db.session.add(new_folder)
+                            db.session.flush()  # Get the ID
+                            current_parent_id = new_folder.id
+                        else:
+                            current_parent_id = existing_folder.id
+                    
+                    target_folder_id = current_parent_id
+                
+                # Process file upload
+                try:
+                    _process_file_upload(file, file_name, target_folder_id, current_user.id)
+                    uploaded_count += 1
+                except Exception as e:
+                    logging.error(f"Fehler beim Hochladen von {file_name}: {e}")
+                    skipped_count += 1
+                    skipped_files.append(file_name)
+            
+            db.session.commit()
+            
+            # Send notifications for uploaded files
+            if uploaded_count > 0:
+                try:
+                    # Get recently uploaded files to send notifications
+                    recent_files = File.query.filter_by(
+                        uploaded_by=current_user.id
+                    ).order_by(File.created_at.desc()).limit(uploaded_count).all()
+                    for f in recent_files:
+                        try:
+                            send_file_notification(f.id, 'new')
+                        except Exception as e:
+                            logging.error(f"Fehler beim Senden der Datei-Benachrichtigung: {e}")
+                except Exception as e:
+                    logging.error(f"Fehler beim Senden von Benachrichtigungen: {e}")
+            
+            # Flash messages
+            if uploaded_count > 0:
+                flash(f'{uploaded_count} Datei(en) wurden hochgeladen.', 'success')
+            if skipped_count > 0:
+                flash(f'{skipped_count} Datei(en) wurden übersprungen (zu groß oder Fehler).', 'warning')
+                if skipped_files:
+                    flash(f'Übersprungene Dateien: {", ".join(skipped_files[:5])}{"..." if len(skipped_files) > 5 else ""}', 'info')
+            
+            if folder_id:
+                return redirect(url_for('files.browse_folder', folder_id=folder_id))
+            return redirect(url_for('files.index'))
+    
+    # Single file upload
     if 'file' not in request.files:
         flash('Keine Datei ausgewählt.', 'danger')
         return redirect(request.referrer or url_for('files.index'))
     
     file = request.files['file']
-    folder_id = request.form.get('folder_id')
-    folder_id = int(folder_id) if folder_id else None
-    
     if file.filename == '':
         flash('Keine Datei ausgewählt.', 'danger')
         return redirect(request.referrer or url_for('files.index'))
@@ -166,7 +267,6 @@ def upload_file():
     file_size = file.tell()
     file.seek(0)  # Reset to beginning
     
-    max_size = 100 * 1024 * 1024  # 100MB in bytes
     if file_size > max_size:
         flash(f'Datei ist zu groß. Maximale Größe: 100MB. Ihre Datei: {file_size / (1024*1024):.1f}MB', 'danger')
         return redirect(request.referrer or url_for('files.index'))
@@ -240,39 +340,55 @@ def upload_file():
         flash(f'Datei "{original_name}" wurde aktualisiert (Version {version_number}).', 'success')
     else:
         # Create new file
-        timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
-        filename = f"{timestamp}_{original_name}"
-        filepath = os.path.join('uploads', 'files', filename)
-        file.save(filepath)
-        
-        # Store absolute path in database
-        absolute_filepath = os.path.abspath(filepath)
-        
-        new_file = File(
-            name=original_name,
-            original_name=original_name,
-            folder_id=folder_id,
-            uploaded_by=current_user.id,
-            file_path=absolute_filepath,
-            file_size=os.path.getsize(absolute_filepath),
-            mime_type=file.content_type,
-            version_number=1,
-            is_current=True
-        )
-        db.session.add(new_file)
+        _process_file_upload(file, original_name, folder_id, current_user.id)
         db.session.commit()
         
         # Sende Benachrichtigung für neue Datei
-        try:
-            send_file_notification(new_file.id, 'new')
-        except Exception as e:
-            logging.error(f"Fehler beim Senden der Datei-Benachrichtigung: {e}")
+        new_file = File.query.filter_by(
+            name=original_name,
+            folder_id=folder_id,
+            uploaded_by=current_user.id
+        ).order_by(File.created_at.desc()).first()
+        
+        if new_file:
+            try:
+                send_file_notification(new_file.id, 'new')
+            except Exception as e:
+                logging.error(f"Fehler beim Senden der Datei-Benachrichtigung: {e}")
         
         flash(f'Datei "{original_name}" wurde hochgeladen.', 'success')
     
     if folder_id:
         return redirect(url_for('files.browse_folder', folder_id=folder_id))
     return redirect(url_for('files.index'))
+
+
+def _process_file_upload(file, original_name, folder_id, user_id):
+    """Helper function to process a single file upload."""
+    timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+    filename = f"{timestamp}_{original_name}"
+    filepath = os.path.join('uploads', 'files', filename)
+    
+    # Ensure directory exists
+    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+    
+    file.save(filepath)
+    
+    # Store absolute path in database
+    absolute_filepath = os.path.abspath(filepath)
+    
+    new_file = File(
+        name=original_name,
+        original_name=original_name,
+        folder_id=folder_id,
+        uploaded_by=user_id,
+        file_path=absolute_filepath,
+        file_size=os.path.getsize(absolute_filepath),
+        mime_type=file.content_type,
+        version_number=1,
+        is_current=True
+    )
+    db.session.add(new_file)
 
 
 @files_bp.route('/download/<int:file_id>')
@@ -649,6 +765,482 @@ def get_file_details(file_id):
             'edit_url': url_for('files.edit_file', file_id=file.id) if is_editable else None
         }
     })
+
+
+# Briefkasten (Dropbox) Routes
+@files_bp.route('/folder/<int:folder_id>/make-dropbox', methods=['POST'])
+@login_required
+def make_dropbox(folder_id):
+    """Aktiviere Briefkasten für einen Ordner."""
+    folder = Folder.query.get_or_404(folder_id)
+    
+    # Generate unique token
+    token = secrets.token_urlsafe(32)
+    while Folder.query.filter_by(dropbox_token=token).first():
+        token = secrets.token_urlsafe(32)
+    
+    folder.is_dropbox = True
+    folder.dropbox_token = token
+    db.session.commit()
+    
+    flash(f'Briefkasten für Ordner "{folder.name}" wurde aktiviert.', 'success')
+    return redirect(url_for('files.browse_folder', folder_id=folder_id))
+
+
+@files_bp.route('/folder/<int:folder_id>/dropbox-settings', methods=['GET', 'POST'])
+@login_required
+def dropbox_settings(folder_id):
+    """Briefkasten-Einstellungen anzeigen und bearbeiten."""
+    folder = Folder.query.get_or_404(folder_id)
+    
+    if not folder.is_dropbox:
+        flash('Dieser Ordner ist kein Briefkasten.', 'danger')
+        return redirect(url_for('files.browse_folder', folder_id=folder_id))
+    
+    if request.method == 'POST':
+        action = request.form.get('action')
+        
+        if action == 'set_password':
+            password = request.form.get('password', '').strip()
+            if password:
+                folder.dropbox_password_hash = generate_password_hash(password)
+                db.session.commit()
+                flash('Passwort wurde gesetzt.', 'success')
+            else:
+                flash('Bitte geben Sie ein Passwort ein.', 'danger')
+        
+        elif action == 'remove_password':
+            folder.dropbox_password_hash = None
+            db.session.commit()
+            flash('Passwort wurde entfernt.', 'success')
+        
+        elif action == 'regenerate_token':
+            # Generate new token
+            token = secrets.token_urlsafe(32)
+            while Folder.query.filter_by(dropbox_token=token).first():
+                token = secrets.token_urlsafe(32)
+            folder.dropbox_token = token
+            db.session.commit()
+            flash('Link wurde neu generiert.', 'success')
+        
+        # Redirect back to folder view
+        return redirect(url_for('files.browse_folder', folder_id=folder_id))
+    
+    # GET: Return JSON for AJAX call
+    dropbox_url = url_for('files.dropbox_upload', token=folder.dropbox_token, _external=True)
+    return jsonify({
+        'success': True,
+        'folder': {
+            'id': folder.id,
+            'name': folder.name,
+            'dropbox_url': dropbox_url,
+            'has_password': folder.dropbox_password_hash is not None
+        }
+    })
+
+
+@files_bp.route('/folder/<int:folder_id>/disable-dropbox', methods=['POST'])
+@login_required
+def disable_dropbox(folder_id):
+    """Deaktiviere Briefkasten für einen Ordner."""
+    folder = Folder.query.get_or_404(folder_id)
+    
+    folder.is_dropbox = False
+    folder.dropbox_token = None
+    folder.dropbox_password_hash = None
+    db.session.commit()
+    
+    flash(f'Briefkasten für Ordner "{folder.name}" wurde deaktiviert.', 'success')
+    return redirect(url_for('files.browse_folder', folder_id=folder_id))
+
+
+@files_bp.route('/dropbox/<token>', methods=['GET', 'POST'])
+def dropbox_upload(token):
+    """Öffentliche Upload-Seite für Briefkasten (ohne Login)."""
+    folder = Folder.query.filter_by(dropbox_token=token, is_dropbox=True).first_or_404()
+    
+    # Check password if set
+    if folder.dropbox_password_hash:
+        # Check if password is provided in session or form
+        if request.method == 'POST':
+            password = request.form.get('password', '')
+            if check_password_hash(folder.dropbox_password_hash, password):
+                session[f'dropbox_auth_{token}'] = True
+                return redirect(url_for('files.dropbox_upload', token=token))
+            else:
+                flash('Ungültiges Passwort.', 'danger')
+        elif not session.get(f'dropbox_auth_{token}'):
+            return render_template('files/dropbox_auth.html', token=token, folder_name=folder.name)
+    
+    # Show upload form
+    return render_template('files/dropbox_upload.html', token=token, folder=folder)
+
+
+@files_bp.route('/dropbox/<token>/upload', methods=['POST'])
+def dropbox_upload_file(token):
+    """Öffentlicher Upload-Endpoint für Briefkasten (ohne Login)."""
+    folder = Folder.query.filter_by(dropbox_token=token, is_dropbox=True).first_or_404()
+    
+    # Check password if set
+    if folder.dropbox_password_hash:
+        if not session.get(f'dropbox_auth_{token}'):
+            password = request.form.get('password', '')
+            if not check_password_hash(folder.dropbox_password_hash, password):
+                flash('Ungültiges Passwort.', 'danger')
+                return redirect(url_for('files.dropbox_upload', token=token))
+            session[f'dropbox_auth_{token}'] = True
+    
+    max_size = 100 * 1024 * 1024  # 100MB in bytes
+    uploaded_count = 0
+    skipped_count = 0
+    uploader_name = request.form.get('uploader_name', '').strip() or 'Anonym'
+    
+    # Handle single file or multiple files
+    if 'file' in request.files:
+        files = request.files.getlist('file')
+        for file in files:
+            if not file.filename:
+                continue
+            
+            # Check file size
+            file.seek(0, 2)  # Seek to end
+            file_size = file.tell()
+            file.seek(0)  # Reset to beginning
+            
+            if file_size > max_size:
+                skipped_count += 1
+                continue
+            
+            # Process filename with date suffix if duplicate
+            original_name = secure_filename(file.filename)
+            file_name = original_name
+            
+            # Check for duplicate
+            existing_file = File.query.filter_by(
+                name=file_name,
+                folder_id=folder.id,
+                is_current=True
+            ).first()
+            
+            if existing_file:
+                # Add date suffix
+                date_str = datetime.utcnow().strftime('%Y-%m-%d')
+                name_without_ext, ext = os.path.splitext(original_name)
+                file_name = f"{name_without_ext}_V{date_str}{ext}"
+                
+                # Check if this name also exists, append number if needed
+                counter = 1
+                while File.query.filter_by(name=file_name, folder_id=folder.id, is_current=True).first():
+                    file_name = f"{name_without_ext}_V{date_str}_{counter}{ext}"
+                    counter += 1
+            
+            try:
+                # Create a special user entry for anonymous uploads or use uploader name
+                # For now, we'll use a placeholder user or create a system user
+                # Check if there's a system/anonymous user
+                anonymous_user = User.query.filter_by(email='anonymous@system.local').first()
+                if not anonymous_user:
+                    # Create anonymous user if needed
+                    anonymous_user = User(
+                        email='anonymous@system.local',
+                        first_name=uploader_name,
+                        last_name='',
+                        password_hash='',  # No password needed
+                        is_active=True,
+                        is_admin=False,
+                        is_email_confirmed=True
+                    )
+                    db.session.add(anonymous_user)
+                    db.session.flush()
+                
+                _process_file_upload(file, file_name, folder.id, anonymous_user.id)
+                uploaded_count += 1
+            except Exception as e:
+                logging.error(f"Fehler beim Hochladen von {file_name}: {e}")
+                skipped_count += 1
+        
+        db.session.commit()
+        
+        if uploaded_count > 0:
+            flash(f'{uploaded_count} Datei(en) wurden erfolgreich hochgeladen.', 'success')
+        if skipped_count > 0:
+            flash(f'{skipped_count} Datei(en) wurden übersprungen (zu groß oder Fehler).', 'warning')
+    
+    return redirect(url_for('files.dropbox_upload', token=token))
+
+
+# ONLYOFFICE Routes
+@files_bp.route('/edit-onlyoffice/<int:file_id>')
+@login_required
+def edit_onlyoffice(file_id):
+    """Edit a file using ONLYOFFICE editor."""
+    # Check if ONLYOFFICE is enabled
+    if not current_app.config.get('ONLYOFFICE_ENABLED', False):
+        flash('ONLYOFFICE ist nicht aktiviert.', 'warning')
+        return redirect(url_for('files.index'))
+    
+    file = File.query.get_or_404(file_id)
+    
+    # Check if file type is supported by ONLYOFFICE
+    from app.utils.onlyoffice import is_onlyoffice_file_type, get_onlyoffice_document_type, get_onlyoffice_file_type
+    file_ext = os.path.splitext(file.original_name)[1].lower()
+    
+    if not is_onlyoffice_file_type(file_ext):
+        flash('Dieser Dateityp wird von ONLYOFFICE nicht unterstützt.', 'warning')
+        if file.folder_id:
+            return redirect(url_for('files.browse_folder', folder_id=file.folder_id))
+        else:
+            return redirect(url_for('files.index'))
+    
+    # Get document type and file type
+    document_type = get_onlyoffice_document_type(file_ext)
+    file_type = get_onlyoffice_file_type(file_ext)
+    
+    # Generate unique document key for versioning
+    import hashlib
+    key_string = f"{file.id}_{file.version_number}_{file.updated_at.timestamp() if file.updated_at else ''}"
+    document_key = hashlib.md5(key_string.encode()).hexdigest()
+    
+    # Build document URL
+    document_url = url_for('files.onlyoffice_document', file_id=file.id, _external=True)
+    callback_url = url_for('files.onlyoffice_callback', file_id=file.id, _external=True)
+    onlyoffice_url = current_app.config.get('ONLYOFFICE_DOCUMENT_SERVER_URL', '/onlyoffice')
+    
+    # Build full URL to ONLYOFFICE API
+    if onlyoffice_url.startswith('http'):
+        api_url = f"{onlyoffice_url}/web-apps/apps/api/documents/api.js"
+    else:
+        # Relative path - use request host
+        api_url = url_for('static', filename='', _external=True).rstrip('/') + onlyoffice_url + '/web-apps/apps/api/documents/api.js'
+    
+    return render_template(
+        'files/edit_onlyoffice.html',
+        file=file,
+        document_key=document_key,
+        document_type=document_type,
+        file_type=file_type,
+        document_url=document_url,
+        callback_url=callback_url,
+        onlyoffice_api_url=api_url,
+        onlyoffice_url=onlyoffice_url
+    )
+
+
+@files_bp.route('/api/onlyoffice-document/<int:file_id>')
+@login_required
+def onlyoffice_document(file_id):
+    """Serve document to ONLYOFFICE editor."""
+    # Check if ONLYOFFICE is enabled
+    if not current_app.config.get('ONLYOFFICE_ENABLED', False):
+        return jsonify({'error': 'ONLYOFFICE not enabled'}), 404
+    
+    file = File.query.get_or_404(file_id)
+    
+    # Ensure we have an absolute path
+    if not os.path.isabs(file.file_path):
+        file_path = os.path.join(os.getcwd(), file.file_path)
+    else:
+        file_path = file.file_path
+    
+    # Check if file exists
+    if not os.path.exists(file_path):
+        return jsonify({'error': 'File not found'}), 404
+    
+    # Determine MIME type
+    file_ext = os.path.splitext(file.original_name)[1].lower()
+    mime_types = {
+        '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        '.doc': 'application/msword',
+        '.odt': 'application/vnd.oasis.opendocument.text',
+        '.rtf': 'application/rtf',
+        '.txt': 'text/plain',
+        '.md': 'text/markdown',
+        '.markdown': 'text/markdown',
+        '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        '.xls': 'application/vnd.ms-excel',
+        '.ods': 'application/vnd.oasis.opendocument.spreadsheet',
+        '.csv': 'text/csv',
+        '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        '.ppt': 'application/vnd.ms-powerpoint',
+        '.odp': 'application/vnd.oasis.opendocument.presentation',
+        '.pdf': 'application/pdf'
+    }
+    mimetype = mime_types.get(file_ext, 'application/octet-stream')
+    
+    return send_file(
+        file_path,
+        mimetype=mimetype,
+        download_name=file.original_name,
+        as_attachment=False
+    )
+
+
+@files_bp.route('/api/onlyoffice-save/<int:file_id>', methods=['POST'])
+@login_required
+def onlyoffice_save(file_id):
+    """Save document from ONLYOFFICE."""
+    # Check if ONLYOFFICE is enabled
+    if not current_app.config.get('ONLYOFFICE_ENABLED', False):
+        return jsonify({'error': 'ONLYOFFICE not enabled'}), 404
+    
+    file = File.query.get_or_404(file_id)
+    
+    # Get file content from request
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file in request'}), 400
+    
+    uploaded_file = request.files['file']
+    
+    # Save current version to history
+    version = FileVersion(
+        file_id=file.id,
+        version_number=file.version_number,
+        file_path=os.path.abspath(file.file_path),
+        file_size=file.file_size,
+        uploaded_by=file.uploaded_by
+    )
+    db.session.add(version)
+    
+    # Delete oldest version if needed
+    versions = FileVersion.query.filter_by(file_id=file.id).order_by(
+        FileVersion.version_number.desc()
+    ).all()
+    
+    if len(versions) >= MAX_FILE_VERSIONS:
+        oldest = versions[-1]
+        if os.path.exists(oldest.file_path):
+            os.remove(oldest.file_path)
+        db.session.delete(oldest)
+    
+    # Save new version
+    timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+    filename = f"{timestamp}_{file.original_name}"
+    filepath = os.path.join('uploads', 'files', filename)
+    
+    # Ensure directory exists
+    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+    
+    uploaded_file.save(filepath)
+    
+    # Store absolute path in database
+    absolute_filepath = os.path.abspath(filepath)
+    
+    file.file_path = absolute_filepath
+    file.file_size = os.path.getsize(absolute_filepath)
+    file.version_number += 1
+    file.uploaded_by = current_user.id
+    file.updated_at = datetime.utcnow()
+    
+    db.session.commit()
+    
+    # Send notification
+    try:
+        send_file_notification(file.id, 'modified')
+    except Exception as e:
+        logging.error(f"Fehler beim Senden der Datei-Benachrichtigung: {e}")
+    
+    return jsonify({'success': True, 'message': 'File saved successfully'})
+
+
+@files_bp.route('/onlyoffice-callback', methods=['POST'])
+def onlyoffice_callback():
+    """Handle callbacks from ONLYOFFICE Document Server."""
+    # Check if ONLYOFFICE is enabled
+    if not current_app.config.get('ONLYOFFICE_ENABLED', False):
+        return jsonify({'error': 'ONLYOFFICE not enabled'}), 404
+    
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'No data received'}), 400
+        
+        status = data.get('status')
+        key = data.get('key')
+        
+        # Extract file_id from key (key format: md5_hash)
+        # We need to find the file by matching the key
+        # For now, we'll use a simpler approach: store key in session or use file_id from URL
+        
+        # Status 6 means document is saved
+        if status == 6:
+            # Get file_id from callback URL parameter
+            file_id = request.args.get('file_id')
+            
+            if file_id:
+                try:
+                    file_id = int(file_id)
+                    file = File.query.get(file_id)
+                    
+                    if file:
+                        saved_file_url = data.get('url')
+                        
+                        if saved_file_url:
+                            # Download the saved file from ONLYOFFICE
+                            response = requests.get(saved_file_url)
+                            
+                            if response.status_code == 200:
+                                # Save current version to history
+                                version = FileVersion(
+                                    file_id=file.id,
+                                    version_number=file.version_number,
+                                    file_path=os.path.abspath(file.file_path),
+                                    file_size=file.file_size,
+                                    uploaded_by=file.uploaded_by
+                                )
+                                db.session.add(version)
+                                
+                                # Delete oldest version if needed
+                                versions = FileVersion.query.filter_by(file_id=file.id).order_by(
+                                    FileVersion.version_number.desc()
+                                ).all()
+                                
+                                if len(versions) >= MAX_FILE_VERSIONS:
+                                    oldest = versions[-1]
+                                    if os.path.exists(oldest.file_path):
+                                        os.remove(oldest.file_path)
+                                    db.session.delete(oldest)
+                                
+                                # Save new version
+                                timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+                                filename = f"{timestamp}_{file.original_name}"
+                                filepath = os.path.join('uploads', 'files', filename)
+                                
+                                os.makedirs(os.path.dirname(filepath), exist_ok=True)
+                                
+                                with open(filepath, 'wb') as f:
+                                    f.write(response.content)
+                                
+                                absolute_filepath = os.path.abspath(filepath)
+                                
+                                # Get the user who last edited (from file.uploaded_by or use system user)
+                                file.file_path = absolute_filepath
+                                file.file_size = os.path.getsize(absolute_filepath)
+                                file.version_number += 1
+                                # Keep original uploaded_by, or update if needed
+                                file.updated_at = datetime.utcnow()
+                                
+                                db.session.commit()
+                                
+                                # Send notification
+                                try:
+                                    send_file_notification(file.id, 'modified')
+                                except Exception as e:
+                                    logging.error(f"Fehler beim Senden der Datei-Benachrichtigung: {e}")
+                                
+                                logging.info(f"ONLYOFFICE: File {file_id} saved successfully")
+                except (ValueError, TypeError) as e:
+                    logging.error(f"ONLYOFFICE callback: Invalid file_id: {e}")
+                except Exception as e:
+                    logging.error(f"ONLYOFFICE callback: Error saving file: {e}")
+            else:
+                logging.warning("ONLYOFFICE callback: No file_id provided in callback URL")
+        
+        return jsonify({'error': 0})  # Success response for ONLYOFFICE
+        
+    except Exception as e:
+        logging.error(f"ONLYOFFICE callback error: {e}")
+        return jsonify({'error': str(e)}), 500
 
 
 

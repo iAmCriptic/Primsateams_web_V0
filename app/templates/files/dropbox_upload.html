@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}Briefkasten - Dateien hochladen{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow">
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <i class="bi bi-mailbox fs-1 text-primary mb-3"></i>
+                    <h3>Briefkasten</h3>
+                    <p class="text-muted">{{ folder.name }}</p>
+                </div>
+                
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
+                <form method="POST" action="{{ url_for('files.dropbox_upload_file', token=token) }}" enctype="multipart/form-data" id="uploadForm">
+                    <div class="mb-3">
+                        <label for="uploader_name" class="form-label">Ihr Name (optional)</label>
+                        <input type="text" class="form-control" id="uploader_name" name="uploader_name" placeholder="Anonym">
+                        <div class="form-text">Ihr Name wird als Ersteller angezeigt. Lassen Sie das Feld leer für anonyme Uploads.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="file" class="form-label">Dateien auswählen</label>
+                        <input type="file" class="form-control" id="file" name="file" multiple required>
+                        <div class="form-text">Maximale Dateigröße: 100MB pro Datei. Mehrere Dateien können gleichzeitig ausgewählt werden.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="folder_upload" class="form-label">Oder Ordner auswählen</label>
+                        <input type="file" class="form-control" id="folder_upload" name="file" webkitdirectory directory multiple>
+                        <div class="form-text">Dateien größer als 100MB werden automatisch übersprungen.</div>
+                    </div>
+                    
+                    <div class="progress mb-3" style="display: none;" id="uploadProgress">
+                        <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100" id="uploadBtn">
+                        <i class="bi bi-upload"></i> Dateien hochladen
+                    </button>
+                </form>
+                
+                <div class="mt-4 text-center text-muted small">
+                    <i class="bi bi-info-circle"></i>
+                    Sie können die hochgeladenen Dateien nicht sehen. Sie werden nur dem Besitzer des Briefkastens angezeigt.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.getElementById('file');
+    const folderInput = document.getElementById('folder_upload');
+    const uploadForm = document.getElementById('uploadForm');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const uploadProgress = document.getElementById('uploadProgress');
+    const maxSize = 100 * 1024 * 1024; // 100MB
+    
+    function validateUpload() {
+        let hasValidInput = false;
+        
+        if (fileInput && fileInput.files.length > 0) {
+            // Check all files
+            for (let i = 0; i < fileInput.files.length; i++) {
+                if (fileInput.files[i].size > maxSize) {
+                    alert(`Die Datei "${fileInput.files[i].name}" ist zu groß. Maximale Größe: 100MB pro Datei`);
+                    fileInput.value = '';
+                    uploadBtn.disabled = true;
+                    return;
+                }
+            }
+            hasValidInput = true;
+        }
+        
+        if (folderInput && folderInput.files.length > 0) {
+            hasValidInput = true;
+        }
+        
+        uploadBtn.disabled = !hasValidInput;
+    }
+    
+    if (fileInput) {
+        fileInput.addEventListener('change', function() {
+            if (folderInput && folderInput.files.length > 0) {
+                folderInput.value = '';
+            }
+            validateUpload();
+        });
+    }
+    
+    if (folderInput) {
+        folderInput.addEventListener('change', function() {
+            if (fileInput && fileInput.files.length > 0) {
+                fileInput.value = '';
+            }
+            validateUpload();
+        });
+    }
+    
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', function(e) {
+            if ((!fileInput || fileInput.files.length === 0) && 
+                (!folderInput || folderInput.files.length === 0)) {
+                e.preventDefault();
+                alert('Bitte wählen Sie eine Datei oder einen Ordner aus.');
+                return;
+            }
+            
+            uploadProgress.style.display = 'block';
+            uploadBtn.disabled = true;
+            uploadBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Hochladen...';
+            
+            let progress = 0;
+            const interval = setInterval(function() {
+                progress += Math.random() * 15;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                }
+                uploadProgress.querySelector('.progress-bar').style.width = progress + '%';
+            }, 200);
+        });
+    }
+});
+</script>
+{% endblock %}
+

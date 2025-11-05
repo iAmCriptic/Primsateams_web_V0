@@ -12,6 +12,11 @@ class Folder(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
+    # Briefkasten (Dropbox) fields
+    is_dropbox = db.Column(db.Boolean, default=False, nullable=False)
+    dropbox_token = db.Column(db.String(255), nullable=True, unique=True)
+    dropbox_password_hash = db.Column(db.String(255), nullable=True)
+    
     # Self-referential relationship for nested folders
     parent = db.relationship('Folder', remote_side=[id], backref='subfolders')
     files = db.relationship('File', back_populates='folder', cascade='all, delete-orphan')

@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+
+{% block title %}{{ file.name }} - ONLYOFFICE Editor{% endblock %}
+
+{% block extra_css %}
+<style>
+    .onlyoffice-editor-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        background: #fff;
+        z-index: 1000;
+    }
+    
+    .onlyoffice-editor-toolbar {
+        background: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        padding: 0.5rem 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-shrink: 0;
+    }
+    
+    .onlyoffice-editor-content {
+        flex: 1;
+        overflow: hidden;
+        position: relative;
+    }
+    
+    #onlyoffice-editor {
+        width: 100%;
+        height: 100%;
+        border: none;
+    }
+    
+    .loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.9);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 1001;
+    }
+    
+    .error-message {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 1rem;
+        border-radius: 0.25rem;
+        margin: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="onlyoffice-editor-container">
+    <div class="onlyoffice-editor-toolbar">
+        <button type="button" class="btn btn-outline-secondary" onclick="goBack()" id="backBtn">
+            <i class="bi bi-arrow-left"></i> Zurück
+        </button>
+        <div class="vr"></div>
+        <span class="text-muted">{{ file.name }}</span>
+        <div class="ms-auto">
+            <span class="badge bg-info" id="statusBadge">Wird geladen...</span>
+        </div>
+    </div>
+    
+    <div class="onlyoffice-editor-content">
+        <div class="loading-overlay" id="loadingOverlay">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Lade Editor...</span>
+            </div>
+            <p class="mt-3 text-muted">ONLYOFFICE Editor wird geladen...</p>
+        </div>
+        
+        <div id="errorContainer" style="display: none;">
+            <div class="error-message">
+                <h5><i class="bi bi-exclamation-triangle"></i> Fehler beim Laden des Editors</h5>
+                <p id="errorMessage"></p>
+                <button class="btn btn-primary mt-2" onclick="location.reload()">Neu laden</button>
+            </div>
+        </div>
+        
+        <div id="onlyoffice-editor"></div>
+    </div>
+</div>
+
+<script src="{{ onlyoffice_api_url }}"></script>
+<script>
+let docEditor;
+let isEditorReady = false;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Build editor configuration
+    const config = {
+        document: {
+            fileType: "{{ file_type }}",
+            key: "{{ document_key }}",
+            title: "{{ file.name }}",
+            url: "{{ document_url }}"
+        },
+        documentType: "{{ document_type }}",
+        editorConfig: {
+            callbackUrl: "{{ callback_url }}",
+            mode: "edit",
+            coEditing: {
+                mode: "fast",
+                change: true
+            },
+            user: {
+                id: "{{ current_user.id }}",
+                name: "{{ current_user.full_name }}"
+            },
+            customization: {
+                autosave: true,
+                forcesave: true,
+                hideRightMenu: false,
+                hideRulers: false,
+                hideStatusBar: false,
+                showReviewChanges: true
+            }
+        },
+        width: "100%",
+        height: "100%"
+    };
+    
+    // Check if ONLYOFFICE API is loaded
+    if (typeof DocsAPI === 'undefined') {
+        showError('ONLYOFFICE Document Server API konnte nicht geladen werden. Bitte stellen Sie sicher, dass ONLYOFFICE Document Server unter {{ onlyoffice_url }} erreichbar ist.');
+        return;
+    }
+    
+    // Initialize editor
+    try {
+        docEditor = new DocsAPI.DocEditor("onlyoffice-editor", config);
+        
+        // Editor event handlers
+        docEditor.events.on("onDocumentReady", function() {
+            hideLoading();
+            updateStatus('Editor bereit');
+            isEditorReady = true;
+        });
+        
+        docEditor.events.on("onInfo", function(data) {
+            console.log('ONLYOFFICE Info:', data);
+        });
+        
+        docEditor.events.on("onError", function(error) {
+            console.error('ONLYOFFICE Error:', error);
+            showError('Ein Fehler ist im Editor aufgetreten: ' + (error.message || 'Unbekannter Fehler'));
+        });
+        
+        docEditor.events.on("onDocumentStateChange", function(data) {
+            if (data.changesUrl) {
+                updateStatus('Änderungen werden gespeichert...');
+            }
+        });
+        
+        docEditor.events.on("onRequestSave", function() {
+            updateStatus('Speichere...');
+        });
+        
+        // Show loading for a bit longer to ensure editor initializes
+        setTimeout(function() {
+            if (!isEditorReady) {
+                hideLoading();
+                updateStatus('Editor wird initialisiert...');
+            }
+        }, 3000);
+        
+    } catch (error) {
+        console.error('Error initializing ONLYOFFICE editor:', error);
+        showError('Fehler beim Initialisieren des Editors: ' + error.message);
+    }
+});
+
+function hideLoading() {
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    if (loadingOverlay) {
+        loadingOverlay.style.display = 'none';
+    }
+}
+
+function showError(message) {
+    hideLoading();
+    const errorContainer = document.getElementById('errorContainer');
+    const errorMessage = document.getElementById('errorMessage');
+    if (errorContainer && errorMessage) {
+        errorMessage.textContent = message;
+        errorContainer.style.display = 'block';
+    }
+    updateStatus('Fehler');
+}
+
+function updateStatus(status) {
+    const statusBadge = document.getElementById('statusBadge');
+    if (statusBadge) {
+        statusBadge.textContent = status;
+        
+        // Update badge color based on status
+        statusBadge.className = 'badge';
+        if (status.includes('Fehler') || status.includes('Fehler')) {
+            statusBadge.classList.add('bg-danger');
+        } else if (status.includes('bereit') || status.includes('bereit')) {
+            statusBadge.classList.add('bg-success');
+        } else if (status.includes('Speichere') || status.includes('Speichere')) {
+            statusBadge.classList.add('bg-warning');
+        } else {
+            statusBadge.classList.add('bg-info');
+        }
+    }
+}
+
+function goBack() {
+    if (isEditorReady && docEditor) {
+        // Try to save if editor is ready
+        try {
+            docEditor.downloadAs();
+        } catch (e) {
+            console.error('Error saving before leaving:', e);
+        }
+    }
+    
+    // Redirect back
+    {% if file.folder_id %}
+    window.location.href = '{{ url_for("files.browse_folder", folder_id=file.folder_id) }}';
+    {% else %}
+    window.location.href = '{{ url_for("files.index") }}';
+    {% endif %}
+}
+
+// Warn before leaving if editor has unsaved changes
+window.addEventListener('beforeunload', function(e) {
+    if (isEditorReady && docEditor) {
+        // Check if there are unsaved changes
+        // Note: This is a simplified check - ONLYOFFICE handles saving internally
+        e.preventDefault();
+        e.returnValue = '';
+    }
+});
+
+// Keyboard shortcut: Escape to go back
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+{% endblock %}
+
