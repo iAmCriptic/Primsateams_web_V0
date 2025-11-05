@@ -1,6 +1,18 @@
 # ONLYOFFICE Document Server Installation und Konfiguration
 
-Diese Anleitung beschreibt die Installation und Konfiguration von ONLYOFFICE Document Server auf Ubuntu für die Integration in das Team Portal.
+Diese Anleitung beschreibt die Installation und Konfiguration von **ONLYOFFICE Docs Community Edition** auf Ubuntu für die Integration in das Team Portal.
+
+## ONLYOFFICE Docs Community Edition
+
+Wir verwenden die **ONLYOFFICE Docs Community Edition** (kostenlos):
+
+- ✅ **Kostenlos** und Open Source
+- ✅ Bis zu **20 gleichzeitige Verbindungen**
+- ✅ Alle Editor-Features (Word, Excel, PowerPoint, PDF, Markdown)
+- ✅ Kollaborative Bearbeitung
+- ✅ Minimaler Ressourcenbedarf
+
+**Hinweis:** Die Community Edition ist für die meisten Anwendungsfälle völlig ausreichend. Die Integration funktioniert identisch mit der Enterprise-Version.
 
 ## Voraussetzungen
 
@@ -22,15 +34,17 @@ sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys CB2DE8E5
 sudo echo "deb http://download.onlyoffice.com/repo/debian squeeze main" | sudo tee /etc/apt/sources.list.d/onlyoffice.list
 ```
 
-### 2. ONLYOFFICE Document Server installieren
+### 2. ONLYOFFICE Docs Community Edition installieren
 
 ```bash
 # Paketlisten aktualisieren
 sudo apt-get update
 
-# ONLYOFFICE Document Server installieren
+# ONLYOFFICE Docs Community Edition installieren
 sudo apt-get install onlyoffice-documentserver
 ```
+
+**Hinweis:** Das Paket `onlyoffice-documentserver` installiert standardmäßig die Community Edition, die kostenlos ist und bis zu 20 gleichzeitige Verbindungen unterstützt. Für mehr Verbindungen benötigen Sie eine Enterprise-Lizenz.
 
 ### 3. Service starten und aktivieren
 
@@ -55,7 +69,7 @@ curl http://localhost:8000/welcome/
 # http://localhost:8000/welcome/
 ```
 
-Wenn Sie eine Erfolgsseite sehen, ist ONLYOFFICE korrekt installiert.
+Wenn Sie eine Erfolgsseite sehen, ist ONLYOFFICE Docs Community Edition korrekt installiert.
 
 ## Nginx Reverse Proxy Konfiguration
 
@@ -110,9 +124,10 @@ curl http://localhost/onlyoffice/web-apps/apps/api/documents/api.js
 # http://ihre-domain.de/onlyoffice/web-apps/apps/api/documents/api.js
 ```
 
+
 ## Markdown-Plugin aktivieren
 
-Das Markdown-Plugin ist standardmäßig in ONLYOFFICE enthalten, muss aber möglicherweise aktiviert werden:
+Das Markdown-Plugin ist standardmäßig in ONLYOFFICE Docs Community Edition enthalten und aktiviert. Falls Sie es manuell aktivieren müssen:
 
 1. Öffnen Sie die ONLYOFFICE-Konfiguration:
    ```bash
@@ -234,7 +249,8 @@ Die Anwendung läuft dann normal weiter, ohne ONLYOFFICE-Features anzuzeigen.
 
 ## Weitere Informationen
 
+- [ONLYOFFICE Docs Community Edition Download](https://www.onlyoffice.com/download-community#docs-community)
 - [ONLYOFFICE Dokumentation](https://api.onlyoffice.com/)
 - [ONLYOFFICE Help Center](https://helpcenter.onlyoffice.com/)
-- [ONLYOFFICE Installation Guide](https://helpcenter.onlyoffice.com/installation/docs-community-install-ubuntu.aspx)
+- [ONLYOFFICE Docs Community Installation Guide](https://helpcenter.onlyoffice.com/installation/docs-community-install-ubuntu.aspx)
 
