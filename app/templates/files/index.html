@@ -55,13 +55,13 @@
                             <i class="bi bi-three-dots-vertical"></i>
                         </button>
                         <ul class="dropdown-menu">
-                            {% if folder.is_dropbox %}
+                            {% if files_dropbox_enabled and folder.is_dropbox %}
                             <li>
                                 <a class="dropdown-item" href="#" onclick="openDropboxSettings({{ folder.id }}); return false;">
                                     <i class="bi bi-gear"></i> Briefkasten bearbeiten
                                 </a>
                             </li>
-                            {% else %}
+                            {% elif files_dropbox_enabled %}
                             <li>
                                 <form method="POST" action="{{ url_for('files.make_dropbox', folder_id=folder.id) }}" class="d-inline">
                                     <button type="submit" class="dropdown-item">
@@ -70,7 +70,39 @@
                                 </form>
                             </li>
                             {% endif %}
+                            {% if files_sharing_enabled %}
                             <li><hr class="dropdown-divider"></li>
+                            {% if folder.share_enabled %}
+                            <li>
+                                <a class="dropdown-item" href="#" onclick="openShareSettings('folder', {{ folder.id }}); return false;">
+                                    <i class="bi bi-gear"></i> Freigabe bearbeiten
+                                </a>
+                            </li>
+                            <li>
+                                <form method="POST" action="{{ url_for('files.update_folder_share', folder_id=folder.id) }}" class="d-inline">
+                                    <input type="hidden" name="action" value="disable">
+                                    <button type="submit" class="dropdown-item">
+                                        <i class="bi bi-slash-circle"></i> Freigabe deaktivieren
+                                    </button>
+                                </form>
+                            </li>
+                            {% else %}
+                            <li>
+                                <a class="dropdown-item" href="#" onclick="openShareDialog('folder', {{ folder.id }}); return false;">
+                                    <i class="bi bi-share"></i> Freigeben
+                                </a>
+                            </li>
+                            {% endif %}
+                            {% endif %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form method="POST" action="{{ url_for('files.rename_folder', folder_id=folder.id) }}" class="d-inline" onsubmit="return confirm('Ordner umbenennen?');">
+                                    <input type="hidden" name="new_name" value="{{ folder.name }}">
+                                    <button type="submit" class="dropdown-item">
+                                        <i class="bi bi-pencil"></i> Umbenennen
+                                    </button>
+                                </form>
+                            </li>
                             <li>
                                 <form method="POST" action="{{ url_for('files.delete_folder', folder_id=folder.id) }}" class="d-inline">
                                     <button type="submit" class="dropdown-item text-danger" data-confirm-delete="Ordner und alle Inhalte löschen?">
@@ -100,13 +132,13 @@
                 <i class="bi bi-three-dots-vertical"></i>
             </button>
             <ul class="dropdown-menu">
-                {% if folder.is_dropbox %}
+                {% if files_dropbox_enabled and folder.is_dropbox %}
                 <li>
                     <a class="dropdown-item" href="#" onclick="openDropboxSettings({{ folder.id }}); return false;">
                         <i class="bi bi-gear"></i> Briefkasten bearbeiten
                     </a>
                 </li>
-                {% else %}
+                {% elif files_dropbox_enabled %}
                 <li>
                     <form method="POST" action="{{ url_for('files.make_dropbox', folder_id=folder.id) }}" class="d-inline">
                         <button type="submit" class="dropdown-item">
@@ -115,7 +147,39 @@
                     </form>
                 </li>
                 {% endif %}
+                {% if files_sharing_enabled %}
                 <li><hr class="dropdown-divider"></li>
+                {% if folder.share_enabled %}
+                <li>
+                    <a class="dropdown-item" href="#" onclick="openShareSettings('folder', {{ folder.id }}); return false;">
+                        <i class="bi bi-gear"></i> Freigabe bearbeiten
+                    </a>
+                </li>
+                <li>
+                    <form method="POST" action="{{ url_for('files.update_folder_share', folder_id=folder.id) }}" class="d-inline">
+                        <input type="hidden" name="action" value="disable">
+                        <button type="submit" class="dropdown-item">
+                            <i class="bi bi-slash-circle"></i> Freigabe deaktivieren
+                        </button>
+                    </form>
+                </li>
+                {% else %}
+                <li>
+                    <a class="dropdown-item" href="#" onclick="openShareDialog('folder', {{ folder.id }}); return false;">
+                        <i class="bi bi-share"></i> Freigeben
+                    </a>
+                </li>
+                {% endif %}
+                {% endif %}
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <form method="POST" action="{{ url_for('files.rename_folder', folder_id=folder.id) }}" class="d-inline" onsubmit="return confirm('Ordner umbenennen?');">
+                        <input type="hidden" name="new_name" value="{{ folder.name }}">
+                        <button type="submit" class="dropdown-item">
+                            <i class="bi bi-pencil"></i> Umbenennen
+                        </button>
+                    </form>
+                </li>
                 <li>
                     <form method="POST" action="{{ url_for('files.delete_folder', folder_id=folder.id) }}" class="d-inline">
                         <button type="submit" class="dropdown-item text-danger" data-confirm-delete="Ordner und alle Inhalte löschen?">
@@ -223,9 +287,38 @@
                             </a></li>
                             {% endif %}
                             <li><hr class="dropdown-divider"></li>
+                            {% if files_sharing_enabled %}
+                            <li><hr class="dropdown-divider"></li>
+                            {% if file.share_enabled %}
+                            <li><a class="dropdown-item" href="#" onclick="openShareSettings('file', {{ file.id }}); return false;">
+                                <i class="bi bi-gear"></i> Freigabe bearbeiten
+                            </a></li>
+                            <li>
+                                <form method="POST" action="{{ url_for('files.update_file_share', file_id=file.id) }}" class="d-inline">
+                                    <input type="hidden" name="action" value="disable">
+                                    <button type="submit" class="dropdown-item">
+                                        <i class="bi bi-slash-circle"></i> Freigabe deaktivieren
+                                    </button>
+                                </form>
+                            </li>
+                            {% else %}
+                            <li><a class="dropdown-item" href="#" onclick="openShareDialog('file', {{ file.id }}); return false;">
+                                <i class="bi bi-share"></i> Freigeben
+                            </a></li>
+                            {% endif %}
+                            {% endif %}
+                            <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="#" onclick="openFileDetails({{ file.id }})">
                                 <i class="bi bi-info-circle"></i> Details & Versionen
                             </a></li>
+                            <li>
+                                <form method="POST" action="{{ url_for('files.rename_file', file_id=file.id) }}" class="d-inline" onsubmit="return confirm('Datei umbenennen?');">
+                                    <input type="hidden" name="new_name" value="{{ file.name }}">
+                                    <button type="submit" class="dropdown-item">
+                                        <i class="bi bi-pencil"></i> Umbenennen
+                                    </button>
+                                </form>
+                            </li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <form method="POST" action="{{ url_for('files.delete_file', file_id=file.id) }}" class="d-inline">
@@ -984,6 +1077,94 @@ function copyDropboxUrl() {
         btn.classList.remove('btn-success');
         btn.classList.add('btn-outline-secondary');
     }, 2000);
+}
+
+// ===== Umbenennen & Freigaben =====
+function openShareDialog(type, id) {
+    const title = type === 'file' ? 'Datei freigeben' : 'Ordner freigeben';
+    const formAction = type === 'file' ? `/files/file/${id}/share` : `/files/folder/${id}/share`;
+    const html = `
+        <form method="POST" action="${formAction}">
+            <div class="mb-3">
+                <label class="form-label">Passwort (optional)</label>
+                <input type="password" name="password" class="form-control">
+                <div class="form-text">Schützt die Freigabe mit einem Passwort.</div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Ablaufdatum (optional)</label>
+                <input type="datetime-local" name="expires_at" class="form-control">
+                <div class="form-text">Nach diesem Datum ist die Freigabe nicht mehr verfügbar.</div>
+            </div>
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> Der Empfänger wird beim ersten Zugriff nach seinem Namen gefragt.
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-share"></i> Freigabe erstellen</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Schließen</button>
+            </div>
+        </form>`;
+    showSimpleModal(title, html);
+}
+
+function openShareSettings(type, id) {
+    const endpoint = type === 'file' ? `/files/file/${id}/share-settings` : `/files/folder/${id}/share-settings`;
+    fetch(endpoint)
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) { return; }
+            const item = data.item;
+            const formAction = type === 'file' ? `/files/file/${id}/share-settings` : `/files/folder/${id}/share-settings`;
+            const html = `
+                <div class="mb-3">
+                    <label class="form-label">Freigabe-Link</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" value="${item.share_url}" readonly>
+                        <button class="btn btn-outline-secondary" type="button" onclick="navigator.clipboard.writeText('${item.share_url}')"><i class="bi bi-clipboard"></i></button>
+                    </div>
+                </div>
+                <form method="POST" action="${formAction}">
+                    <div class="mb-3">
+                        <label class="form-label">Passwort (leer lassen = unverändert)</label>
+                        <input type="password" class="form-control" name="password">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Ablaufdatum</label>
+                        <input type="datetime-local" class="form-control" name="expires_at" value="${item.expires_at ? item.expires_at.substring(0,16) : ''}">
+                    </div>
+                    ${item.share_name ? `<div class="alert alert-info mb-3"><i class="bi bi-info-circle"></i> Aktueller Gast: ${item.share_name}</div>` : ''}
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Speichern</button>
+                        <button type="submit" name="action" value="disable" class="btn btn-outline-danger"><i class="bi bi-slash-circle"></i> Freigabe deaktivieren</button>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Schließen</button>
+                    </div>
+                </form>`;
+            showSimpleModal('Freigabe bearbeiten', html);
+        });
+}
+
+function showSimpleModal(title, bodyHtml) {
+    let modal = document.getElementById('simpleModal');
+    if (!modal) {
+        const tpl = document.createElement('div');
+        tpl.innerHTML = `
+        <div class="modal fade" id="simpleModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title"></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body"></div>
+                </div>
+            </div>
+        </div>`;
+        document.body.appendChild(tpl.firstElementChild);
+        modal = document.getElementById('simpleModal');
+    }
+    modal.querySelector('.modal-title').innerText = title;
+    modal.querySelector('.modal-body').innerHTML = bodyHtml;
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
 }
 </script>
 {% endblock %}

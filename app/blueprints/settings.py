@@ -559,6 +559,22 @@ def admin_system():
                     flash('Ungültiger Dateityp. Nur PNG, JPG, JPEG, GIF und SVG Dateien sind erlaubt.', 'danger')
                     return redirect(url_for('settings.admin_system'))
         
+        # Feature Flags: Dateien
+        dropbox_enabled = request.form.get('files_dropbox_enabled') == 'on'
+        sharing_enabled = request.form.get('files_sharing_enabled') == 'on'
+
+        dropbox_setting = SystemSettings.query.filter_by(key='files_dropbox_enabled').first()
+        if dropbox_setting:
+            dropbox_setting.value = str(dropbox_enabled)
+        else:
+            db.session.add(SystemSettings(key='files_dropbox_enabled', value=str(dropbox_enabled)))
+
+        sharing_setting = SystemSettings.query.filter_by(key='files_sharing_enabled').first()
+        if sharing_setting:
+            sharing_setting.value = str(sharing_enabled)
+        else:
+            db.session.add(SystemSettings(key='files_sharing_enabled', value=str(sharing_enabled)))
+
         db.session.commit()
         flash('System-Einstellungen wurden aktualisiert.', 'success')
         return redirect(url_for('settings.admin_system'))
@@ -566,11 +582,16 @@ def admin_system():
     # Get current settings
     portal_name_setting = SystemSettings.query.filter_by(key='portal_name').first()
     portal_logo_setting = SystemSettings.query.filter_by(key='portal_logo').first()
+    dropbox_setting = SystemSettings.query.filter_by(key='files_dropbox_enabled').first()
+    sharing_setting = SystemSettings.query.filter_by(key='files_sharing_enabled').first()
     
     portal_name = portal_name_setting.value if portal_name_setting else ''
     portal_logo = portal_logo_setting.value if portal_logo_setting else None
+    files_dropbox_enabled = (dropbox_setting and str(dropbox_setting.value).lower() == 'true') or False
+    files_sharing_enabled = (sharing_setting and str(sharing_setting.value).lower() == 'true') or False
     
-    return render_template('settings/admin_system.html', portal_name=portal_name, portal_logo=portal_logo)
+    return render_template('settings/admin_system.html', portal_name=portal_name, portal_logo=portal_logo,
+                           files_dropbox_enabled=files_dropbox_enabled, files_sharing_enabled=files_sharing_enabled)
 
 
 @settings_bp.route('/admin/whitelist')

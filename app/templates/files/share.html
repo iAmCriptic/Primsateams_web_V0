@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Freigabe{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                {% if item_type == 'file' %}
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="bi bi-file-earmark me-2"></i>
+                        <h4 class="mb-0">{{ file.name }}</h4>
+                    </div>
+                    <p class="text-muted mb-4">Als Gast angemeldet: {{ guest_name }}</p>
+                    <div class="d-flex gap-2">
+                        <a href="{{ url_for('files.public_share_download', token=token) }}" class="btn btn-primary">
+                            <i class="bi bi-download"></i> Herunterladen
+                        </a>
+                        {% if onlyoffice_available %}
+                            {% set file_ext = file.name[file.name.rfind('.'):] if '.' in file.name else '' %}
+                            {% if file_ext.lower() in ['.docx', '.doc', '.odt', '.rtf', '.txt', '.xlsx', '.xls', '.ods', '.csv', '.pptx', '.ppt', '.odp', '.pdf', '.md', '.markdown'] %}
+                        <a href="{{ url_for('files.share_edit_onlyoffice', token=token) }}" class="btn btn-success">
+                            <i class="bi bi-file-earmark-text"></i> Mit ONLYOFFICE bearbeiten
+                        </a>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="bi bi-folder2-open me-2"></i>
+                        <h4 class="mb-0">{{ folder.name }}</h4>
+                    </div>
+                    <p class="text-muted mb-3">Als Gast angemeldet: {{ guest_name }}</p>
+                    
+                    <div class="mb-4">
+                        <h5 class="mb-3">Dateien im Ordner</h5>
+                        {% if folder_files %}
+                        <div class="list-group">
+                            {% for file in folder_files %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-file-earmark me-2"></i>
+                                    <span>{{ file.name }}</span>
+                                    {% if file.file_size %}
+                                    <small class="text-muted ms-2">
+                                        {% if file.file_size > 1024*1024 %}
+                                            {{ (file.file_size / (1024*1024))|round(1) }} MB
+                                        {% else %}
+                                            {{ (file.file_size / 1024)|round(1) }} KB
+                                        {% endif %}
+                                    </small>
+                                    {% endif %}
+                                </div>
+                                <div class="btn-group">
+                                    <a href="{{ url_for('files.public_share_folder_file_download', token=token, file_id=file.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-download"></i> Herunterladen
+                                    </a>
+                                    {% if onlyoffice_available %}
+                                        {% set file_ext = file.name[file.name.rfind('.'):] if '.' in file.name else '' %}
+                                        {% if file_ext.lower() in ['.docx', '.doc', '.odt', '.rtf', '.txt', '.xlsx', '.xls', '.ods', '.csv', '.pptx', '.ppt', '.odp', '.pdf', '.md', '.markdown'] %}
+                                    <a href="{{ url_for('files.share_edit_onlyoffice', token=token) }}?file_id={{ file.id }}" class="btn btn-sm btn-outline-success">
+                                        <i class="bi bi-file-earmark-text"></i> Bearbeiten
+                                    </a>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> Dieser Ordner ist noch leer.
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <h5 class="mb-3">Dateien hochladen</h5>
+                    <form method="POST" action="{{ url_for('files.public_share_upload', token=token) }}" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label class="form-label">Dateien auswählen</label>
+                            <input type="file" class="form-control" name="file" multiple required>
+                        </div>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-upload"></i> Hochladen</button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

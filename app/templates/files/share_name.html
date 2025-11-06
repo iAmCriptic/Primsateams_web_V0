@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Freigabe - Name eingeben{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow">
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <i class="bi bi-person-circle fs-1 text-primary mb-3"></i>
+                    <h3>Freigabe</h3>
+                    <p class="text-muted">{{ item.name }}</p>
+                </div>
+                
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
+                <form method="POST" action="{{ url_for('files.public_share', token=token) }}">
+                    <div class="mb-3">
+                        <label for="guest_name" class="form-label">Ihr Name</label>
+                        <input type="text" class="form-control" id="guest_name" name="guest_name" required autofocus placeholder="Max Mustermann">
+                        <div class="form-text">Dieser Name wird für die Bearbeitung verwendet.</div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-check-circle"></i> Weiter
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

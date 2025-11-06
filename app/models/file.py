@@ -17,6 +17,13 @@ class Folder(db.Model):
     dropbox_token = db.Column(db.String(255), nullable=True, unique=True)
     dropbox_password_hash = db.Column(db.String(255), nullable=True)
     
+    # Sharing fields
+    share_enabled = db.Column(db.Boolean, default=False, nullable=False)
+    share_token = db.Column(db.String(255), nullable=True, unique=True)
+    share_password_hash = db.Column(db.String(255), nullable=True)
+    share_expires_at = db.Column(db.DateTime, nullable=True)
+    share_name = db.Column(db.String(255), nullable=True)
+    
     # Self-referential relationship for nested folders
     parent = db.relationship('Folder', remote_side=[id], backref='subfolders')
     files = db.relationship('File', back_populates='folder', cascade='all, delete-orphan')
@@ -49,6 +56,13 @@ class File(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
+    # Sharing fields
+    share_enabled = db.Column(db.Boolean, default=False, nullable=False)
+    share_token = db.Column(db.String(255), nullable=True, unique=True)
+    share_password_hash = db.Column(db.String(255), nullable=True)
+    share_expires_at = db.Column(db.DateTime, nullable=True)
+    share_name = db.Column(db.String(255), nullable=True)
+
     # Relationships
     folder = db.relationship('Folder', back_populates='files')
     uploader = db.relationship('User', back_populates='uploaded_files')

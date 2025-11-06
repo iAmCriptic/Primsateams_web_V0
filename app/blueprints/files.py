@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from app import db
 from app.models.file import File, FileVersion, Folder
 from app.models.user import User
+from app.models.settings import SystemSettings
 from app.utils.notifications import send_file_notification
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -45,11 +46,19 @@ def browse_folder(folder_id):
         is_current=True
     ).order_by(File.name).all()
     
+    # Feature flags
+    dropbox_setting = SystemSettings.query.filter_by(key='files_dropbox_enabled').first()
+    sharing_setting = SystemSettings.query.filter_by(key='files_sharing_enabled').first()
+    files_dropbox_enabled = (dropbox_setting and str(dropbox_setting.value).lower() == 'true') or False
+    files_sharing_enabled = (sharing_setting and str(sharing_setting.value).lower() == 'true') or False
+
     return render_template(
         'files/index.html',
         current_folder=current_folder,
         subfolders=subfolders,
-        files=files
+        files=files,
+        files_dropbox_enabled=files_dropbox_enabled,
+        files_sharing_enabled=files_sharing_enabled
     )
 
 
@@ -80,6 +89,54 @@ def create_folder():
         return redirect(url_for('files.browse_folder', folder_id=parent_id))
     return redirect(url_for('files.index'))
 
+
+@files_bp.route('/file/<int:file_id>/rename', methods=['POST'])
+@login_required
+def rename_file(file_id):
+    """Benennt eine Datei um."""
+    file = File.query.get_or_404(file_id)
+    new_name = request.form.get('new_name', '').strip()
+    
+    if not new_name:
+        flash('Neuer Dateiname darf nicht leer sein.', 'danger')
+        return redirect(request.referrer or url_for('files.index'))
+    
+    # Keine Pfadseparatoren erlauben
+    if '/' in new_name or '\\' in new_name:
+        flash('Ungültiger Dateiname.', 'danger')
+        return redirect(request.referrer or url_for('files.index'))
+    
+    file.name = new_name
+    db.session.commit()
+    flash('Datei wurde umbenannt.', 'success')
+    
+    if file.folder_id:
+        return redirect(url_for('files.browse_folder', folder_id=file.folder_id))
+    return redirect(url_for('files.index'))
+
+
+@files_bp.route('/folder/<int:folder_id>/rename', methods=['POST'])
+@login_required
+def rename_folder(folder_id):
+    """Benennt einen Ordner um."""
+    folder = Folder.query.get_or_404(folder_id)
+    new_name = request.form.get('new_name', '').strip()
+    
+    if not new_name:
+        flash('Neuer Ordnername darf nicht leer sein.', 'danger')
+        return redirect(request.referrer or url_for('files.index'))
+    
+    if '/' in new_name or '\\' in new_name:
+        flash('Ungültiger Ordnername.', 'danger')
+        return redirect(request.referrer or url_for('files.index'))
+    
+    folder.name = new_name
+    db.session.commit()
+    flash('Ordner wurde umbenannt.', 'success')
+    
+    if folder.parent_id:
+        return redirect(url_for('files.browse_folder', folder_id=folder.parent_id))
+    return redirect(url_for('files.index'))
 
 @files_bp.route('/create-file', methods=['POST'])
 @login_required
@@ -969,6 +1026,300 @@ def dropbox_upload_file(token):
     return redirect(url_for('files.dropbox_upload', token=token))
 
 
+# =========================
+# Sharing (Freigaben)
+# =========================
+
+def _is_sharing_enabled() -> bool:
+    setting = SystemSettings.query.filter_by(key='files_sharing_enabled').first()
+    return (setting and str(setting.value).lower() == 'true') or False
+
+
+def _generate_unique_share_token():
+    token = secrets.token_urlsafe(32)
+    while File.query.filter_by(share_token=token).first() or Folder.query.filter_by(share_token=token).first():
+        token = secrets.token_urlsafe(32)
+    return token
+
+
+def _check_share_access(token):
+    """Prüft ob ein Share-Token gültig ist und gibt (item, guest_name) zurück.
+    Der guest_name wird aus der Session gelesen (wird beim ersten Zugriff eingegeben).
+    """
+    shared_file = File.query.filter_by(share_token=token, share_enabled=True).first()
+    shared_folder = None if shared_file else Folder.query.filter_by(share_token=token, share_enabled=True).first()
+    
+    if not shared_file and not shared_folder:
+        return None, None
+    
+    item = shared_file or shared_folder
+    
+    # Check expiry
+    if item.share_expires_at and datetime.utcnow() > item.share_expires_at:
+        return None, None
+    
+    # Check password if set
+    if item.share_password_hash:
+        session_key = f'share_auth_{token}'
+        if not session.get(session_key):
+            return None, None
+    
+    # Get guest name from session
+    guest_name_key = f'share_guest_name_{token}'
+    guest_name = session.get(guest_name_key)
+    
+    # Wenn kein Name in Session, ist Zugriff verweigert (muss vorher eingegeben werden)
+    if not guest_name:
+        return None, None
+    
+    return item, guest_name
+
+
+@files_bp.route('/file/<int:file_id>/share', methods=['POST'])
+@login_required
+def create_file_share(file_id):
+    if not _is_sharing_enabled():
+        flash('Freigaben sind deaktiviert.', 'warning')
+        return redirect(request.referrer or url_for('files.index'))
+    file = File.query.get_or_404(file_id)
+    password = request.form.get('password', '').strip()
+    expires_at = request.form.get('expires_at', '').strip()
+
+    file.share_enabled = True
+    file.share_token = _generate_unique_share_token()
+    file.share_password_hash = generate_password_hash(password) if password else None
+    file.share_expires_at = datetime.fromisoformat(expires_at) if expires_at else None
+    file.share_name = None  # Wird beim ersten Zugriff vom Gast eingegeben
+    db.session.commit()
+
+    flash('Freigabe erstellt.', 'success')
+    return redirect(request.referrer or url_for('files.index'))
+
+
+@files_bp.route('/folder/<int:folder_id>/share', methods=['POST'])
+@login_required
+def create_folder_share(folder_id):
+    if not _is_sharing_enabled():
+        flash('Freigaben sind deaktiviert.', 'warning')
+        return redirect(request.referrer or url_for('files.index'))
+    folder = Folder.query.get_or_404(folder_id)
+    password = request.form.get('password', '').strip()
+    expires_at = request.form.get('expires_at', '').strip()
+
+    folder.share_enabled = True
+    folder.share_token = _generate_unique_share_token()
+    folder.share_password_hash = generate_password_hash(password) if password else None
+    folder.share_expires_at = datetime.fromisoformat(expires_at) if expires_at else None
+    folder.share_name = None  # Wird beim ersten Zugriff vom Gast eingegeben
+    db.session.commit()
+
+    flash('Freigabe erstellt.', 'success')
+    return redirect(request.referrer or url_for('files.index'))
+
+
+@files_bp.route('/file/<int:file_id>/share-settings')
+@login_required
+def file_share_settings(file_id):
+    file = File.query.get_or_404(file_id)
+    if not file.share_enabled or not file.share_token:
+        return jsonify({'success': False}), 404
+    share_url = url_for('files.public_share', token=file.share_token, _external=True)
+    return jsonify({'success': True, 'item': {'type': 'file', 'id': file.id, 'name': file.name, 'share_url': share_url, 'has_password': file.share_password_hash is not None, 'expires_at': file.share_expires_at.isoformat() if file.share_expires_at else None, 'share_name': file.share_name}})
+
+
+@files_bp.route('/folder/<int:folder_id>/share-settings')
+@login_required
+def folder_share_settings(folder_id):
+    folder = Folder.query.get_or_404(folder_id)
+    if not folder.share_enabled or not folder.share_token:
+        return jsonify({'success': False}), 404
+    share_url = url_for('files.public_share', token=folder.share_token, _external=True)
+    return jsonify({'success': True, 'item': {'type': 'folder', 'id': folder.id, 'name': folder.name, 'share_url': share_url, 'has_password': folder.share_password_hash is not None, 'expires_at': folder.share_expires_at.isoformat() if folder.share_expires_at else None, 'share_name': folder.share_name}})
+
+
+@files_bp.route('/file/<int:file_id>/share-settings', methods=['POST'])
+@login_required
+def update_file_share(file_id):
+    file = File.query.get_or_404(file_id)
+    action = request.form.get('action')
+    if action == 'disable':
+        file.share_enabled = False
+        file.share_token = None
+        file.share_password_hash = None
+        file.share_expires_at = None
+        file.share_name = None
+    else:
+        password = request.form.get('password', '').strip()
+        expires_at = request.form.get('expires_at', '').strip()
+        file.share_password_hash = generate_password_hash(password) if password else file.share_password_hash
+        file.share_expires_at = datetime.fromisoformat(expires_at) if expires_at else None
+    db.session.commit()
+    flash('Freigabe aktualisiert.', 'success')
+    return redirect(request.referrer or url_for('files.index'))
+
+
+@files_bp.route('/folder/<int:folder_id>/share-settings', methods=['POST'])
+@login_required
+def update_folder_share(folder_id):
+    folder = Folder.query.get_or_404(folder_id)
+    action = request.form.get('action')
+    if action == 'disable':
+        folder.share_enabled = False
+        folder.share_token = None
+        folder.share_password_hash = None
+        folder.share_expires_at = None
+        folder.share_name = None
+    else:
+        password = request.form.get('password', '').strip()
+        expires_at = request.form.get('expires_at', '').strip()
+        folder.share_password_hash = generate_password_hash(password) if password else folder.share_password_hash
+        folder.share_expires_at = datetime.fromisoformat(expires_at) if expires_at else None
+    db.session.commit()
+    flash('Freigabe aktualisiert.', 'success')
+    return redirect(request.referrer or url_for('files.index'))
+
+
+@files_bp.route('/share/<token>', methods=['GET', 'POST'])
+def public_share(token):
+    # Find file or folder by token
+    shared_file = File.query.filter_by(share_token=token, share_enabled=True).first()
+    shared_folder = None if shared_file else Folder.query.filter_by(share_token=token, share_enabled=True).first()
+    if not shared_file and not shared_folder:
+        flash('Freigabe existiert nicht mehr.', 'danger')
+        return redirect(url_for('files.index'))
+
+    item = shared_file or shared_folder
+    # Check expiry
+    if item.share_expires_at and datetime.utcnow() > item.share_expires_at:
+        flash('Freigabe ist abgelaufen.', 'danger')
+        return redirect(url_for('files.index'))
+
+    # Password gate
+    if item.share_password_hash:
+        session_key = f'share_auth_{token}'
+        if request.method == 'POST' and 'password' in request.form:
+            if check_password_hash(item.share_password_hash, request.form.get('password','')):
+                session[session_key] = True
+                return redirect(url_for('files.public_share', token=token))
+            else:
+                flash('Ungültiges Passwort.', 'danger')
+        elif not session.get(session_key):
+            return render_template('files/share_auth.html', token=token, item=item)
+
+    # Name-Eingabe verpflichtend (Gast-Name)
+    # Name wird in Session gespeichert, damit er innerhalb derselben Browser-Session wiederverwendet wird
+    guest_name_key = f'share_guest_name_{token}'
+    
+    # Prüfe ob Name bereits in Session vorhanden
+    guest_name = session.get(guest_name_key)
+    
+    # Wenn POST-Request mit neuem Namen
+    if request.method == 'POST' and 'guest_name' in request.form:
+        guest_name = request.form.get('guest_name', '').strip()
+        if guest_name:
+            # Speichere in Session für diese Browser-Session
+            session[guest_name_key] = guest_name
+            # Weiterleitung zur Freigabe-Seite
+            return redirect(url_for('files.public_share', token=token))
+        else:
+            flash('Bitte geben Sie einen Namen ein.', 'danger')
+    
+    # Wenn kein Name in Session, zeige Eingabe-Formular
+    if not guest_name:
+        return render_template('files/share_name.html', token=token, item=item)
+
+    # Check ONLYOFFICE availability
+    from app.utils.onlyoffice import is_onlyoffice_enabled
+    onlyoffice_available = is_onlyoffice_enabled()
+    
+    # Render file or folder view
+    if shared_file:
+        # Provide download and edit option
+        return render_template('files/share.html', item_type='file', file=shared_file, token=token, guest_name=guest_name, onlyoffice_available=onlyoffice_available)
+    else:
+        # Get files in the shared folder
+        folder_files = File.query.filter_by(
+            folder_id=shared_folder.id,
+            is_current=True
+        ).order_by(File.name).all()
+        
+        # Show upload list and files in folder
+        return render_template('files/share.html', item_type='folder', folder=shared_folder, folder_files=folder_files, token=token, guest_name=guest_name, onlyoffice_available=onlyoffice_available)
+
+
+@files_bp.route('/share/<token>/download', methods=['GET'])
+def public_share_download(token):
+    """Download für direkt freigegebene Datei."""
+    shared_file = File.query.filter_by(share_token=token, share_enabled=True).first_or_404()
+    # Ensure path
+    file_path = shared_file.file_path if os.path.isabs(shared_file.file_path) else os.path.join(os.getcwd(), shared_file.file_path)
+    return send_file(file_path, as_attachment=True, download_name=shared_file.original_name)
+
+
+@files_bp.route('/share/<token>/file/<int:file_id>/download', methods=['GET'])
+def public_share_folder_file_download(token, file_id):
+    """Download für Datei in freigegebenem Ordner."""
+    # Prüfe ob Ordner freigegeben ist
+    shared_folder = Folder.query.filter_by(share_token=token, share_enabled=True).first_or_404()
+    
+    # Prüfe ob Datei im Ordner ist
+    file = File.query.filter_by(id=file_id, folder_id=shared_folder.id, is_current=True).first_or_404()
+    
+    # Prüfe Zugriff (Passwort, Ablaufdatum, Name)
+    item, guest_name = _check_share_access(token)
+    if not item or not guest_name:
+        flash('Zugriff verweigert.', 'danger')
+        return redirect(url_for('files.public_share', token=token))
+    
+    # Ensure path
+    file_path = file.file_path if os.path.isabs(file.file_path) else os.path.join(os.getcwd(), file.file_path)
+    return send_file(file_path, as_attachment=True, download_name=file.original_name)
+
+
+@files_bp.route('/share/<token>/upload', methods=['POST'])
+def public_share_upload(token):
+    shared_folder = Folder.query.filter_by(share_token=token, share_enabled=True).first_or_404()
+    # Password gate
+    if shared_folder.share_password_hash:
+        if not session.get(f'share_auth_{token}'):
+            password = request.form.get('password', '')
+            if not check_password_hash(shared_folder.share_password_hash, password):
+                flash('Ungültiges Passwort.', 'danger')
+                return redirect(url_for('files.public_share', token=token))
+            session[f'share_auth_{token}'] = True
+
+    uploader_name = request.form.get('uploader_name', '').strip() or 'Anonym'
+    if 'file' in request.files:
+        files = request.files.getlist('file')
+        for f in files:
+            if not f.filename:
+                continue
+            # Derive unique name
+            original_name = secure_filename(f.filename)
+            name = original_name
+            existing = File.query.filter_by(name=name, folder_id=shared_folder.id, is_current=True).first()
+            if existing:
+                date_str = datetime.utcnow().strftime('%Y-%m-%d')
+                base, ext = os.path.splitext(original_name)
+                name = f"{base}_V{date_str}{ext}"
+            anonymous_user = User.query.filter_by(email='anonymous@system.local').first()
+            if not anonymous_user:
+                anonymous_user = User(
+                    email='anonymous@system.local',
+                    first_name=uploader_name,
+                    last_name='',
+                    password_hash='',
+                    is_active=True,
+                    is_admin=False,
+                    is_email_confirmed=True
+                )
+                db.session.add(anonymous_user)
+                db.session.flush()
+            _process_file_upload(f, name, shared_folder.id, anonymous_user.id)
+        db.session.commit()
+        flash('Upload abgeschlossen.', 'success')
+    return redirect(url_for('files.public_share', token=token))
+
 # ONLYOFFICE Routes
 @files_bp.route('/edit-onlyoffice/<int:file_id>')
 @login_required
@@ -1022,7 +1373,86 @@ def edit_onlyoffice(file_id):
         document_url=document_url,
         callback_url=callback_url,
         onlyoffice_api_url=api_url,
-        onlyoffice_url=onlyoffice_url
+        onlyoffice_url=onlyoffice_url,
+        guest_mode=False
+    )
+
+
+@files_bp.route('/share/<token>/edit-onlyoffice')
+def share_edit_onlyoffice(token):
+    """Edit a shared file using ONLYOFFICE editor (Gast-Zugriff)."""
+    # Check if ONLYOFFICE is enabled
+    if not current_app.config.get('ONLYOFFICE_ENABLED', False):
+        flash('ONLYOFFICE ist nicht aktiviert.', 'warning')
+        return redirect(url_for('files.public_share', token=token))
+    
+    item, guest_name = _check_share_access(token)
+    if not item or not guest_name:
+        flash('Bitte geben Sie zuerst Ihren Namen ein.', 'warning')
+        return redirect(url_for('files.public_share', token=token))
+    
+    # Prüfe ob eine spezifische Datei aus einem Ordner bearbeitet werden soll
+    file_id = request.args.get('file_id')
+    if file_id:
+        try:
+            file_id = int(file_id)
+            # Prüfe ob es ein freigegebener Ordner ist
+            if isinstance(item, Folder):
+                file = File.query.filter_by(id=file_id, folder_id=item.id, is_current=True).first_or_404()
+            else:
+                # Direkt freigegebene Datei
+                file = item
+        except (ValueError, TypeError):
+            flash('Ungültige Datei-ID.', 'danger')
+            return redirect(url_for('files.public_share', token=token))
+    else:
+        # Direkt freigegebene Datei
+        if not isinstance(item, File):
+            flash('Ordner können nicht mit ONLYOFFICE bearbeitet werden. Bitte wählen Sie eine Datei aus.', 'warning')
+            return redirect(url_for('files.public_share', token=token))
+        file = item
+    
+    # Check if file type is supported by ONLYOFFICE
+    from app.utils.onlyoffice import is_onlyoffice_file_type, get_onlyoffice_document_type, get_onlyoffice_file_type
+    file_ext = os.path.splitext(file.original_name)[1].lower()
+    
+    if not is_onlyoffice_file_type(file_ext):
+        flash('Dieser Dateityp wird von ONLYOFFICE nicht unterstützt.', 'warning')
+        return redirect(url_for('files.public_share', token=token))
+    
+    # Get document type and file type
+    document_type = get_onlyoffice_document_type(file_ext)
+    file_type = get_onlyoffice_file_type(file_ext)
+    
+    # Generate unique document key for versioning
+    import hashlib
+    key_string = f"{file.id}_{file.version_number}_{file.updated_at.timestamp() if file.updated_at else ''}"
+    document_key = hashlib.md5(key_string.encode()).hexdigest()
+    
+    # Build document URL with token and file_id (guest_name ist in Session)
+    document_url = url_for('files.share_onlyoffice_document', token=token, file_id=file.id, _external=True)
+    callback_url = url_for('files.share_onlyoffice_callback', token=token, file_id=file.id, _external=True)
+    onlyoffice_url = current_app.config.get('ONLYOFFICE_DOCUMENT_SERVER_URL', '/onlyoffice')
+    
+    # Build full URL to ONLYOFFICE API
+    if onlyoffice_url.startswith('http'):
+        api_url = f"{onlyoffice_url}/web-apps/apps/api/documents/api.js"
+    else:
+        api_url = url_for('static', filename='', _external=True).rstrip('/') + onlyoffice_url + '/web-apps/apps/api/documents/api.js'
+    
+    return render_template(
+        'files/edit_onlyoffice.html',
+        file=file,
+        document_key=document_key,
+        document_type=document_type,
+        file_type=file_type,
+        document_url=document_url,
+        callback_url=callback_url,
+        onlyoffice_api_url=api_url,
+        onlyoffice_url=onlyoffice_url,
+        guest_mode=True,
+        guest_name=guest_name,
+        share_token=token
     )
 
 
@@ -1035,6 +1465,27 @@ def onlyoffice_document(file_id):
         return jsonify({'error': 'ONLYOFFICE not enabled'}), 404
     
     file = File.query.get_or_404(file_id)
+
+
+@files_bp.route('/share/<token>/api/onlyoffice-document/<int:file_id>')
+def share_onlyoffice_document(token, file_id):
+    """Serve document to ONLYOFFICE editor (Gast-Zugriff)."""
+    # Check if ONLYOFFICE is enabled
+    if not current_app.config.get('ONLYOFFICE_ENABLED', False):
+        return jsonify({'error': 'ONLYOFFICE not enabled'}), 404
+    
+    item, guest_name = _check_share_access(token)
+    if not item or not guest_name:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    # Prüfe ob es eine Datei aus einem Ordner ist oder direkt freigegebene Datei
+    if isinstance(item, Folder):
+        file = File.query.filter_by(id=file_id, folder_id=item.id, is_current=True).first_or_404()
+    else:
+        # Direkt freigegebene Datei
+        if item.id != file_id:
+            return jsonify({'error': 'File ID mismatch'}), 403
+        file = item
     
     # Ensure we have an absolute path
     if not os.path.isabs(file.file_path):
@@ -1142,6 +1593,92 @@ def onlyoffice_save(file_id):
     return jsonify({'success': True, 'message': 'File saved successfully'})
 
 
+@files_bp.route('/share/<token>/api/onlyoffice-save/<int:file_id>', methods=['POST'])
+def share_onlyoffice_save(token, file_id):
+    """Save document from ONLYOFFICE (Gast-Zugriff)."""
+    # Check if ONLYOFFICE is enabled
+    if not current_app.config.get('ONLYOFFICE_ENABLED', False):
+        return jsonify({'error': 'ONLYOFFICE not enabled'}), 404
+    
+    item, guest_name = _check_share_access(token)
+    if not item or not guest_name:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    # Prüfe ob es eine Datei aus einem Ordner ist oder direkt freigegebene Datei
+    if isinstance(item, Folder):
+        file = File.query.filter_by(id=file_id, folder_id=item.id, is_current=True).first_or_404()
+    else:
+        # Direkt freigegebene Datei
+        if item.id != file_id:
+            return jsonify({'error': 'File ID mismatch'}), 403
+        file = item
+    
+    # Get file content from request
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file in request'}), 400
+    
+    uploaded_file = request.files['file']
+    
+    # Get anonymous user for guest edits
+    anonymous_user = User.query.filter_by(email='anonymous@system.local').first()
+    if not anonymous_user:
+        anonymous_user = User(
+            email='anonymous@system.local',
+            first_name=guest_name,
+            last_name='',
+            password_hash='',
+            is_active=True,
+            is_admin=False,
+            is_email_confirmed=True
+        )
+        db.session.add(anonymous_user)
+        db.session.flush()
+    
+    # Save current version to history
+    version = FileVersion(
+        file_id=file.id,
+        version_number=file.version_number,
+        file_path=os.path.abspath(file.file_path),
+        file_size=file.file_size,
+        uploaded_by=file.uploaded_by
+    )
+    db.session.add(version)
+    
+    # Delete oldest version if needed
+    versions = FileVersion.query.filter_by(file_id=file.id).order_by(
+        FileVersion.version_number.desc()
+    ).all()
+    
+    if len(versions) >= MAX_FILE_VERSIONS:
+        oldest = versions[-1]
+        if os.path.exists(oldest.file_path):
+            os.remove(oldest.file_path)
+        db.session.delete(oldest)
+    
+    # Save new version
+    timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+    filename = f"{timestamp}_{file.original_name}"
+    filepath = os.path.join('uploads', 'files', filename)
+    
+    # Ensure directory exists
+    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+    
+    uploaded_file.save(filepath)
+    
+    # Store absolute path in database
+    absolute_filepath = os.path.abspath(filepath)
+    
+    file.file_path = absolute_filepath
+    file.file_size = os.path.getsize(absolute_filepath)
+    file.version_number += 1
+    file.uploaded_by = anonymous_user.id
+    file.updated_at = datetime.utcnow()
+    
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': 'File saved successfully'})
+
+
 @files_bp.route('/onlyoffice-callback', methods=['POST'])
 def onlyoffice_callback():
     """Handle callbacks from ONLYOFFICE Document Server."""
@@ -1240,6 +1777,118 @@ def onlyoffice_callback():
         
     except Exception as e:
         logging.error(f"ONLYOFFICE callback error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@files_bp.route('/share/<token>/onlyoffice-callback', methods=['POST'])
+def share_onlyoffice_callback(token):
+    """Handle callbacks from ONLYOFFICE Document Server (Gast-Zugriff)."""
+    # Check if ONLYOFFICE is enabled
+    if not current_app.config.get('ONLYOFFICE_ENABLED', False):
+        return jsonify({'error': 'ONLYOFFICE not enabled'}), 404
+    
+    item, guest_name = _check_share_access(token)
+    if not item or not guest_name:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    # Get file_id from callback URL parameter
+    file_id = request.args.get('file_id')
+    if not file_id:
+        return jsonify({'error': 'File ID required'}), 400
+    
+    try:
+        file_id = int(file_id)
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Invalid file ID'}), 400
+    
+    # Prüfe ob es eine Datei aus einem Ordner ist oder direkt freigegebene Datei
+    if isinstance(item, Folder):
+        file = File.query.filter_by(id=file_id, folder_id=item.id, is_current=True).first_or_404()
+    else:
+        # Direkt freigegebene Datei
+        if item.id != file_id:
+            return jsonify({'error': 'File ID mismatch'}), 403
+        file = item
+    
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'No data received'}), 400
+        
+        status = data.get('status')
+        
+        # Status 6 means document is saved
+        if status == 6:
+            saved_file_url = data.get('url')
+            
+            if saved_file_url:
+                # Download the saved file from ONLYOFFICE
+                response = requests.get(saved_file_url)
+                
+                if response.status_code == 200:
+                    # Get anonymous user for guest edits
+                    anonymous_user = User.query.filter_by(email='anonymous@system.local').first()
+                    if not anonymous_user:
+                        anonymous_user = User(
+                            email='anonymous@system.local',
+                            first_name=guest_name,
+                            last_name='',
+                            password_hash='',
+                            is_active=True,
+                            is_admin=False,
+                            is_email_confirmed=True
+                        )
+                        db.session.add(anonymous_user)
+                        db.session.flush()
+                    
+                    # Save current version to history
+                    version = FileVersion(
+                        file_id=file.id,
+                        version_number=file.version_number,
+                        file_path=os.path.abspath(file.file_path),
+                        file_size=file.file_size,
+                        uploaded_by=file.uploaded_by
+                    )
+                    db.session.add(version)
+                    
+                    # Delete oldest version if needed
+                    versions = FileVersion.query.filter_by(file_id=file.id).order_by(
+                        FileVersion.version_number.desc()
+                    ).all()
+                    
+                    if len(versions) >= MAX_FILE_VERSIONS:
+                        oldest = versions[-1]
+                        if os.path.exists(oldest.file_path):
+                            os.remove(oldest.file_path)
+                        db.session.delete(oldest)
+                    
+                    # Save new version
+                    timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+                    filename = f"{timestamp}_{file.original_name}"
+                    filepath = os.path.join('uploads', 'files', filename)
+                    
+                    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+                    
+                    with open(filepath, 'wb') as f:
+                        f.write(response.content)
+                    
+                    absolute_filepath = os.path.abspath(filepath)
+                    
+                    file.file_path = absolute_filepath
+                    file.file_size = os.path.getsize(absolute_filepath)
+                    file.version_number += 1
+                    file.uploaded_by = anonymous_user.id
+                    file.updated_at = datetime.utcnow()
+                    
+                    db.session.commit()
+                    
+                    logging.info(f"ONLYOFFICE: Shared file {file.id} saved successfully by guest {guest_name}")
+        
+        return jsonify({'error': 0})  # Success response for ONLYOFFICE
+        
+    except Exception as e:
+        logging.error(f"ONLYOFFICE callback error (share): {e}")
         return jsonify({'error': str(e)}), 500
 
 

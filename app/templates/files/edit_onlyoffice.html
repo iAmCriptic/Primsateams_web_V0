@@ -118,8 +118,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 change: true
             },
             user: {
-                id: "{{ current_user.id }}",
-                name: "{{ current_user.full_name }}"
+                id: "{{ guest_mode and share_token or current_user.id }}",
+                name: "{{ guest_mode and guest_name or current_user.full_name }}"
             },
             customization: {
                 autosave: true,
