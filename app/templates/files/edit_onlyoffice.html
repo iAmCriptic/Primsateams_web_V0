@@ -1,72 +1,188 @@
-{% extends "base.html" %}
-
-{% block title %}{{ file.name }} - ONLYOFFICE Editor{% endblock %}
-
-{% block extra_css %}
-<style>
-    .onlyoffice-editor-container {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        background: #fff;
-        z-index: 1000;
-    }
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ file.name }} - ONLYOFFICE Editor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        
+        .onlyoffice-editor-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+        }
     
-    .onlyoffice-editor-toolbar {
-        background: #f8f9fa;
-        border-bottom: 1px solid #dee2e6;
-        padding: 0.5rem 1rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        flex-shrink: 0;
-    }
-    
-    .onlyoffice-editor-content {
-        flex: 1;
-        overflow: hidden;
-        position: relative;
-    }
-    
-    #onlyoffice-editor {
-        width: 100%;
-        height: 100%;
-        border: none;
-    }
-    
-    .loading-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(255, 255, 255, 0.9);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        z-index: 1001;
-    }
-    
-    .error-message {
-        background: #f8d7da;
-        color: #721c24;
-        padding: 1rem;
-        border-radius: 0.25rem;
-        margin: 1rem;
-    }
-</style>
-{% endblock %}
-
-{% block content %}
+        .onlyoffice-editor-toolbar {
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            padding: 0.5rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-shrink: 0;
+            z-index: 1000;
+        }
+        
+        .onlyoffice-editor-toolbar button {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+            border: 1px solid #dee2e6;
+            background: #fff;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            color: #495057;
+        }
+        
+        .onlyoffice-editor-toolbar button:hover {
+            background: #e9ecef;
+        }
+        
+        .onlyoffice-editor-toolbar .vr {
+            width: 1px;
+            height: 1.5rem;
+            background: #dee2e6;
+        }
+        
+        .onlyoffice-editor-toolbar .text-muted {
+            color: #6c757d;
+            font-size: 0.875rem;
+        }
+        
+        .onlyoffice-editor-toolbar .ms-auto {
+            margin-left: auto;
+        }
+        
+        .onlyoffice-editor-toolbar .badge {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            border-radius: 0.25rem;
+            font-weight: 500;
+        }
+        
+        .badge.bg-info {
+            background-color: #0dcaf0;
+            color: #000;
+        }
+        
+        .badge.bg-success {
+            background-color: #198754;
+            color: #fff;
+        }
+        
+        .badge.bg-warning {
+            background-color: #ffc107;
+            color: #000;
+        }
+        
+        .badge.bg-danger {
+            background-color: #dc3545;
+            color: #fff;
+        }
+        
+        .onlyoffice-editor-content {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        #onlyoffice-editor {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1001;
+        }
+        
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+            border: 0.25em solid currentColor;
+            border-right-color: transparent;
+            border-radius: 50%;
+            animation: spinner-border 0.75s linear infinite;
+        }
+        
+        @keyframes spinner-border {
+            to { transform: rotate(360deg); }
+        }
+        
+        .text-primary {
+            color: #0d6efd;
+        }
+        
+        .text-muted {
+            color: #6c757d;
+        }
+        
+        .mt-3 {
+            margin-top: 1rem;
+        }
+        
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 0.25rem;
+            margin: 1rem;
+        }
+        
+        .error-message h5 {
+            margin-bottom: 0.5rem;
+        }
+        
+        .error-message .btn {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+            border: none;
+            background: #0d6efd;
+            color: #fff;
+            border-radius: 0.25rem;
+            cursor: pointer;
+        }
+        
+        .error-message .btn:hover {
+            background: #0b5ed7;
+        }
+        
+        .mt-2 {
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
 <div class="onlyoffice-editor-container">
-    <div class="onlyoffice-editor-toolbar">
-        <button type="button" class="btn btn-outline-secondary" onclick="goBack()" id="backBtn">
-            <i class="bi bi-arrow-left"></i> Zurück
+    <div class="onlyoffice-editor-toolbar" style="display: none;" id="toolbar">
+        <button type="button" onclick="goBack()" id="backBtn">
+            ← Zurück
         </button>
         <div class="vr"></div>
         <span class="text-muted">{{ file.name }}</span>
@@ -85,9 +201,9 @@
         
         <div id="errorContainer" style="display: none;">
             <div class="error-message">
-                <h5><i class="bi bi-exclamation-triangle"></i> Fehler beim Laden des Editors</h5>
+                <h5>⚠ Fehler beim Laden des Editors</h5>
                 <p id="errorMessage"></p>
-                <button class="btn btn-primary mt-2" onclick="location.reload()">Neu laden</button>
+                <button class="btn mt-2" onclick="location.reload()">Neu laden</button>
             </div>
         </div>
         
@@ -231,12 +347,17 @@ function goBack() {
         }
     }
     
-    // Redirect back
-    {% if file.folder_id %}
-    window.location.href = '{{ url_for("files.browse_folder", folder_id=file.folder_id) }}';
-    {% else %}
-    window.location.href = '{{ url_for("files.index") }}';
-    {% endif %}
+    // Close window if opened in new window, otherwise redirect
+    if (window.opener) {
+        window.close();
+    } else {
+        // Redirect back
+        {% if file.folder_id %}
+        window.location.href = '{{ url_for("files.browse_folder", folder_id=file.folder_id) }}';
+        {% else %}
+        window.location.href = '{{ url_for("files.index") }}';
+        {% endif %}
+    }
 }
 
 // Warn before leaving if editor has unsaved changes
@@ -255,6 +376,11 @@ document.addEventListener('keydown', function(e) {
         goBack();
     }
 });
+
+// Hide toolbar by default for fullscreen experience
+// Uncomment the line below if you want to show the toolbar
+// document.getElementById('toolbar').style.display = 'flex';
 </script>
-{% endblock %}
+</body>
+</html>
 

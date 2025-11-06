@@ -105,3 +105,4 @@ sudo chmod -R 755 /var/www/teamportal/app/static
 ```
 
 
+

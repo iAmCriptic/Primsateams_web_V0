@@ -1359,10 +1359,19 @@ def edit_onlyoffice(file_id):
     
     # Build full URL to ONLYOFFICE API
     if onlyoffice_url.startswith('http'):
+        # Absolute URL - normalize (remove trailing slash if present)
+        onlyoffice_url = onlyoffice_url.rstrip('/')
         api_url = f"{onlyoffice_url}/web-apps/apps/api/documents/api.js"
     else:
-        # Relative path - use request host
-        api_url = url_for('static', filename='', _external=True).rstrip('/') + onlyoffice_url + '/web-apps/apps/api/documents/api.js'
+        # Relative path - use request host and scheme
+        scheme = request.scheme
+        host = request.host
+        # Ensure onlyoffice_url starts with /
+        if not onlyoffice_url.startswith('/'):
+            onlyoffice_url = '/' + onlyoffice_url
+        # Remove trailing slash
+        onlyoffice_url = onlyoffice_url.rstrip('/')
+        api_url = f"{scheme}://{host}{onlyoffice_url}/web-apps/apps/api/documents/api.js"
     
     return render_template(
         'files/edit_onlyoffice.html',
@@ -1436,9 +1445,19 @@ def share_edit_onlyoffice(token):
     
     # Build full URL to ONLYOFFICE API
     if onlyoffice_url.startswith('http'):
+        # Absolute URL - normalize (remove trailing slash if present)
+        onlyoffice_url = onlyoffice_url.rstrip('/')
         api_url = f"{onlyoffice_url}/web-apps/apps/api/documents/api.js"
     else:
-        api_url = url_for('static', filename='', _external=True).rstrip('/') + onlyoffice_url + '/web-apps/apps/api/documents/api.js'
+        # Relative path - use request host and scheme
+        scheme = request.scheme
+        host = request.host
+        # Ensure onlyoffice_url starts with /
+        if not onlyoffice_url.startswith('/'):
+            onlyoffice_url = '/' + onlyoffice_url
+        # Remove trailing slash
+        onlyoffice_url = onlyoffice_url.rstrip('/')
+        api_url = f"{scheme}://{host}{onlyoffice_url}/web-apps/apps/api/documents/api.js"
     
     return render_template(
         'files/edit_onlyoffice.html',

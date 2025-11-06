@@ -272,7 +272,7 @@
                             {% if onlyoffice_available %}
                                 {% set file_ext = file.name[file.name.rfind('.'):] if '.' in file.name else '' %}
                                 {% if file_ext.lower() in ['.docx', '.doc', '.odt', '.rtf', '.txt', '.xlsx', '.xls', '.ods', '.csv', '.pptx', '.ppt', '.odp', '.pdf', '.md', '.markdown'] %}
-                            <li><a class="dropdown-item" href="{{ url_for('files.edit_onlyoffice', file_id=file.id) }}">
+                            <li><a class="dropdown-item" href="{{ url_for('files.edit_onlyoffice', file_id=file.id) }}" target="_blank" rel="noopener noreferrer">
                                 <i class="bi bi-file-earmark-text"></i> Mit ONLYOFFICE bearbeiten
                             </a></li>
                             <li><hr class="dropdown-divider"></li>
@@ -410,7 +410,7 @@
                     {% if onlyoffice_available %}
                         {% set file_ext = file.name[file.name.rfind('.'):] if '.' in file.name else '' %}
                         {% if file_ext.lower() in ['.docx', '.doc', '.odt', '.rtf', '.txt', '.xlsx', '.xls', '.ods', '.csv', '.pptx', '.ppt', '.odp', '.pdf', '.md', '.markdown'] %}
-                    <li><a class="dropdown-item" href="{{ url_for('files.edit_onlyoffice', file_id=file.id) }}">
+                    <li><a class="dropdown-item" href="{{ url_for('files.edit_onlyoffice', file_id=file.id) }}" target="_blank" rel="noopener noreferrer">
                         <i class="bi bi-file-earmark-text"></i> Mit ONLYOFFICE bearbeiten
                     </a></li>
                     <li><hr class="dropdown-divider"></li>

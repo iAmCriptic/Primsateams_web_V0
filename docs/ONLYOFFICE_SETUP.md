@@ -98,6 +98,13 @@ location /onlyoffice/ {
     # Buffer-Einstellungen
     proxy_buffering off;
     proxy_request_buffering off;
+    
+    # Größere Header-Buffer (behebt "Request Header Or Cookie Too Large")
+    client_header_buffer_size 16k;
+    large_client_header_buffers 8 32k;
+    
+    # Größere Dateien erlauben
+    client_max_body_size 100M;
 }
 ```
 
