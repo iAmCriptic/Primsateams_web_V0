@@ -20,7 +20,7 @@
                         {% if onlyoffice_available %}
                             {% set file_ext = file.name[file.name.rfind('.'):] if '.' in file.name else '' %}
                             {% if file_ext.lower() in ['.docx', '.doc', '.odt', '.rtf', '.txt', '.xlsx', '.xls', '.ods', '.csv', '.pptx', '.ppt', '.odp', '.pdf', '.md', '.markdown'] %}
-                        <a href="{{ url_for('files.share_edit_onlyoffice', token=token) }}" class="btn btn-success" target="_blank" rel="noopener noreferrer">
+                        <a href="{{ url_for('files.share_edit_onlyoffice', token=token) }}" class="btn btn-success">
                             <i class="bi bi-file-earmark-text"></i> Mit ONLYOFFICE bearbeiten
                         </a>
                             {% endif %}
@@ -59,7 +59,7 @@
                                     {% if onlyoffice_available %}
                                         {% set file_ext = file.name[file.name.rfind('.'):] if '.' in file.name else '' %}
                                         {% if file_ext.lower() in ['.docx', '.doc', '.odt', '.rtf', '.txt', '.xlsx', '.xls', '.ods', '.csv', '.pptx', '.ppt', '.odp', '.pdf', '.md', '.markdown'] %}
-                                    <a href="{{ url_for('files.share_edit_onlyoffice', token=token) }}?file_id={{ file.id }}" class="btn btn-sm btn-outline-success" target="_blank" rel="noopener noreferrer">
+                                    <a href="{{ url_for('files.share_edit_onlyoffice', token=token) }}?file_id={{ file.id }}" class="btn btn-sm btn-outline-success">
                                         <i class="bi bi-file-earmark-text"></i> Bearbeiten
                                     </a>
                                         {% endif %}

@@ -74,6 +74,10 @@ class Config:
     ONLYOFFICE_ENABLED = os.environ.get('ONLYOFFICE_ENABLED', 'False').lower() == 'true'
     ONLYOFFICE_DOCUMENT_SERVER_URL = os.environ.get('ONLYOFFICE_DOCUMENT_SERVER_URL', '/onlyoffice')
     ONLYOFFICE_SECRET_KEY = os.environ.get('ONLYOFFICE_SECRET_KEY', '')
+    # Public URL for Flask app (required when OnlyOffice runs on different server)
+    # OnlyOffice needs to access document_url and callback_url from its server
+    # Example: http://192.168.188.115:5000 or https://yourdomain.com
+    ONLYOFFICE_PUBLIC_URL = os.environ.get('ONLYOFFICE_PUBLIC_URL', '')
 
 
 class DevelopmentConfig(Config):

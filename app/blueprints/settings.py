@@ -594,6 +594,60 @@ def admin_system():
                            files_dropbox_enabled=files_dropbox_enabled, files_sharing_enabled=files_sharing_enabled)
 
 
+@settings_bp.route('/admin/modules', methods=['GET', 'POST'])
+@login_required
+def admin_modules():
+    """Module settings (admin only)."""
+    if not current_user.is_admin:
+        flash('Nur Administratoren haben Zugriff auf diese Seite.', 'danger')
+        return redirect(url_for('settings.index'))
+    
+    if request.method == 'POST':
+        # Module-Einstellungen speichern
+        modules = {
+            'module_chat': request.form.get('module_chat') == 'on',
+            'module_files': request.form.get('module_files') == 'on',
+            'module_calendar': request.form.get('module_calendar') == 'on',
+            'module_email': request.form.get('module_email') == 'on',
+            'module_credentials': request.form.get('module_credentials') == 'on',
+            'module_manuals': request.form.get('module_manuals') == 'on',
+            'module_canvas': request.form.get('module_canvas') == 'on',
+            'module_inventory': request.form.get('module_inventory') == 'on'
+        }
+        
+        for module_key, enabled in modules.items():
+            module_setting = SystemSettings.query.filter_by(key=module_key).first()
+            if module_setting:
+                module_setting.value = str(enabled)
+            else:
+                db.session.add(SystemSettings(key=module_key, value=str(enabled), description=f'Modul {module_key} aktiviert'))
+        
+        db.session.commit()
+        flash('Module-Einstellungen wurden aktualisiert.', 'success')
+        return redirect(url_for('settings.admin_modules'))
+    
+    # Get module settings
+    from app.utils.common import is_module_enabled
+    module_chat_enabled = is_module_enabled('module_chat')
+    module_files_enabled = is_module_enabled('module_files')
+    module_calendar_enabled = is_module_enabled('module_calendar')
+    module_email_enabled = is_module_enabled('module_email')
+    module_credentials_enabled = is_module_enabled('module_credentials')
+    module_manuals_enabled = is_module_enabled('module_manuals')
+    module_canvas_enabled = is_module_enabled('module_canvas')
+    module_inventory_enabled = is_module_enabled('module_inventory')
+    
+    return render_template('settings/admin_modules.html',
+                           module_chat_enabled=module_chat_enabled,
+                           module_files_enabled=module_files_enabled,
+                           module_calendar_enabled=module_calendar_enabled,
+                           module_email_enabled=module_email_enabled,
+                           module_credentials_enabled=module_credentials_enabled,
+                           module_manuals_enabled=module_manuals_enabled,
+                           module_canvas_enabled=module_canvas_enabled,
+                           module_inventory_enabled=module_inventory_enabled)
+
+
 @settings_bp.route('/admin/whitelist')
 @login_required
 def admin_whitelist():
@@ -796,5 +850,9 @@ def about():
     first_admin = User.query.filter_by(is_admin=True).order_by(User.created_at.asc()).first()
     creator_name = first_admin.full_name if first_admin else "Unbekannt"
     
-    return render_template('settings/about.html', creator_name=creator_name)
+    # OnlyOffice Status prüfen
+    from app.utils.onlyoffice import is_onlyoffice_enabled
+    onlyoffice_enabled = is_onlyoffice_enabled()
+    
+    return render_template('settings/about.html', creator_name=creator_name, onlyoffice_enabled=onlyoffice_enabled)
 

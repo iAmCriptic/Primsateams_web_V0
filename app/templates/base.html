@@ -225,24 +225,30 @@
                         <div class="small">Dashboard</div>
                     </a>
                 </div>
+                {% if is_module_enabled('module_chat') %}
                 <div class="col">
                     <a href="{{ url_for('chat.index') }}" class="nav-link {% if request.endpoint and 'chat' in request.endpoint %}active{% endif %}">
                         <i class="bi bi-chat-dots fs-4"></i>
                         <div class="small">Chats</div>
                     </a>
                 </div>
+                {% endif %}
+                {% if is_module_enabled('module_files') %}
                 <div class="col">
                     <a href="{{ url_for('files.index') }}" class="nav-link {% if request.endpoint and 'files' in request.endpoint %}active{% endif %}">
                         <i class="bi bi-folder fs-4"></i>
                         <div class="small">Dateien</div>
                     </a>
                 </div>
+                {% endif %}
+                {% if is_module_enabled('module_calendar') %}
                 <div class="col">
                     <a href="{{ url_for('calendar.index') }}" class="nav-link {% if request.endpoint and 'calendar' in request.endpoint %}active{% endif %}">
                         <i class="bi bi-calendar-event fs-4"></i>
                         <div class="small">Termine</div>
                     </a>
                 </div>
+                {% endif %}
                 <div class="col">
                     <a href="javascript:void(0)" role="button" class="nav-link" data-bs-toggle="offcanvas" data-bs-target="#moreMenu">
                         <i class="bi bi-three-dots fs-4"></i>
@@ -271,54 +277,70 @@
                     Dashboard
                 </a>
             </li>
+            {% if is_module_enabled('module_chat') %}
             <li>
                 <a href="{{ url_for('chat.index') }}" class="nav-link {% if request.endpoint and 'chat' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-chat-dots me-2"></i>
                     Chats
                 </a>
             </li>
+            {% endif %}
+            {% if is_module_enabled('module_files') %}
             <li>
                 <a href="{{ url_for('files.index') }}" class="nav-link {% if request.endpoint and 'files' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-folder me-2"></i>
                     Dateien
                 </a>
             </li>
+            {% endif %}
+            {% if is_module_enabled('module_calendar') %}
             <li>
                 <a href="{{ url_for('calendar.index') }}" class="nav-link {% if request.endpoint and 'calendar' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-calendar-event me-2"></i>
                     Termine
                 </a>
             </li>
+            {% endif %}
+            {% if is_module_enabled('module_email') %}
             <li>
                 <a href="{{ url_for('email.index') }}" class="nav-link {% if request.endpoint and 'email' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-envelope me-2"></i>
                     E-Mail
                 </a>
             </li>
+            {% endif %}
+            {% if is_module_enabled('module_credentials') %}
             <li>
                 <a href="{{ url_for('credentials.index') }}" class="nav-link {% if request.endpoint and 'credentials' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-key me-2"></i>
                     Zugangsdaten
                 </a>
             </li>
+            {% endif %}
+            {% if is_module_enabled('module_manuals') %}
             <li>
                 <a href="{{ url_for('manuals.index') }}" class="nav-link {% if request.endpoint and 'manuals' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-book me-2"></i>
                     Anleitungen
                 </a>
             </li>
+            {% endif %}
+            {% if is_module_enabled('module_canvas') %}
             <li>
                 <a href="{{ url_for('canvas.index') }}" class="nav-link {% if request.endpoint and 'canvas' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-palette me-2"></i>
                     Canvas
                 </a>
             </li>
+            {% endif %}
+            {% if is_module_enabled('module_inventory') %}
             <li>
                 <a href="{{ url_for('inventory.dashboard') }}" class="nav-link {% if request.endpoint and 'inventory' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-box-seam me-2"></i>
                     Lagerverwaltung
                 </a>
             </li>
+            {% endif %}
             <li>
                 <a href="{{ url_for('settings.index') }}" class="nav-link {% if request.endpoint and 'settings' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-gear me-2"></i>
@@ -352,36 +374,46 @@
         </div>
         <div class="offcanvas-body">
             <ul class="nav nav-pills flex-column">
+                {% if is_module_enabled('module_email') %}
                 <li class="nav-item">
                     <a href="{{ url_for('email.index') }}" class="nav-link {% if request.endpoint and 'email' in request.endpoint %}active{% endif %}">
                         <i class="bi bi-envelope me-2"></i>
                         E-Mail
                     </a>
                 </li>
+                {% endif %}
+                {% if is_module_enabled('module_credentials') %}
                 <li>
                     <a href="{{ url_for('credentials.index') }}" class="nav-link {% if request.endpoint and 'credentials' in request.endpoint %}active{% endif %}">
                         <i class="bi bi-key me-2"></i>
                         Zugangsdaten
                     </a>
                 </li>
+                {% endif %}
+                {% if is_module_enabled('module_manuals') %}
                 <li>
                     <a href="{{ url_for('manuals.index') }}" class="nav-link {% if request.endpoint and 'manuals' in request.endpoint %}active{% endif %}">
                         <i class="bi bi-book me-2"></i>
                         Anleitungen
                     </a>
                 </li>
+                {% endif %}
+                {% if is_module_enabled('module_canvas') %}
                 <li>
                     <a href="{{ url_for('canvas.index') }}" class="nav-link {% if request.endpoint and 'canvas' in request.endpoint %}active{% endif %}">
                         <i class="bi bi-palette me-2"></i>
                         Canvas
                     </a>
                 </li>
+                {% endif %}
+                {% if is_module_enabled('module_inventory') %}
                 <li>
                     <a href="{{ url_for('inventory.dashboard') }}" class="nav-link {% if request.endpoint and 'inventory' in request.endpoint %}active{% endif %}">
                         <i class="bi bi-box-seam me-2"></i>
                         Lagerverwaltung
                     </a>
                 </li>
+                {% endif %}
                 <li>
                     <a href="{{ url_for('settings.index') }}" class="nav-link {% if request.endpoint and 'settings' in request.endpoint %}active{% endif %}">
                         <i class="bi bi-gear me-2"></i>

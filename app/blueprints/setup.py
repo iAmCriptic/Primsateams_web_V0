@@ -235,6 +235,27 @@ def setup_complete():
             )
             db.session.add(admin_whitelist_entry)
             
+            # Module-Einstellungen speichern
+            modules = {
+                'module_chat': request.form.get('module_chat') == 'on',
+                'module_files': request.form.get('module_files') == 'on',
+                'module_calendar': request.form.get('module_calendar') == 'on',
+                'module_email': request.form.get('module_email') == 'on',
+                'module_credentials': request.form.get('module_credentials') == 'on',
+                'module_manuals': request.form.get('module_manuals') == 'on',
+                'module_canvas': request.form.get('module_canvas') == 'on',
+                'module_inventory': request.form.get('module_inventory') == 'on'
+            }
+            
+            for module_key, enabled in modules.items():
+                module_setting = SystemSettings(
+                    key=module_key,
+                    value=str(enabled),
+                    description=f'Modul {module_key} aktiviert'
+                )
+                db.session.add(module_setting)
+                logging.info(f"Module setting created: {module_key}={enabled}")
+            
             db.session.commit()
             logging.info("All data committed successfully")
             
@@ -428,8 +449,6 @@ def setup_step2():
         # Speichere in Session
         session['setup_whitelist_entries'] = whitelist_entries
         
-        # Debug: Session-Daten prüfen
-        
         return redirect(url_for('setup.setup_step3'))
     
     # Hole aktuellen Farbverlauf aus den System-Einstellungen oder Session
@@ -441,11 +460,41 @@ def setup_step2():
 
 @setup_bp.route('/setup/step3', methods=['GET', 'POST'])
 def setup_step3():
-    """Schritt 3: Administrator-Account erstellen."""
+    """Schritt 3: Module aktivieren."""
     if not is_setup_needed():
         return redirect(url_for('auth.login'))
     
-    # Debug: Session-Daten prüfen
+    if 'setup_portal_name' not in session:
+        return redirect(url_for('setup.setup_step1'))
+    
+    if request.method == 'POST':
+        # Module-Einstellungen in Session speichern
+        modules = {
+            'module_chat': request.form.get('module_chat') == 'on',
+            'module_files': request.form.get('module_files') == 'on',
+            'module_calendar': request.form.get('module_calendar') == 'on',
+            'module_email': request.form.get('module_email') == 'on',
+            'module_credentials': request.form.get('module_credentials') == 'on',
+            'module_manuals': request.form.get('module_manuals') == 'on',
+            'module_canvas': request.form.get('module_canvas') == 'on',
+            'module_inventory': request.form.get('module_inventory') == 'on'
+        }
+        
+        session['setup_modules'] = modules
+        return redirect(url_for('setup.setup_step4'))
+    
+    # Hole aktuellen Farbverlauf aus den System-Einstellungen oder Session
+    gradient_setting = SystemSettings.query.filter_by(key='color_gradient').first()
+    current_gradient = gradient_setting.value if gradient_setting else session.get('setup_color_gradient')
+    
+    return render_template('setup/step3.html', color_gradient=current_gradient)
+
+
+@setup_bp.route('/setup/step4', methods=['GET', 'POST'])
+def setup_step4():
+    """Schritt 4: Administrator-Account erstellen."""
+    if not is_setup_needed():
+        return redirect(url_for('auth.login'))
     
     if 'setup_portal_name' not in session:
         return redirect(url_for('setup.setup_step1'))
@@ -613,6 +662,27 @@ def setup_step3():
             )
             db.session.add(admin_whitelist_entry)
             
+            # Module-Einstellungen speichern (aus Session)
+            modules = session.get('setup_modules', {
+                'module_chat': True,
+                'module_files': True,
+                'module_calendar': True,
+                'module_email': True,
+                'module_credentials': True,
+                'module_manuals': True,
+                'module_canvas': True,
+                'module_inventory': True
+            })
+            
+            for module_key, enabled in modules.items():
+                module_setting = SystemSettings(
+                    key=module_key,
+                    value=str(enabled),
+                    description=f'Modul {module_key} aktiviert'
+                )
+                db.session.add(module_setting)
+                logging.info(f"Module setting created: {module_key}={enabled}")
+            
             logging.info("Committing all changes to database")
             db.session.commit()
             logging.info("Database commit successful")
@@ -639,6 +709,7 @@ def setup_step3():
             session.pop('setup_default_accent_color', None)
             session.pop('setup_color_gradient', None)
             session.pop('setup_whitelist_entries', None)
+            session.pop('setup_modules', None)
             logging.info("Session data cleared")
             
             # Admin automatisch einloggen
@@ -662,13 +733,13 @@ def setup_step3():
             flash(f'Fehler beim Setup: {str(e)}', 'danger')
             # Verwende Session-Daten statt Datenbank-Abfrage nach Rollback
             current_gradient = session.get('setup_color_gradient')
-            return render_template('setup/step3.html', color_gradient=current_gradient)
+            return render_template('setup/step4.html', color_gradient=current_gradient)
     
     # Hole aktuellen Farbverlauf aus den System-Einstellungen oder Session
     gradient_setting = SystemSettings.query.filter_by(key='color_gradient').first()
     current_gradient = gradient_setting.value if gradient_setting else session.get('setup_color_gradient')
     
-    return render_template('setup/step3.html', color_gradient=current_gradient)
+    return render_template('setup/step4.html', color_gradient=current_gradient)
 
 
 @setup_bp.route('/setup/check')

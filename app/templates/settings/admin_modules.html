@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Module - Administration{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('settings.index') }}">Einstellungen</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('settings.admin') }}">Administration</a></li>
+        <li class="breadcrumb-item active">Module</li>
+    </ol>
+</nav>
+
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Module verwalten</h4>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4">
+                    Aktivieren oder deaktivieren Sie Module für alle Benutzer. Deaktivierte Module werden in der Navigation ausgeblendet.
+                </p>
+                
+                <form method="POST">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="module_chat" name="module_chat" {% if module_chat_enabled %}checked{% endif %}>
+                                <label class="form-check-label" for="module_chat">
+                                    <i class="bi bi-chat-dots me-2"></i>Chat
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="module_files" name="module_files" {% if module_files_enabled %}checked{% endif %}>
+                                <label class="form-check-label" for="module_files">
+                                    <i class="bi bi-folder me-2"></i>Dateien
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="module_calendar" name="module_calendar" {% if module_calendar_enabled %}checked{% endif %}>
+                                <label class="form-check-label" for="module_calendar">
+                                    <i class="bi bi-calendar-event me-2"></i>Kalender
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="module_email" name="module_email" {% if module_email_enabled %}checked{% endif %}>
+                                <label class="form-check-label" for="module_email">
+                                    <i class="bi bi-envelope me-2"></i>E-Mail
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="module_credentials" name="module_credentials" {% if module_credentials_enabled %}checked{% endif %}>
+                                <label class="form-check-label" for="module_credentials">
+                                    <i class="bi bi-key me-2"></i>Zugangsdaten
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="module_manuals" name="module_manuals" {% if module_manuals_enabled %}checked{% endif %}>
+                                <label class="form-check-label" for="module_manuals">
+                                    <i class="bi bi-book me-2"></i>Anleitungen
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="module_canvas" name="module_canvas" {% if module_canvas_enabled %}checked{% endif %}>
+                                <label class="form-check-label" for="module_canvas">
+                                    <i class="bi bi-palette me-2"></i>Canvas
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="module_inventory" name="module_inventory" {% if module_inventory_enabled %}checked{% endif %}>
+                                <label class="form-check-label" for="module_inventory">
+                                    <i class="bi bi-box-seam me-2"></i>Lagerverwaltung
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-accent">Änderungen speichern</button>
+                        <a href="{{ url_for('settings.admin') }}" class="btn btn-outline-secondary">Zurück</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

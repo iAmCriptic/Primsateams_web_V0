@@ -30,6 +30,16 @@ def create_app(config_name='default'):
     login_manager.login_message = 'Bitte melden Sie sich an, um auf diese Seite zuzugreifen.'
     login_manager.login_message_category = 'info'
     
+    # Custom unauthorized handler for API endpoints (returns JSON instead of redirecting)
+    @login_manager.unauthorized_handler
+    def unauthorized():
+        # Check if this is an API request (OnlyOffice or other API endpoints)
+        if request.path.startswith('/api/') or request.path.startswith('/files/api/'):
+            return jsonify({'error': 'Authentication required'}), 401
+        # For regular requests, redirect to login
+        from flask import redirect, url_for
+        return redirect(url_for('auth.login'))
+    
     # Add email confirmation check to all routes
     @app.before_request
     def check_email_confirmation():
@@ -37,12 +47,14 @@ def create_app(config_name='default'):
         from flask import request, redirect, url_for, flash
         from flask_login import current_user
         
-        # Skip check for auth routes, setup, static files, API, and portal logo
+        # Skip check for auth routes, setup, static files, API, OnlyOffice endpoints, and portal logo
         if (request.endpoint and 
             (request.endpoint.startswith('auth.') or 
              request.endpoint.startswith('setup.') or
              request.endpoint.startswith('static') or
              request.endpoint.startswith('api.') or
+             request.endpoint.startswith('files.onlyoffice') or  # OnlyOffice endpoints
+             request.endpoint.startswith('files.share_onlyoffice') or  # OnlyOffice share endpoints
              request.endpoint == 'manifest' or
              request.endpoint == 'settings.portal_logo')):
             return
@@ -127,12 +139,16 @@ def create_app(config_name='default'):
         from app.utils.onlyoffice import is_onlyoffice_enabled
         onlyoffice_available = is_onlyoffice_enabled()
         
+        # Add module check function
+        from app.utils.common import is_module_enabled
+        
         return {
             'app_name': app_name,
             'app_logo': app_logo,
             'color_gradient': color_gradient,
             'portal_logo_filename': portal_logo_filename,
-            'onlyoffice_available': onlyoffice_available
+            'onlyoffice_available': onlyoffice_available,
+            'is_module_enabled': is_module_enabled
         }
     
     # Email header decoder filter
@@ -293,6 +309,9 @@ def create_app(config_name='default'):
         app.logger.error(f"500 Internal Server Error: {error}", exc_info=True)
         # Rollback any database transactions
         db.session.rollback()
+        # Return JSON for API endpoints
+        if request.path.startswith('/api/') or request.path.startswith('/files/api/'):
+            return jsonify({'error': 'Internal server error', 'message': str(error)}), 500
         return render_template('errors/500.html'), 500
     
     @app.errorhandler(Exception)
@@ -303,6 +322,9 @@ def create_app(config_name='default'):
         # Rollback any database transactions
         db.session.rollback()
         
+        # Return JSON for API endpoints
+        if request.path.startswith('/api/') or request.path.startswith('/files/api/'):
+            return jsonify({'error': 'Internal server error', 'message': str(e)}), 500
         # Return 500 error page
         return render_template('errors/500.html'), 500
     

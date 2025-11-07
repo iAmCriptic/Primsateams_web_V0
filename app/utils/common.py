@@ -58,3 +58,26 @@ def format_time(dt, format_string='%H:%M'):
     
     local_dt = get_local_time(dt)
     return local_dt.strftime(format_string)
+
+
+def is_module_enabled(module_key):
+    """
+    Prüft ob ein Modul aktiviert ist.
+    
+    Args:
+        module_key: Der Schlüssel des Moduls (z.B. 'module_chat', 'module_files')
+        
+    Returns:
+        True wenn das Modul aktiviert ist, False sonst. Standardmäßig True wenn nicht gesetzt.
+    """
+    try:
+        from app.models.settings import SystemSettings
+        setting = SystemSettings.query.filter_by(key=module_key).first()
+        if setting:
+            # Prüfe ob der Wert 'true' ist (case-insensitive)
+            return str(setting.value).lower() == 'true'
+        # Standardmäßig aktiviert wenn nicht gesetzt (für Rückwärtskompatibilität)
+        return True
+    except Exception:
+        # Bei Fehlern (z.B. während Setup) standardmäßig aktiviert
+        return True

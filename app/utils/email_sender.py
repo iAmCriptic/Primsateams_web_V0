@@ -2,6 +2,7 @@ import os
 import secrets
 import string
 import logging
+import base64
 from datetime import datetime, timedelta
 from flask import render_template, current_app
 from flask_mail import Message
@@ -12,6 +13,72 @@ from app.models.user import User
 def generate_confirmation_code():
     """Generiert einen 6-stelligen Bestätigungscode."""
     return ''.join(secrets.choice(string.digits) for _ in range(6))
+
+
+def get_logo_base64():
+    """Holt das Portal-Logo aus SystemSettings oder Konfiguration und gibt es als Base64-String zurück."""
+    try:
+        from app.models.settings import SystemSettings
+        
+        # Versuche Portal-Logo aus SystemSettings zu laden
+        portal_logo_setting = SystemSettings.query.filter_by(key='portal_logo').first()
+        if portal_logo_setting and portal_logo_setting.value:
+            # Portal-Logo ist in uploads/system/ gespeichert
+            project_root = os.path.dirname(current_app.root_path)
+            logo_path = os.path.join(project_root, current_app.config['UPLOAD_FOLDER'], 'system', portal_logo_setting.value)
+            if os.path.exists(logo_path):
+                try:
+                    with open(logo_path, 'rb') as f:
+                        logo_data = f.read()
+                    # Bestimme MIME-Type basierend auf Dateierweiterung
+                    ext = os.path.splitext(portal_logo_setting.value)[1].lower()
+                    mime_types = {
+                        '.png': 'image/png',
+                        '.jpg': 'image/jpeg',
+                        '.jpeg': 'image/jpeg',
+                        '.gif': 'image/gif',
+                        '.svg': 'image/svg+xml'
+                    }
+                    mime_type = mime_types.get(ext, 'image/png')
+                    logo_base64 = base64.b64encode(logo_data).decode('utf-8')
+                    return f"data:{mime_type};base64,{logo_base64}"
+                except Exception as e:
+                    logging.warning(f"Fehler beim Laden des Portal-Logos: {e}")
+    except Exception as e:
+        logging.warning(f"Fehler beim Zugriff auf SystemSettings: {e}")
+    
+    # Fallback zu Standard-Logo
+    try:
+        logo_path = current_app.config.get('APP_LOGO', 'static/img/logo.png')
+        
+        # Wenn der Pfad mit 'static/' beginnt, entferne es
+        if logo_path.startswith('static/'):
+            logo_path = logo_path[7:]
+        
+        # Konvertiere zu absolutem Pfad
+        static_folder = current_app.static_folder
+        full_path = os.path.join(static_folder, logo_path)
+        
+        if os.path.exists(full_path):
+            with open(full_path, 'rb') as f:
+                logo_data = f.read()
+            # Bestimme MIME-Type basierend auf Dateierweiterung
+            ext = os.path.splitext(full_path)[1].lower()
+            mime_types = {
+                '.png': 'image/png',
+                '.jpg': 'image/jpeg',
+                '.jpeg': 'image/jpeg',
+                '.gif': 'image/gif',
+                '.svg': 'image/svg+xml'
+            }
+            mime_type = mime_types.get(ext, 'image/png')
+            logo_base64 = base64.b64encode(logo_data).decode('utf-8')
+            return f"data:{mime_type};base64,{logo_base64}"
+    except Exception as e:
+        logging.warning(f"Fehler beim Laden des Standard-Logos: {e}")
+    
+    # Wenn kein Logo gefunden wurde, gib None zurück
+    return None
 
 
 def send_confirmation_email(user):
@@ -45,20 +112,23 @@ def send_confirmation_email(user):
             logging.warning(f"E-Mail-Konfiguration unvollständig. Code für {user.email}: {confirmation_code}")
             return False
         
+        # Get portal name from SystemSettings
+        try:
+            from app.models.settings import SystemSettings
+            portal_name_setting = SystemSettings.query.filter_by(key='portal_name').first()
+            portal_name = portal_name_setting.value if portal_name_setting and portal_name_setting.value else current_app.config.get('APP_NAME', 'Prismateams')
+        except:
+            portal_name = current_app.config.get('APP_NAME', 'Prismateams')
+        
         # Erstelle E-Mail
         msg = Message(
-            # Get portal name from SystemSettings
-            try:
-                from app.models.settings import SystemSettings
-                portal_name_setting = SystemSettings.query.filter_by(key='portal_name').first()
-                portal_name = portal_name_setting.value if portal_name_setting and portal_name_setting.value else current_app.config.get('APP_NAME', 'Prismateams')
-            except:
-                portal_name = current_app.config.get('APP_NAME', 'Prismateams')
-            
             subject=f'E-Mail-Bestätigung - {portal_name}',
             recipients=[user.email],
             sender=current_app.config.get('MAIL_DEFAULT_SENDER', mail_username)
         )
+        
+        # Logo als Base64 laden
+        logo_base64 = get_logo_base64()
         
         # HTML-Template rendern
         html_content = render_template(
@@ -66,7 +136,8 @@ def send_confirmation_email(user):
             user=user,
             confirmation_code=confirmation_code,
             app_name=portal_name,
-            current_year=datetime.utcnow().year
+            current_year=datetime.utcnow().year,
+            logo_base64=logo_base64
         )
         
         msg.html = html_content
@@ -83,20 +154,23 @@ def send_confirmation_email(user):
             try:
                 logging.info("Versuche alternative E-Mail-Konfiguration...")
                 
+                # Get portal name from SystemSettings (bereits oben definiert, aber zur Sicherheit nochmal)
+                try:
+                    from app.models.settings import SystemSettings
+                    portal_name_setting = SystemSettings.query.filter_by(key='portal_name').first()
+                    portal_name = portal_name_setting.value if portal_name_setting and portal_name_setting.value else current_app.config.get('APP_NAME', 'Prismateams')
+                except:
+                    portal_name = current_app.config.get('APP_NAME', 'Prismateams')
+                
                 # Erstelle neue Message mit korrigierter Konfiguration
                 msg_alt = Message(
-                    # Get portal name from SystemSettings
-            try:
-                from app.models.settings import SystemSettings
-                portal_name_setting = SystemSettings.query.filter_by(key='portal_name').first()
-                portal_name = portal_name_setting.value if portal_name_setting and portal_name_setting.value else current_app.config.get('APP_NAME', 'Prismateams')
-            except:
-                portal_name = current_app.config.get('APP_NAME', 'Prismateams')
-            
-            subject=f'E-Mail-Bestätigung - {portal_name}',
+                    subject=f'E-Mail-Bestätigung - {portal_name}',
                     recipients=[user.email],
                     sender=current_app.config.get('MAIL_DEFAULT_SENDER', mail_username)
                 )
+                
+                # Logo als Base64 laden
+                logo_base64 = get_logo_base64()
                 
                 # HTML-Template rendern
                 html_content = render_template(
@@ -104,7 +178,8 @@ def send_confirmation_email(user):
                     user=user,
                     confirmation_code=confirmation_code,
                     app_name=portal_name,
-                    current_year=datetime.utcnow().year
+                    current_year=datetime.utcnow().year,
+                    logo_base64=logo_base64
                 )
                 
                 msg_alt.html = html_content
@@ -187,6 +262,9 @@ def send_return_confirmation_email(borrow_transaction):
             sender=current_app.config.get('MAIL_DEFAULT_SENDER', mail_username)
         )
         
+        # Logo als Base64 laden
+        logo_base64 = get_logo_base64()
+        
         # HTML-Template für Rückgabe-Bestätigung
         return_date = borrow_transaction.actual_return_date.strftime('%d.%m.%Y') if borrow_transaction.actual_return_date else datetime.utcnow().strftime('%d.%m.%Y')
         
@@ -197,7 +275,8 @@ def send_return_confirmation_email(borrow_transaction):
             product=product,
             transaction=borrow_transaction,
             return_date=return_date,
-            current_year=datetime.utcnow().year
+            current_year=datetime.utcnow().year,
+            logo_base64=logo_base64
         )
         
         msg.html = html_content
