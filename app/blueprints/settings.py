@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, send_from_directory, abort, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, send_from_directory, abort, current_app, send_file
 from flask_login import login_required, current_user
 from app import db
 from app.models.user import User
@@ -8,9 +8,11 @@ from app.models.notification import NotificationSettings, ChatNotificationSettin
 from app.models.chat import Chat, ChatMember
 from app.models.whitelist import WhitelistEntry
 from app.utils.notifications import get_or_create_notification_settings
+from app.utils.backup import export_backup, import_backup, SUPPORTED_CATEGORIES
 from werkzeug.utils import secure_filename
 from datetime import datetime
 import os
+import tempfile
 
 settings_bp = Blueprint('settings', __name__)
 
@@ -646,6 +648,99 @@ def admin_modules():
                            module_manuals_enabled=module_manuals_enabled,
                            module_canvas_enabled=module_canvas_enabled,
                            module_inventory_enabled=module_inventory_enabled)
+
+
+@settings_bp.route('/admin/backup', methods=['GET', 'POST'])
+@login_required
+def admin_backup():
+    """Backup Import/Export (admin only)."""
+    if not current_user.is_admin:
+        flash('Nur Administratoren haben Zugriff auf diese Seite.', 'danger')
+        return redirect(url_for('settings.index'))
+    
+    if request.method == 'POST':
+        action = request.form.get('action')
+        
+        if action == 'export':
+            # Export-Backup erstellen
+            categories = request.form.getlist('export_categories')
+            if not categories:
+                flash('Bitte wählen Sie mindestens eine Kategorie zum Exportieren aus.', 'danger')
+                return render_template('settings/admin_backup.html', categories=SUPPORTED_CATEGORIES)
+            
+            try:
+                # Temporäre Datei erstellen
+                timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+                temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.teamportal', mode='w', encoding='utf-8')
+                temp_path = temp_file.name
+                temp_file.close()
+                
+                # Backup erstellen
+                result = export_backup(categories, temp_path)
+                
+                if result['success']:
+                    return send_file(
+                        temp_path,
+                        as_attachment=True,
+                        attachment_filename=f'backup_{timestamp}.teamportal',
+                        mimetype='application/json'
+                    )
+                else:
+                    flash('Fehler beim Erstellen des Backups.', 'danger')
+            except Exception as e:
+                current_app.logger.error(f"Fehler beim Export: {str(e)}")
+                flash(f'Fehler beim Erstellen des Backups: {str(e)}', 'danger')
+        
+        elif action == 'import':
+            # Import-Backup hochladen
+            if 'backup_file' not in request.files:
+                flash('Bitte wählen Sie eine Backup-Datei aus.', 'danger')
+                return render_template('settings/admin_backup.html', categories=SUPPORTED_CATEGORIES)
+            
+            file = request.files['backup_file']
+            if file.filename == '':
+                flash('Bitte wählen Sie eine Backup-Datei aus.', 'danger')
+                return render_template('settings/admin_backup.html', categories=SUPPORTED_CATEGORIES)
+            
+            if not file.filename.endswith('.teamportal'):
+                flash('Ungültige Dateiendung. Bitte wählen Sie eine .teamportal-Datei aus.', 'danger')
+                return render_template('settings/admin_backup.html', categories=SUPPORTED_CATEGORIES)
+            
+            try:
+                # Temporäre Datei speichern
+                temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.teamportal', mode='wb')
+                file.save(temp_file.name)
+                temp_path = temp_file.name
+                temp_file.close()
+                
+                # Kategorien auswählen
+                import_categories = request.form.getlist('import_categories')
+                if not import_categories:
+                    flash('Bitte wählen Sie mindestens eine Kategorie zum Importieren aus.', 'danger')
+                    os.unlink(temp_path)
+                    return render_template('settings/admin_backup.html', categories=SUPPORTED_CATEGORIES)
+                
+                # Backup importieren
+                result = import_backup(temp_path, import_categories)
+                
+                # Temporäre Datei löschen
+                os.unlink(temp_path)
+                
+                if result['success']:
+                    imported = ', '.join(result.get('imported', []))
+                    flash(f'Backup erfolgreich importiert! Importierte Kategorien: {imported}', 'success')
+                else:
+                    flash(f'Fehler beim Importieren des Backups: {result.get("error", "Unbekannter Fehler")}', 'danger')
+            except Exception as e:
+                current_app.logger.error(f"Fehler beim Import: {str(e)}")
+                flash(f'Fehler beim Importieren des Backups: {str(e)}', 'danger')
+                if 'temp_path' in locals():
+                    try:
+                        os.unlink(temp_path)
+                    except:
+                        pass
+    
+    return render_template('settings/admin_backup.html', categories=SUPPORTED_CATEGORIES)
 
 
 @settings_bp.route('/admin/whitelist')

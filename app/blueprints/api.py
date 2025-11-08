@@ -6,6 +6,7 @@ from app.models.chat import Chat, ChatMessage, ChatMember
 from app.models.file import File, Folder
 from app.models.calendar import CalendarEvent, EventParticipant
 from app.models.email import EmailMessage
+from app.models.canvas import Canvas
 from app.models.notification import PushSubscription
 from app.utils.notifications import register_push_subscription, send_push_notification
 from datetime import datetime
@@ -250,6 +251,40 @@ def get_dashboard_stats():
         'unread_emails': unread_emails,
         'total_files': total_files
     })
+
+
+@api_bp.route('/files/recent', methods=['GET'])
+@login_required
+def get_recent_files():
+    """Get recent files edited by current user."""
+    files = File.query.filter_by(
+        uploaded_by=current_user.id
+    ).order_by(File.updated_at.desc()).limit(3).all()
+    
+    return jsonify([{
+        'id': file.id,
+        'name': file.name,
+        'original_name': file.original_name,
+        'updated_at': file.updated_at.isoformat(),
+        'mime_type': file.mime_type,
+        'url': url_for('files.view_file', file_id=file.id)
+    } for file in files])
+
+
+@api_bp.route('/canvas/recent', methods=['GET'])
+@login_required
+def get_recent_canvases():
+    """Get recently edited canvases by current user."""
+    canvases = Canvas.query.filter_by(
+        created_by=current_user.id
+    ).order_by(Canvas.updated_at.desc()).limit(3).all()
+    
+    return jsonify([{
+        'id': canvas.id,
+        'name': canvas.name,
+        'updated_at': canvas.updated_at.isoformat(),
+        'url': url_for('canvas.edit', canvas_id=canvas.id)
+    } for canvas in canvases])
 
 
 # Push Notifications API

@@ -1367,8 +1367,9 @@ def compose():
         full_body_html = body_html + footer
         
         try:
-            # Get sender from config or use MAIL_USERNAME as fallback
-            sender = current_app.config.get('MAIL_DEFAULT_SENDER') or current_app.config.get('MAIL_USERNAME')
+            # Get formatted sender from config (with optional display name)
+            from config import get_formatted_sender
+            sender = get_formatted_sender()
             if not sender:
                 flash('E-Mail-Absender ist nicht konfiguriert. Bitte kontaktieren Sie den Administrator.', 'danger')
                 return render_template('email/compose.html')

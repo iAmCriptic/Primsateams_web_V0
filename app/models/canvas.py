@@ -1,5 +1,6 @@
 from datetime import datetime
 from app import db
+import json
 
 
 class Canvas(db.Model):
@@ -15,6 +16,7 @@ class Canvas(db.Model):
     
     # Relationships
     text_fields = db.relationship('CanvasTextField', back_populates='canvas', cascade='all, delete-orphan')
+    elements = db.relationship('CanvasElement', back_populates='canvas', cascade='all, delete-orphan')
     
     def __repr__(self):
         return f'<Canvas {self.name}>'
@@ -47,6 +49,42 @@ class CanvasTextField(db.Model):
     
     def __repr__(self):
         return f'<CanvasTextField {self.id} on canvas {self.canvas_id}>'
+
+
+class CanvasElement(db.Model):
+    __tablename__ = 'canvas_elements'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    canvas_id = db.Column(db.Integer, db.ForeignKey('canvases.id'), nullable=False)
+    
+    # Element type: rectangle, diamond, circle, arrow, line, text, image
+    element_type = db.Column(db.String(50), nullable=False)
+    
+    # JSON-basierte Speicherung aller Eigenschaften
+    properties = db.Column(db.Text, nullable=False)  # JSON string
+    
+    # Z-Index für Layering
+    z_index = db.Column(db.Integer, default=0, nullable=False)
+    
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    canvas = db.relationship('Canvas', back_populates='elements')
+    
+    def get_properties(self):
+        """Gibt die Properties als Dictionary zurück."""
+        if self.properties:
+            return json.loads(self.properties)
+        return {}
+    
+    def set_properties(self, props_dict):
+        """Setzt die Properties aus einem Dictionary."""
+        self.properties = json.dumps(props_dict)
+    
+    def __repr__(self):
+        return f'<CanvasElement {self.id} ({self.element_type}) on canvas {self.canvas_id}>'
 
 
 

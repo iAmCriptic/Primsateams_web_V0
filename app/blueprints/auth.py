@@ -304,10 +304,12 @@ def test_email():
         }
         
         # Versuche Test-E-Mail zu senden
+        from config import get_formatted_sender
+        sender = get_formatted_sender() or mail_username
         msg = Message(
             subject='Test-E-Mail - Prismateams',
             recipients=[current_user.email],
-            sender=current_app.config.get('MAIL_DEFAULT_SENDER', mail_username)
+            sender=sender
         )
         msg.body = 'Dies ist eine Test-E-Mail von Prismateams.'
         

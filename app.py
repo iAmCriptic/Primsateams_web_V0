@@ -39,11 +39,14 @@ def make_shell_context():
 
 
 if __name__ == '__main__':
+    from app import socketio
     print(f"Starte HTTP-Server auf http://0.0.0.0:5000")
-    app.run(
+    socketio.run(
+        app,
         host='0.0.0.0',
         port=5000,
-        debug=True
+        debug=True,
+        allow_unsafe_werkzeug=True
     )
 
 

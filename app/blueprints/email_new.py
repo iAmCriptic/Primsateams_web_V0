@@ -580,11 +580,13 @@ def compose():
         
         try:
             # Send email using Flask-Mail
+            from config import get_formatted_sender
+            sender = get_formatted_sender() or mail.default_sender
             msg = Message(
                 subject=subject,
                 recipients=to.split(','),
                 body=full_body,
-                sender=mail.default_sender
+                sender=sender
             )
             
             if cc:
@@ -607,7 +609,7 @@ def compose():
             # Save to database
             email_record = EmailMessage(
                 subject=subject,
-                sender=mail.default_sender,
+                sender=sender,
                 recipients=to,
                 cc=cc,
                 body_text=full_body,

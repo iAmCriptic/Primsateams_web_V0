@@ -40,6 +40,7 @@ class Config:
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER') or os.environ.get('MAIL_USERNAME')
+    MAIL_SENDER_NAME = os.environ.get('MAIL_SENDER_NAME', '')  # Optional: Anzeigename für Absender
     
     # IMAP
     IMAP_SERVER = os.environ.get('IMAP_SERVER')
@@ -105,6 +106,20 @@ config = {
     'testing': TestingConfig,
     'default': DevelopmentConfig
 }
+
+
+def get_formatted_sender():
+    """Gibt den formatierten Absender zurück: 'Name <email@example.com>' oder nur 'email@example.com'."""
+    sender_name = os.environ.get('MAIL_SENDER_NAME', '').strip()
+    sender_email = os.environ.get('MAIL_DEFAULT_SENDER') or os.environ.get('MAIL_USERNAME')
+    
+    if not sender_email:
+        return None
+    
+    if sender_name:
+        return f"{sender_name} <{sender_email}>"
+    else:
+        return sender_email
 
 
 

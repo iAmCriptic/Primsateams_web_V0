@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_mail import Mail
+from flask_socketio import SocketIO
 from config import config
 import os
 
@@ -9,6 +10,7 @@ import os
 db = SQLAlchemy()
 login_manager = LoginManager()
 mail = Mail()
+socketio = SocketIO(cors_allowed_origins="*")
 
 
 def create_app(config_name='default'):
@@ -24,6 +26,7 @@ def create_app(config_name='default'):
     db.init_app(app)
     login_manager.init_app(app)
     mail.init_app(app)
+    socketio.init_app(app)
     
     # Configure login manager
     login_manager.login_view = 'auth.login'
@@ -544,6 +547,9 @@ def create_app(config_name='default'):
     # Start notification scheduler
     from app.tasks.notification_scheduler import start_notification_scheduler
     start_notification_scheduler(app)
+    
+    # Import SocketIO handlers
+    from app.blueprints import canvas
     
     return app
 

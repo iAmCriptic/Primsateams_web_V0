@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}Backup Import/Export - Administration{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('settings.index') }}">Einstellungen</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('settings.admin') }}">Administration</a></li>
+        <li class="breadcrumb-item active">Backup Import/Export</li>
+    </ol>
+</nav>
+
+<div class="row">
+    <div class="col-lg-10 mx-auto">
+        <!-- Export-Bereich -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="bi bi-download me-2"></i>Backup erstellen</h4>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4">
+                    Erstellen Sie ein Backup Ihrer Daten. Wählen Sie die Kategorien aus, die Sie exportieren möchten.
+                </p>
+                
+                <form method="POST" id="exportForm">
+                    <input type="hidden" name="action" value="export">
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Zu exportierende Kategorien:</label>
+                        <div class="row g-3">
+                            {% for key, label in categories.items() %}
+                            <div class="col-md-6">
+                                <div class="form-check d-flex align-items-center">
+                                    <input class="form-check-input" type="checkbox" name="export_categories" value="{{ key }}" id="export_{{ key }}">
+                                    <label class="form-check-label flex-grow-1" for="export_{{ key }}">
+                                        {% if key == 'settings' %}
+                                            <i class="bi bi-gear me-2"></i>
+                                        {% elif key == 'users' %}
+                                            <i class="bi bi-people me-2"></i>
+                                        {% elif key == 'emails' %}
+                                            <i class="bi bi-envelope me-2"></i>
+                                        {% elif key == 'chats' %}
+                                            <i class="bi bi-chat-dots me-2"></i>
+                                        {% elif key == 'appointments' %}
+                                            <i class="bi bi-calendar-event me-2"></i>
+                                        {% elif key == 'credentials' %}
+                                            <i class="bi bi-key me-2"></i>
+                                        {% elif key == 'files' %}
+                                            <i class="bi bi-folder me-2"></i>
+                                        {% endif %}
+                                        {{ label }}
+                                    </label>
+                                    <i class="bi bi-info-circle text-info ms-2" 
+                                       data-bs-toggle="popover" 
+                                       data-bs-trigger="hover"
+                                       data-bs-placement="right"
+                                       data-bs-html="true"
+                                       data-bs-content="
+                                       {% if key == 'settings' %}
+                                       <strong>Enthält:</strong><br>
+                                       • System-Einstellungen (Portal-Name, Logo, Module-Aktivierung, Datei-Einstellungen)<br>
+                                       • Whitelist-Einträge (E-Mail-Adressen und Domains)
+                                       {% elif key == 'users' %}
+                                       <strong>Enthält:</strong><br>
+                                       • Alle Benutzerdaten (Name, E-Mail, Profilbild, Einstellungen)<br>
+                                       • Passwort-Hashes (verschlüsselt, für Anmeldung nach Import)<br>
+                                       • Benachrichtigungseinstellungen
+                                       {% elif key == 'emails' %}
+                                       <strong>Enthält:</strong><br>
+                                       • E-Mail-Nachrichten (Betreff, Inhalt, Absender, Empfänger)<br>
+                                       • E-Mail-Anhänge<br>
+                                       • E-Mail-Berechtigungen (Lese- und Sende-Berechtigungen)
+                                       {% elif key == 'chats' %}
+                                       <strong>Enthält:</strong><br>
+                                       • Chat-Gruppen (Name, Typ, Erstellungsdatum)<br>
+                                       • Alle Chat-Nachrichten (Text, Medien, Zeitstempel)<br>
+                                       • Chat-Mitgliedschaften (wer ist in welchem Chat)
+                                       {% elif key == 'appointments' %}
+                                       <strong>Enthält:</strong><br>
+                                       • Kalender-Termine (Titel, Beschreibung, Zeit, Ort)<br>
+                                       • Teilnehmer-Status (wer nimmt teil, wer hat abgelehnt)
+                                       {% elif key == 'credentials' %}
+                                       <strong>Enthält:</strong><br>
+                                       • Website-Zugangsdaten (URL, Benutzername, Passwort, Notizen)<br>
+                                       <small class='text-muted'>Hinweis: Passwörter werden entschlüsselt exportiert</small>
+                                       {% elif key == 'files' %}
+                                       <strong>Enthält:</strong><br>
+                                       • Dateien (Name, Inhalt, Größe, MIME-Typ)<br>
+                                       • Ordnerstruktur<br>
+                                       • Datei-Versionen
+                                       {% endif %}
+                                       "
+                                       title="{{ label }}"></i>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="mt-3">
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAll('export')">Alle auswählen</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAll('export')">Alle abwählen</button>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Hinweis:</strong> Die Backup-Datei wird im Format <code>.teamportal</code> erstellt. 
+                        Benutzer-Passwörter werden als verschlüsselte Hashes exportiert, damit sich Benutzer nach dem Import weiterhin anmelden können.
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-download me-2"></i>Backup erstellen und herunterladen
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Import-Bereich -->
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0"><i class="bi bi-upload me-2"></i>Backup importieren</h4>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4">
+                    Importieren Sie ein Backup. Wählen Sie die Kategorien aus, die Sie importieren möchten.
+                </p>
+                
+                <form method="POST" enctype="multipart/form-data" id="importForm">
+                    <input type="hidden" name="action" value="import">
+                    
+                    <div class="mb-3">
+                        <label for="backup_file" class="form-label fw-bold">Backup-Datei auswählen:</label>
+                        <input type="file" class="form-control" id="backup_file" name="backup_file" accept=".teamportal" required>
+                        <div class="form-text">Nur .teamportal-Dateien werden akzeptiert.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Zu importierende Kategorien:</label>
+                        <div class="row g-3">
+                            {% for key, label in categories.items() %}
+                            <div class="col-md-6">
+                                <div class="form-check d-flex align-items-center">
+                                    <input class="form-check-input" type="checkbox" name="import_categories" value="{{ key }}" id="import_{{ key }}">
+                                    <label class="form-check-label flex-grow-1" for="import_{{ key }}">
+                                        {% if key == 'settings' %}
+                                            <i class="bi bi-gear me-2"></i>
+                                        {% elif key == 'users' %}
+                                            <i class="bi bi-people me-2"></i>
+                                        {% elif key == 'emails' %}
+                                            <i class="bi bi-envelope me-2"></i>
+                                        {% elif key == 'chats' %}
+                                            <i class="bi bi-chat-dots me-2"></i>
+                                        {% elif key == 'appointments' %}
+                                            <i class="bi bi-calendar-event me-2"></i>
+                                        {% elif key == 'credentials' %}
+                                            <i class="bi bi-key me-2"></i>
+                                        {% elif key == 'files' %}
+                                            <i class="bi bi-folder me-2"></i>
+                                        {% endif %}
+                                        {{ label }}
+                                    </label>
+                                    <i class="bi bi-info-circle text-info ms-2" 
+                                       data-bs-toggle="popover" 
+                                       data-bs-trigger="hover"
+                                       data-bs-placement="right"
+                                       data-bs-html="true"
+                                       data-bs-content="
+                                       {% if key == 'settings' %}
+                                       <strong>Enthält:</strong><br>
+                                       • System-Einstellungen (Portal-Name, Logo, Module-Aktivierung, Datei-Einstellungen)<br>
+                                       • Whitelist-Einträge (E-Mail-Adressen und Domains)
+                                       {% elif key == 'users' %}
+                                       <strong>Enthält:</strong><br>
+                                       • Alle Benutzerdaten (Name, E-Mail, Profilbild, Einstellungen)<br>
+                                       • Passwort-Hashes (verschlüsselt, für Anmeldung nach Import)<br>
+                                       • Benachrichtigungseinstellungen
+                                       {% elif key == 'emails' %}
+                                       <strong>Enthält:</strong><br>
+                                       • E-Mail-Nachrichten (Betreff, Inhalt, Absender, Empfänger)<br>
+                                       • E-Mail-Anhänge<br>
+                                       • E-Mail-Berechtigungen (Lese- und Sende-Berechtigungen)
+                                       {% elif key == 'chats' %}
+                                       <strong>Enthält:</strong><br>
+                                       • Chat-Gruppen (Name, Typ, Erstellungsdatum)<br>
+                                       • Alle Chat-Nachrichten (Text, Medien, Zeitstempel)<br>
+                                       • Chat-Mitgliedschaften (wer ist in welchem Chat)
+                                       {% elif key == 'appointments' %}
+                                       <strong>Enthält:</strong><br>
+                                       • Kalender-Termine (Titel, Beschreibung, Zeit, Ort)<br>
+                                       • Teilnehmer-Status (wer nimmt teil, wer hat abgelehnt)
+                                       {% elif key == 'credentials' %}
+                                       <strong>Enthält:</strong><br>
+                                       • Website-Zugangsdaten (URL, Benutzername, Passwort, Notizen)<br>
+                                       <small class='text-muted'>Hinweis: Passwörter werden entschlüsselt exportiert</small>
+                                       {% elif key == 'files' %}
+                                       <strong>Enthält:</strong><br>
+                                       • Dateien (Name, Inhalt, Größe, MIME-Typ)<br>
+                                       • Ordnerstruktur<br>
+                                       • Datei-Versionen
+                                       {% endif %}
+                                       "
+                                       title="{{ label }}"></i>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="mt-3">
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAll('import')">Alle auswählen</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAll('import')">Alle abwählen</button>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>Warnung:</strong> Beim Import werden bestehende Daten überschrieben oder neue Daten hinzugefügt. 
+                        IDs werden neu generiert. Stellen Sie sicher, dass Sie ein aktuelles Backup haben, bevor Sie importieren.
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success" onclick="return confirm('Sind Sie sicher, dass Sie das Backup importieren möchten?')">
+                            <i class="bi bi-upload me-2"></i>Backup importieren
+                        </button>
+                        <a href="{{ url_for('settings.admin') }}" class="btn btn-outline-secondary">Zurück</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function selectAll(type) {
+    const checkboxes = document.querySelectorAll(`input[name="${type}_categories"]`);
+    checkboxes.forEach(cb => cb.checked = true);
+}
+
+function deselectAll(type) {
+    const checkboxes = document.querySelectorAll(`input[name="${type}_categories"]`);
+    checkboxes.forEach(cb => cb.checked = false);
+}
+
+// Bootstrap Popover initialisieren
+document.addEventListener('DOMContentLoaded', function() {
+    var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
+    var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+        return new bootstrap.Popover(popoverTriggerEl);
+    });
+});
+</script>
+{% endblock %}
+

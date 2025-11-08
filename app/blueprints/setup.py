@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, current_app
 from flask_login import login_user
 from app import db
 from app.models.user import User
@@ -6,8 +6,11 @@ from app.models.email import EmailPermission
 from app.models.chat import Chat, ChatMember
 from app.models.settings import SystemSettings
 from app.models.whitelist import WhitelistEntry
+from app.utils.backup import import_backup, SUPPORTED_CATEGORIES
 from datetime import datetime
 import logging
+import os
+import tempfile
 
 setup_bp = Blueprint('setup', __name__)
 
@@ -39,6 +42,72 @@ def setup():
     current_gradient = gradient_setting.value if gradient_setting else session.get('setup_color_gradient')
     
     return render_template('setup/index.html', color_gradient=current_gradient)
+
+
+@setup_bp.route('/setup/import-backup', methods=['GET', 'POST'])
+def setup_import_backup():
+    """Backup-Import im Setup-Prozess (Schritt 0)."""
+    if not is_setup_needed():
+        return redirect(url_for('auth.login'))
+    
+    if request.method == 'POST':
+        action = request.form.get('action')
+        
+        if action == 'skip':
+            # Backup-Import überspringen
+            return redirect(url_for('setup.setup_step1'))
+        
+        elif action == 'import':
+            # Backup importieren
+            if 'backup_file' not in request.files:
+                flash('Bitte wählen Sie eine Backup-Datei aus.', 'danger')
+                return render_template('setup/import_backup.html', categories=SUPPORTED_CATEGORIES)
+            
+            file = request.files['backup_file']
+            if file.filename == '':
+                flash('Bitte wählen Sie eine Backup-Datei aus.', 'danger')
+                return render_template('setup/import_backup.html', categories=SUPPORTED_CATEGORIES)
+            
+            if not file.filename.endswith('.teamportal'):
+                flash('Ungültige Dateiendung. Bitte wählen Sie eine .teamportal-Datei aus.', 'danger')
+                return render_template('setup/import_backup.html', categories=SUPPORTED_CATEGORIES)
+            
+            try:
+                # Temporäre Datei speichern
+                temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.teamportal', mode='wb')
+                file.save(temp_file.name)
+                temp_path = temp_file.name
+                temp_file.close()
+                
+                # Kategorien auswählen (alle wenn nicht angegeben)
+                import_categories = request.form.getlist('import_categories')
+                if not import_categories:
+                    # Wenn keine Kategorien ausgewählt, importiere alle verfügbaren
+                    import_categories = ['all']
+                
+                # Backup importieren
+                result = import_backup(temp_path, import_categories)
+                
+                # Temporäre Datei löschen
+                os.unlink(temp_path)
+                
+                if result['success']:
+                    imported = ', '.join(result.get('imported', []))
+                    flash(f'Backup erfolgreich importiert! Importierte Kategorien: {imported}', 'success')
+                    # Weiter zum nächsten Schritt
+                    return redirect(url_for('setup.setup_step1'))
+                else:
+                    flash(f'Fehler beim Importieren des Backups: {result.get("error", "Unbekannter Fehler")}', 'danger')
+            except Exception as e:
+                current_app.logger.error(f"Fehler beim Import im Setup: {str(e)}")
+                flash(f'Fehler beim Importieren des Backups: {str(e)}', 'danger')
+                if 'temp_path' in locals():
+                    try:
+                        os.unlink(temp_path)
+                    except:
+                        pass
+    
+    return render_template('setup/import_backup.html', categories=SUPPORTED_CATEGORIES)
 
 
 @setup_bp.route('/setup/complete', methods=['GET', 'POST'])

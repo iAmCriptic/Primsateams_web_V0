@@ -121,10 +121,12 @@ def send_confirmation_email(user):
             portal_name = current_app.config.get('APP_NAME', 'Prismateams')
         
         # Erstelle E-Mail
+        from config import get_formatted_sender
+        sender = get_formatted_sender() or mail_username
         msg = Message(
             subject=f'E-Mail-Bestätigung - {portal_name}',
             recipients=[user.email],
-            sender=current_app.config.get('MAIL_DEFAULT_SENDER', mail_username)
+            sender=sender
         )
         
         # Logo als Base64 laden
@@ -163,10 +165,12 @@ def send_confirmation_email(user):
                     portal_name = current_app.config.get('APP_NAME', 'Prismateams')
                 
                 # Erstelle neue Message mit korrigierter Konfiguration
+                from config import get_formatted_sender
+                sender = get_formatted_sender() or mail_username
                 msg_alt = Message(
                     subject=f'E-Mail-Bestätigung - {portal_name}',
                     recipients=[user.email],
-                    sender=current_app.config.get('MAIL_DEFAULT_SENDER', mail_username)
+                    sender=sender
                 )
                 
                 # Logo als Base64 laden
@@ -268,10 +272,12 @@ def send_borrow_receipt_email(borrow_transactions):
             portal_name = current_app.config.get('APP_NAME', 'Prismateams')
         
         # Erstelle E-Mail
+        from config import get_formatted_sender
+        sender = get_formatted_sender() or mail_username
         msg = Message(
             subject=f'Ausleihschein - {portal_name}',
             recipients=[borrower.email],
-            sender=current_app.config.get('MAIL_DEFAULT_SENDER', mail_username)
+            sender=sender
         )
         
         # Logo als Base64 laden
@@ -346,10 +352,12 @@ def send_return_confirmation_email(borrow_transaction):
             portal_name = current_app.config.get('APP_NAME', 'Prismateams')
         
         # Erstelle E-Mail
+        from config import get_formatted_sender
+        sender = get_formatted_sender() or mail_username
         msg = Message(
             subject=f'Rückgabe-Bestätigung - {portal_name}',
             recipients=[borrower.email],
-            sender=current_app.config.get('MAIL_DEFAULT_SENDER', mail_username)
+            sender=sender
         )
         
         # Logo als Base64 laden

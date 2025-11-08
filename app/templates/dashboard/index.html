@@ -24,7 +24,10 @@
 </div>
 
 <div class="row g-3">
+    {% set enabled_widgets = dashboard_config.get('enabled_widgets', []) %}
+    
     <!-- Upcoming Events Widget -->
+    {% if 'termine' in enabled_widgets %}
     <div class="col-12 col-md-6 col-lg-4">
         <div class="card widget" onclick="location.href='{{ url_for('calendar.index') }}'">
             <div class="card-body">
@@ -54,8 +57,10 @@
             </div>
         </div>
     </div>
+    {% endif %}
 
     <!-- Unread Messages Widget -->
+    {% if 'nachrichten' in enabled_widgets %}
     <div class="col-12 col-md-6 col-lg-4">
         <div class="card widget" onclick="location.href='{{ url_for('chat.index') }}'">
             <div class="card-body">
@@ -85,8 +90,10 @@
             </div>
         </div>
     </div>
+    {% endif %}
 
     <!-- Recent Emails Widget -->
+    {% if 'emails' in enabled_widgets %}
     <div class="col-12 col-md-6 col-lg-4">
         <div class="card widget" onclick="location.href='{{ url_for('email.index') }}'">
             <div class="card-body">
@@ -118,6 +125,73 @@
             </div>
         </div>
     </div>
+    {% endif %}
+
+    <!-- Recent Files Widget -->
+    {% if 'dateien' in enabled_widgets %}
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card widget" onclick="location.href='{{ url_for('files.index') }}'">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-folder widget-icon text-warning"></i>
+                        Letzte Dateien
+                    </h5>
+                    <span class="badge bg-primary files-badge">{{ recent_files|length }}</span>
+                </div>
+                
+                {% if recent_files %}
+                    <div class="list-group list-group-flush">
+                        {% for file in recent_files %}
+                        <div class="list-group-item px-0">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1 text-truncate">{{ file.original_name }}</h6>
+                                <small class="text-muted">{{ file.updated_at.strftime('%d.%m.') }}</small>
+                            </div>
+                            <small class="text-muted">{{ file.updated_at.strftime('%H:%M') }} Uhr</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted mb-0">Keine Dateien</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recent Canvases Widget -->
+    {% if 'canvas' in enabled_widgets %}
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card widget" onclick="location.href='{{ url_for('canvas.index') }}'">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-palette widget-icon text-danger"></i>
+                        Canvas
+                    </h5>
+                    <span class="badge bg-primary canvas-badge">{{ recent_canvases|length }}</span>
+                </div>
+                
+                {% if recent_canvases %}
+                    <div class="list-group list-group-flush">
+                        {% for canvas in recent_canvases %}
+                        <div class="list-group-item px-0">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1 text-truncate">{{ canvas.name }}</h6>
+                                <small class="text-muted">{{ canvas.updated_at.strftime('%d.%m.') }}</small>
+                            </div>
+                            <small class="text-muted">{{ canvas.updated_at.strftime('%H:%M') }} Uhr</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted mb-0">Keine Canvas</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <div class="row mt-4">
@@ -129,33 +203,40 @@
                     Schnellzugriff
                 </h5>
                 <div class="row g-3 mt-2">
-                    <div class="col-6 col-md-3">
-                        <a href="{{ url_for('files.index') }}" class="btn btn-outline-primary w-100">
-                            <i class="bi bi-folder d-block fs-3 mb-2"></i>
-                            Dateien
-                        </a>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <a href="{{ url_for('credentials.index') }}" class="btn btn-outline-primary w-100">
-                            <i class="bi bi-key d-block fs-3 mb-2"></i>
-                            Zugangsdaten
-                        </a>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <a href="{{ url_for('manuals.index') }}" class="btn btn-outline-primary w-100">
-                            <i class="bi bi-book d-block fs-3 mb-2"></i>
-                            Anleitungen
-                        </a>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <a href="{{ url_for('canvas.index') }}" class="btn btn-outline-primary w-100">
-                            <i class="bi bi-palette d-block fs-3 mb-2"></i>
-                            Canvas
-                        </a>
-                    </div>
+                    {% set quick_access_links = dashboard_config.get('quick_access_links', []) %}
+                    {% set link_map = {
+                        'files': {'url': url_for('files.index'), 'icon': 'bi-folder', 'label': 'Dateien'},
+                        'credentials': {'url': url_for('credentials.index'), 'icon': 'bi-key', 'label': 'Zugangsdaten'},
+                        'manuals': {'url': url_for('manuals.index'), 'icon': 'bi-book', 'label': 'Anleitungen'},
+                        'canvas': {'url': url_for('canvas.index'), 'icon': 'bi-palette', 'label': 'Canvas'},
+                        'chat': {'url': url_for('chat.index'), 'icon': 'bi-chat-dots', 'label': 'Chats'},
+                        'calendar': {'url': url_for('calendar.index'), 'icon': 'bi-calendar-event', 'label': 'Termine'},
+                        'email': {'url': url_for('email.index'), 'icon': 'bi-envelope', 'label': 'E-Mail'},
+                        'inventory': {'url': url_for('inventory.dashboard'), 'icon': 'bi-box-seam', 'label': 'Lagerverwaltung'}
+                    } %}
+                    {% for link_key in quick_access_links %}
+                        {% if link_key in link_map %}
+                            {% set link = link_map[link_key] %}
+                            <div class="col-6 col-md-3">
+                                <a href="{{ link.url }}" class="btn btn-outline-primary w-100">
+                                    <i class="bi {{ link.icon }} d-block fs-3 mb-2"></i>
+                                    {{ link.label }}
+                                </a>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
                 </div>
             </div>
         </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12 text-center">
+        <a href="{{ url_for('dashboard.edit') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-pencil-square me-2"></i>
+            Dashboard Bearbeiten
+        </a>
     </div>
 </div>
 {% endblock %}
@@ -196,6 +277,11 @@ class DashboardUpdater {
         this.updateInterval = setInterval(() => {
             this.updateEmails();
             this.updateCalendar();
+            // Dateien und Canvas seltener aktualisieren (alle 60 Sekunden)
+            if (Math.random() < 0.5) {
+                this.updateFiles();
+                this.updateCanvases();
+            }
         }, 30000);
         
         // Erste Aktualisierung nach 5 Sekunden
@@ -214,6 +300,12 @@ class DashboardUpdater {
             
             // Aktualisiere Termine
             await this.updateCalendar();
+            
+            // Aktualisiere Dateien (optional, niedrigere Priorität)
+            await this.updateFiles();
+            
+            // Aktualisiere Canvas (optional, niedrigere Priorität)
+            await this.updateCanvases();
             
             this.lastUpdate = new Date();
         } catch (error) {
@@ -255,6 +347,38 @@ class DashboardUpdater {
             }
         } catch (error) {
             console.log('Fehler beim Aktualisieren der Termine:', error);
+        }
+    }
+    
+    async updateFiles() {
+        try {
+            const response = await fetch('/api/files/recent');
+            if (response.ok) {
+                const data = await response.json();
+                // Optional: Aktualisiere Badge für Dateien-Widget
+                const badge = document.querySelector('.files-badge');
+                if (badge) {
+                    badge.textContent = data.length;
+                }
+            }
+        } catch (error) {
+            console.log('Fehler beim Aktualisieren der Dateien:', error);
+        }
+    }
+    
+    async updateCanvases() {
+        try {
+            const response = await fetch('/api/canvas/recent');
+            if (response.ok) {
+                const data = await response.json();
+                // Optional: Aktualisiere Badge für Canvas-Widget
+                const badge = document.querySelector('.canvas-badge');
+                if (badge) {
+                    badge.textContent = data.length;
+                }
+            }
+        } catch (error) {
+            console.log('Fehler beim Aktualisieren der Canvas:', error);
         }
     }
     

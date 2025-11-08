@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Bearbeiten - Team Portal{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>Dashboard Bearbeiten</h1>
+        <p class="text-muted">Passen Sie Ihr Dashboard nach Ihren Wünschen an</p>
+    </div>
+</div>
+
+<form method="POST" action="{{ url_for('dashboard.edit') }}">
+    <div class="row">
+        <div class="col-12 col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-grid-3x3-gap me-2"></i>
+                        Widgets
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Wählen Sie aus, welche Widgets auf Ihrem Dashboard angezeigt werden sollen.</p>
+                    
+                    {% set enabled_widgets = dashboard_config.get('enabled_widgets', []) %}
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="widget_termine" id="widget_termine" {% if 'termine' in enabled_widgets %}checked{% endif %}>
+                        <label class="form-check-label" for="widget_termine">
+                            <i class="bi bi-calendar-event text-primary me-2"></i>
+                            <strong>Termine</strong>
+                            <small class="text-muted d-block ms-4">Zeigt die nächsten anstehenden Termine</small>
+                        </label>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="widget_nachrichten" id="widget_nachrichten" {% if 'nachrichten' in enabled_widgets %}checked{% endif %}>
+                        <label class="form-check-label" for="widget_nachrichten">
+                            <i class="bi bi-chat-dots text-success me-2"></i>
+                            <strong>Nachrichten</strong>
+                            <small class="text-muted d-block ms-4">Zeigt ungelesene Chat-Nachrichten</small>
+                        </label>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="widget_emails" id="widget_emails" {% if 'emails' in enabled_widgets %}checked{% endif %}>
+                        <label class="form-check-label" for="widget_emails">
+                            <i class="bi bi-envelope text-info me-2"></i>
+                            <strong>E-Mails</strong>
+                            <small class="text-muted d-block ms-4">Zeigt die letzten E-Mails</small>
+                        </label>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="widget_dateien" id="widget_dateien" {% if 'dateien' in enabled_widgets %}checked{% endif %}>
+                        <label class="form-check-label" for="widget_dateien">
+                            <i class="bi bi-folder text-warning me-2"></i>
+                            <strong>Letzte Dateien</strong>
+                            <small class="text-muted d-block ms-4">Zeigt die zuletzt bearbeiteten Dateien</small>
+                        </label>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="widget_canvas" id="widget_canvas" {% if 'canvas' in enabled_widgets %}checked{% endif %}>
+                        <label class="form-check-label" for="widget_canvas">
+                            <i class="bi bi-palette text-danger me-2"></i>
+                            <strong>Canvas</strong>
+                            <small class="text-muted d-block ms-4">Zeigt die zuletzt bearbeiteten Canvas</small>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-12 col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-speedometer2 me-2"></i>
+                        Schnellzugriff
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Wählen Sie aus, welche Links im Schnellzugriff angezeigt werden sollen.</p>
+                    
+                    {% set quick_access_links = dashboard_config.get('quick_access_links', []) %}
+                    
+                    {% if is_module_enabled('module_files') %}
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="link_files" id="link_files" {% if 'files' in quick_access_links %}checked{% endif %}>
+                        <label class="form-check-label" for="link_files">
+                            <i class="bi bi-folder me-2"></i>
+                            <strong>Dateien</strong>
+                        </label>
+                    </div>
+                    {% endif %}
+                    
+                    {% if is_module_enabled('module_chat') %}
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="link_chat" id="link_chat" {% if 'chat' in quick_access_links %}checked{% endif %}>
+                        <label class="form-check-label" for="link_chat">
+                            <i class="bi bi-chat-dots me-2"></i>
+                            <strong>Chats</strong>
+                        </label>
+                    </div>
+                    {% endif %}
+                    
+                    {% if is_module_enabled('module_calendar') %}
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="link_calendar" id="link_calendar" {% if 'calendar' in quick_access_links %}checked{% endif %}>
+                        <label class="form-check-label" for="link_calendar">
+                            <i class="bi bi-calendar-event me-2"></i>
+                            <strong>Termine</strong>
+                        </label>
+                    </div>
+                    {% endif %}
+                    
+                    {% if is_module_enabled('module_email') %}
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="link_email" id="link_email" {% if 'email' in quick_access_links %}checked{% endif %}>
+                        <label class="form-check-label" for="link_email">
+                            <i class="bi bi-envelope me-2"></i>
+                            <strong>E-Mail</strong>
+                        </label>
+                    </div>
+                    {% endif %}
+                    
+                    {% if is_module_enabled('module_credentials') %}
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="link_credentials" id="link_credentials" {% if 'credentials' in quick_access_links %}checked{% endif %}>
+                        <label class="form-check-label" for="link_credentials">
+                            <i class="bi bi-key me-2"></i>
+                            <strong>Zugangsdaten</strong>
+                        </label>
+                    </div>
+                    {% endif %}
+                    
+                    {% if is_module_enabled('module_manuals') %}
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="link_manuals" id="link_manuals" {% if 'manuals' in quick_access_links %}checked{% endif %}>
+                        <label class="form-check-label" for="link_manuals">
+                            <i class="bi bi-book me-2"></i>
+                            <strong>Anleitungen</strong>
+                        </label>
+                    </div>
+                    {% endif %}
+                    
+                    {% if is_module_enabled('module_canvas') %}
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="link_canvas" id="link_canvas" {% if 'canvas' in quick_access_links %}checked{% endif %}>
+                        <label class="form-check-label" for="link_canvas">
+                            <i class="bi bi-palette me-2"></i>
+                            <strong>Canvas</strong>
+                        </label>
+                    </div>
+                    {% endif %}
+                    
+                    {% if is_module_enabled('module_inventory') %}
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="link_inventory" id="link_inventory" {% if 'inventory' in quick_access_links %}checked{% endif %}>
+                        <label class="form-check-label" for="link_inventory">
+                            <i class="bi bi-box-seam me-2"></i>
+                            <strong>Lagerverwaltung</strong>
+                        </label>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between">
+                <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>
+                    Zurück zum Dashboard
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-circle me-2"></i>
+                    Speichern
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+

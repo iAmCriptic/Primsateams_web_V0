@@ -2,6 +2,7 @@ from datetime import datetime
 from flask_login import UserMixin
 from argon2 import PasswordHasher
 from app import db
+import json
 
 ph = PasswordHasher()
 
@@ -44,6 +45,9 @@ class User(UserMixin, db.Model):
     
     # Inventory Permissions
     can_borrow = db.Column(db.Boolean, default=True, nullable=False)  # Kann der User Artikel ausleihen?
+    
+    # Dashboard Configuration
+    dashboard_config = db.Column(db.Text, nullable=True)  # JSON string für Dashboard-Konfiguration
     
     # Relationships
     chat_memberships = db.relationship('ChatMember', back_populates='user', cascade='all, delete-orphan')
@@ -102,6 +106,24 @@ class User(UserMixin, db.Model):
         db.session.add(email_perm)
         db.session.commit()
         return email_perm
+    
+    def get_dashboard_config(self):
+        """Gibt die Dashboard-Konfiguration zurück."""
+        if self.dashboard_config:
+            try:
+                return json.loads(self.dashboard_config)
+            except:
+                pass
+        # Standard-Konfiguration - nur die wichtigsten Widgets aktiv
+        return {
+            "enabled_widgets": ["termine", "nachrichten", "emails"],
+            "quick_access_links": ["files", "credentials", "manuals", "canvas"]
+        }
+    
+    def set_dashboard_config(self, config):
+        """Setzt die Dashboard-Konfiguration."""
+        self.dashboard_config = json.dumps(config)
+        db.session.commit()
     
     def __repr__(self):
         return f'<User {self.email}>'
