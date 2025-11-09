@@ -62,6 +62,14 @@ def generate_transaction_number():
     return f"INV-{timestamp}-{random_part}"
 
 
+def generate_borrow_group_id():
+    """Generiert eine eindeutige Gruppierungs-ID für Mehrfachausleihen."""
+    # Format: GRP-YYYYMMDD-HHMMSS-XXXX
+    timestamp = datetime.utcnow().strftime('%Y%m%d-%H%M%S')
+    random_part = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(4))
+    return f"GRP-{timestamp}-{random_part}"
+
+
 # ========== Frontend Routes ==========
 
 @inventory_bp.route('/')
@@ -389,6 +397,9 @@ def borrow_multiple():
         products = Product.query.filter(Product.id.in_(product_ids)).all()
         transactions = []
         
+        # Gemeinsame Gruppierungs-ID für alle Produkte dieser Mehrfachausleihe
+        borrow_group_id = generate_borrow_group_id()
+        
         for product in products:
             if product.status != 'available':
                 continue
@@ -396,6 +407,7 @@ def borrow_multiple():
             transaction_number = generate_transaction_number()
             borrow_transaction = BorrowTransaction(
                 transaction_number=transaction_number,
+                borrow_group_id=borrow_group_id,
                 product_id=product.id,
                 borrower_id=borrower.id,
                 borrowed_by_id=current_user.id,
@@ -696,6 +708,9 @@ def borrow_scanner_checkout():
     products = Product.query.filter(Product.id.in_(cart_product_ids)).all()
     transactions = []
     
+    # Gemeinsame Gruppierungs-ID für alle Produkte dieser Mehrfachausleihe
+    borrow_group_id = generate_borrow_group_id()
+    
     for product in products:
         if product.status != 'available':
             continue
@@ -703,6 +718,7 @@ def borrow_scanner_checkout():
         transaction_number = generate_transaction_number()
         borrow_transaction = BorrowTransaction(
             transaction_number=transaction_number,
+            borrow_group_id=borrow_group_id,
             product_id=product.id,
             borrower_id=borrower.id,
             borrowed_by_id=current_user.id,
@@ -1226,6 +1242,7 @@ def api_borrow():
     return jsonify({
         'transaction_id': borrow_transaction.id,
         'transaction_number': transaction_number,
+        'borrow_group_id': borrow_transaction.borrow_group_id,
         'qr_code_data': qr_data
     }), 201
 
@@ -1241,6 +1258,7 @@ def api_borrows():
     return jsonify([{
         'id': b.id,
         'transaction_number': b.transaction_number,
+        'borrow_group_id': b.borrow_group_id,
         'product_id': b.product_id,
         'product_name': b.product.name,
         'borrower_id': b.borrower_id,
@@ -1264,6 +1282,7 @@ def api_borrows_my():
     return jsonify([{
         'id': b.id,
         'transaction_number': b.transaction_number,
+        'borrow_group_id': b.borrow_group_id,
         'product_id': b.product_id,
         'product_name': b.product.name,
         'borrow_date': b.borrow_date.isoformat(),
@@ -1271,6 +1290,71 @@ def api_borrows_my():
         'is_overdue': b.is_overdue,
         'qr_code_data': b.qr_code_data
     } for b in borrows])
+
+
+@inventory_bp.route('/api/borrows/my/grouped', methods=['GET'])
+@login_required
+def api_borrows_my_grouped():
+    """API: Meine Ausleihen gruppiert nach Ausleihvorgang (für Widget)."""
+    borrows = BorrowTransaction.query.filter_by(
+        borrower_id=current_user.id,
+        status='active'
+    ).order_by(BorrowTransaction.borrow_date.desc()).all()
+    
+    # Gruppiere nach borrow_group_id (oder falls None, nach transaction_number für Einzelausleihen)
+    grouped = {}
+    for b in borrows:
+        # Verwende borrow_group_id falls vorhanden, sonst transaction_number für Einzelausleihen
+        group_key = b.borrow_group_id if b.borrow_group_id else b.transaction_number
+        
+        if group_key not in grouped:
+            grouped[group_key] = {
+                'borrow_group_id': b.borrow_group_id,
+                'borrow_date': b.borrow_date.isoformat(),
+                'expected_return_date': b.expected_return_date.isoformat(),
+                'transactions': [],
+                'product_count': 0,
+                'is_overdue': False
+            }
+        
+        grouped[group_key]['transactions'].append({
+            'id': b.id,
+            'transaction_number': b.transaction_number,
+            'product_id': b.product_id,
+            'product_name': b.product.name,
+            'expected_return_date': b.expected_return_date.isoformat(),
+            'is_overdue': b.is_overdue,
+            'qr_code_data': b.qr_code_data
+        })
+        
+        # Aktualisiere erwartetes Rückgabedatum (spätestes Datum)
+        current_max_date = date.fromisoformat(grouped[group_key]['expected_return_date'])
+        if b.expected_return_date > current_max_date:
+            grouped[group_key]['expected_return_date'] = b.expected_return_date.isoformat()
+        
+        # Prüfe ob überfällig
+        if b.is_overdue:
+            grouped[group_key]['is_overdue'] = True
+    
+    # Formatiere für Widget
+    result = []
+    for group_key, group_data in grouped.items():
+        group_data['product_count'] = len(group_data['transactions'])
+        # Entferne transactions aus der Hauptantwort (optional, kann auch enthalten bleiben)
+        result.append({
+            'borrow_group_id': group_data['borrow_group_id'],
+            'borrow_date': group_data['borrow_date'],
+            'expected_return_date': group_data['expected_return_date'],
+            'product_count': group_data['product_count'],
+            'is_overdue': group_data['is_overdue'],
+            'products': [t['product_name'] for t in group_data['transactions']],
+            'transactions': group_data['transactions']  # Für Details falls benötigt
+        })
+    
+    # Sortiere nach Datum (neueste zuerst)
+    result.sort(key=lambda x: x['borrow_date'], reverse=True)
+    
+    return jsonify(result)
 
 
 @inventory_bp.route('/api/return', methods=['POST'])

@@ -6,6 +6,7 @@ from app.models.email import EmailMessage, EmailPermission
 from app.models.file import File
 from app.models.canvas import Canvas
 from app import db
+from app.utils.common import is_module_enabled
 from datetime import datetime
 from sqlalchemy import and_
 
@@ -25,15 +26,15 @@ def index():
     config = current_user.get_dashboard_config()
     enabled_widgets = config.get('enabled_widgets', [])
     
-    # Widget-Daten nur laden, wenn Widget aktiviert ist
+    # Widget-Daten nur laden, wenn Widget aktiviert ist UND Modul aktiviert ist
     upcoming_events = []
-    if 'termine' in enabled_widgets:
+    if 'termine' in enabled_widgets and is_module_enabled('module_calendar'):
         upcoming_events = CalendarEvent.query.filter(
             CalendarEvent.start_time >= datetime.utcnow()
         ).order_by(CalendarEvent.start_time).limit(3).all()
     
     unread_messages = []
-    if 'nachrichten' in enabled_widgets:
+    if 'nachrichten' in enabled_widgets and is_module_enabled('module_chat'):
         user_chats = ChatMember.query.filter_by(user_id=current_user.id).all()
         for membership in user_chats:
             messages = ChatMessage.query.filter(
@@ -49,7 +50,7 @@ def index():
         unread_messages = sorted(unread_messages, key=lambda x: x.created_at, reverse=True)[:5]
     
     recent_emails = []
-    if 'emails' in enabled_widgets:
+    if 'emails' in enabled_widgets and is_module_enabled('module_email'):
         email_perm = EmailPermission.query.filter_by(user_id=current_user.id).first()
         if email_perm and email_perm.can_read:
             recent_emails = EmailMessage.query.filter_by(
@@ -58,13 +59,13 @@ def index():
             ).order_by(EmailMessage.received_at.desc()).limit(5).all()
     
     recent_files = []
-    if 'dateien' in enabled_widgets:
+    if 'dateien' in enabled_widgets and is_module_enabled('module_files'):
         recent_files = File.query.filter_by(
             uploaded_by=current_user.id
         ).order_by(File.updated_at.desc()).limit(3).all()
     
     recent_canvases = []
-    if 'canvas' in enabled_widgets:
+    if 'canvas' in enabled_widgets and is_module_enabled('module_canvas'):
         recent_canvases = Canvas.query.filter_by(
             created_by=current_user.id
         ).order_by(Canvas.updated_at.desc()).limit(3).all()
@@ -109,7 +110,8 @@ def edit():
             'chat': 'chat',
             'calendar': 'calendar',
             'email': 'email',
-            'inventory': 'inventory'
+            'inventory': 'inventory',
+            'wiki': 'wiki'
         }
         for link_key, link_value in available_links.items():
             if request.form.get(f'link_{link_key}') == 'on':

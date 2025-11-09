@@ -80,6 +80,7 @@ class BorrowTransaction(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     transaction_number = db.Column(db.String(50), unique=True, nullable=False, index=True)  # Ausleihvorgangsnummer
+    borrow_group_id = db.Column(db.String(50), nullable=True, index=True)  # Gruppierungs-ID für Mehrfachausleihen
     product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
     borrower_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)  # Wer leiht aus
     borrowed_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)  # Wer registriert die Ausleihe

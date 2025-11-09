@@ -91,6 +91,7 @@ def create_app(config_name='default'):
         os.path.join(app.config['UPLOAD_FOLDER'], 'profile_pics'),
         os.path.join(app.config['UPLOAD_FOLDER'], 'inventory', 'product_images'),
         os.path.join(app.config['UPLOAD_FOLDER'], 'system'),  # For portal logo
+        os.path.join(app.config['UPLOAD_FOLDER'], 'wiki'),  # For wiki pages
     ]
     for directory in upload_dirs:
         os.makedirs(directory, exist_ok=True)
@@ -234,57 +235,14 @@ def create_app(config_name='default'):
     def markdown_filter(text):
         """Filter to render markdown text."""
         try:
-            import markdown
-            from flask import current_app
+            from app.utils.markdown import process_markdown
+            # Nutze die zentrale Markdown-Verarbeitung für Konsistenz
+            return process_markdown(text, wiki_mode=False)
             
-            # Test if tables extension is available
-            try:
-                import markdown.extensions.tables
-                tables_available = True
-            except ImportError:
-                tables_available = False
-            
-            current_app.logger.info(f"Tables extension available: {tables_available}")
-            
-            if tables_available:
-                # Create markdown instance with tables extension
-                md = markdown.Markdown(
-                    extensions=[
-                        'tables',
-                        'fenced_code',
-                        'codehilite',
-                        'nl2br'
-                    ]
-                )
-            else:
-                # Fallback without tables extension
-                md = markdown.Markdown(
-                    extensions=[
-                        'fenced_code',
-                        'codehilite',
-                        'nl2br'
-                    ]
-                )
-            
-            # Convert markdown to HTML
-            html = md.convert(text)
-            
-            # Debug logging
-            current_app.logger.info(f"Markdown input: {text[:200]}...")
-            current_app.logger.info(f"Markdown output: {html[:200]}...")
-            current_app.logger.info(f"Table detected in output: {'<table>' in html}")
-            
-            return html
-            
-        except ImportError:
-            # Fallback to plain text if markdown is not installed
-            from flask import current_app
-            current_app.logger.warning("Markdown library not available, using plain text fallback")
-            return text.replace('\n', '<br>')
         except Exception as e:
-            # Fallback if markdown processing fails
+            # Fallback to plain text if markdown processing fails
             from flask import current_app
-            current_app.logger.error(f"Markdown processing error: {e}")
+            current_app.logger.warning(f"Markdown processing failed: {e}, using plain text fallback")
             return text.replace('\n', '<br>')
 
     # Error handlers
@@ -360,6 +318,8 @@ def create_app(config_name='default'):
     from app.blueprints.api import api_bp
     from app.blueprints.errors import errors_bp
     from app.blueprints.inventory import inventory_bp
+    from app.blueprints.wiki import wiki_bp
+    from app.blueprints.comments import comments_bp
     
     app.register_blueprint(setup_bp)
     app.register_blueprint(auth_bp)
@@ -375,6 +335,8 @@ def create_app(config_name='default'):
     app.register_blueprint(api_bp, url_prefix='/api')
     app.register_blueprint(errors_bp, url_prefix='/test')
     app.register_blueprint(inventory_bp, url_prefix='/inventory')
+    app.register_blueprint(wiki_bp)
+    app.register_blueprint(comments_bp)
     
     # PWA Manifest Route - Generate dynamically based on portal name
     @app.route('/manifest.json')

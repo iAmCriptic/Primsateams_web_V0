@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Kalender importieren - Team Portal{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('calendar.index') }}">Termine</a></li>
+                <li class="breadcrumb-item active">Kalender importieren</li>
+            </ol>
+        </nav>
+        
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Kalender importieren</h4>
+            </div>
+            <div class="card-body">
+                <p>Importieren Sie Termine aus einer iCal-Datei (.ics). Die Datei kann von Google Calendar, Outlook oder anderen Kalenderanwendungen exportiert werden.</p>
+                
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="ical_file" class="form-label">iCal-Datei (.ics)</label>
+                        <input type="file" class="form-control" id="ical_file" name="ical_file" accept=".ics" required>
+                        <small class="form-text text-muted">Nur .ics-Dateien werden unterstützt.</small>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Hinweis:</strong> Duplikate werden automatisch erkannt und nicht importiert.
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-accent">Importieren</button>
+                        <a href="{{ url_for('calendar.index') }}" class="btn btn-outline-secondary">Abbrechen</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

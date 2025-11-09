@@ -58,9 +58,10 @@
             {% endfor %}
         </div>
         <div class="p-3 border-top">
-            <form method="POST" action="{{ url_for('email.sync_emails') }}">
-                <button type="submit" class="btn btn-outline-secondary w-100" data-bs-dismiss="offcanvas">
-                    <i class="bi bi-arrow-clockwise me-2"></i>Synchronisieren
+            <form method="POST" action="{{ url_for('email.sync_emails') }}" class="sync-form" onsubmit="return handleSyncSubmit(event, this);">
+                <button type="submit" class="btn btn-outline-secondary w-100 sync-btn" data-bs-dismiss="offcanvas">
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" style="display: none;"></span>
+                    <i class="bi bi-arrow-clockwise me-2 sync-icon"></i>Synchronisieren
                 </button>
             </form>
         </div>
@@ -202,9 +203,10 @@
                 <i class="bi bi-pencil-square"></i>
             </a>
         </div>
-        <form method="POST" action="{{ url_for('email.sync_emails') }}" class="mb-3">
-            <button type="submit" class="btn btn-sm btn-outline-secondary w-100">
-                <i class="bi bi-arrow-clockwise"></i> Synchronisieren
+        <form method="POST" action="{{ url_for('email.sync_emails') }}" class="mb-3 sync-form" onsubmit="return handleSyncSubmit(event, this);">
+            <button type="submit" class="btn btn-sm btn-outline-secondary w-100 sync-btn">
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" style="display: none;"></span>
+                <i class="bi bi-arrow-clockwise sync-icon"></i> Synchronisieren
             </button>
         </form>
         <hr>
@@ -439,9 +441,10 @@
         </div>
     </div>
     <div class="col-auto">
-        <form method="POST" action="{{ url_for('email.sync_emails') }}" class="d-inline me-2">
-            <button type="submit" class="btn btn-outline-accent">
-                <i class="bi bi-arrow-clockwise"></i> Synchronisieren
+        <form method="POST" action="{{ url_for('email.sync_emails') }}" class="d-inline me-2 sync-form" onsubmit="return handleSyncSubmit(event, this);">
+            <button type="submit" class="btn btn-outline-accent sync-btn">
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" style="display: none;"></span>
+                <i class="bi bi-arrow-clockwise sync-icon"></i> Synchronisieren
             </button>
         </form>
         <a href="{{ url_for('email.compose') }}" class="btn btn-accent">
@@ -621,6 +624,75 @@ document.addEventListener('click', function(e) {
     const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl, { backdrop: true, focus: true, keyboard: true });
     bsModal.show();
 });
+
+// E-Mail-Synchronisation mit Ladeindikator
+function handleSyncSubmit(event, form) {
+    event.preventDefault();
+    
+    const button = form.querySelector('.sync-btn');
+    const spinner = button.querySelector('.spinner-border');
+    const icon = button.querySelector('.sync-icon');
+    
+    // Zeige Spinner und deaktiviere Button
+    if (spinner) spinner.style.display = 'inline-block';
+    if (icon) icon.style.display = 'none';
+    button.disabled = true;
+    
+    // Deaktiviere alle anderen Sync-Buttons auf der Seite
+    document.querySelectorAll('.sync-btn').forEach(btn => {
+        btn.disabled = true;
+        const btnSpinner = btn.querySelector('.spinner-border');
+        const btnIcon = btn.querySelector('.sync-icon');
+        if (btnSpinner) btnSpinner.style.display = 'inline-block';
+        if (btnIcon) btnIcon.style.display = 'none';
+    });
+    
+    // AJAX-Request für Hintergrund-Synchronisation
+    fetch(form.action, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams(new FormData(form))
+    })
+    .then(response => {
+        if (response.ok) {
+            return response.json();
+        }
+        throw new Error('Synchronisation fehlgeschlagen');
+    })
+    .then(data => {
+        // Warte 30 Sekunden bevor Button wieder aktiviert wird
+        setTimeout(() => {
+            // Aktiviere alle Sync-Buttons wieder
+            document.querySelectorAll('.sync-btn').forEach(btn => {
+                btn.disabled = false;
+                const btnSpinner = btn.querySelector('.spinner-border');
+                const btnIcon = btn.querySelector('.sync-icon');
+                if (btnSpinner) btnSpinner.style.display = 'none';
+                if (btnIcon) btnIcon.style.display = 'inline';
+            });
+            
+            // Lade Seite neu nach 30 Sekunden
+            window.location.reload();
+        }, 30000); // 30 Sekunden
+    })
+    .catch(error => {
+        console.error('Synchronisationsfehler:', error);
+        alert('Fehler bei der Synchronisation. Bitte versuchen Sie es erneut.');
+        
+        // Spinner ausblenden und Button wieder aktivieren
+        document.querySelectorAll('.sync-btn').forEach(btn => {
+            btn.disabled = false;
+            const btnSpinner = btn.querySelector('.spinner-border');
+            const btnIcon = btn.querySelector('.sync-icon');
+            if (btnSpinner) btnSpinner.style.display = 'none';
+            if (btnIcon) btnIcon.style.display = 'inline';
+        });
+    });
+    
+    return false;
+}
 </script>
 {% endblock %}
 {% endblock %}

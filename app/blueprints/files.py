@@ -38,13 +38,30 @@ def browse_folder(folder_id):
     if folder_id:
         subfolders = Folder.query.filter_by(parent_id=folder_id).order_by(Folder.name).all()
     else:
-        subfolders = Folder.query.filter_by(parent_id=None).order_by(Folder.name).all()
+        # Wenn kein Ordner, zeige Ordner ohne Parent (parent_id IS NULL)
+        subfolders = Folder.query.filter(Folder.parent_id.is_(None)).order_by(Folder.name).all()
     
     # Get files in current folder
-    files = File.query.filter_by(
-        folder_id=folder_id,
-        is_current=True
-    ).order_by(File.name).all()
+    if folder_id:
+        files = File.query.filter_by(
+            folder_id=folder_id,
+            is_current=True
+        ).order_by(File.name).all()
+    else:
+        # Wenn kein Ordner, zeige Dateien ohne Ordner (folder_id IS NULL)
+        # Verwende explizit filter() mit is_(None) für korrekte NULL-Prüfung
+        files = File.query.filter(
+            File.folder_id.is_(None),
+            File.is_current == True
+        ).order_by(File.name).all()
+        
+        # Stelle sicher, dass files eine Liste ist (nicht None)
+        if files is None:
+            files = []
+    
+    # Stelle sicher, dass files immer eine Liste ist
+    if files is None:
+        files = []
     
     # Feature flags
     dropbox_setting = SystemSettings.query.filter_by(key='files_dropbox_enabled').first()
@@ -722,6 +739,35 @@ def edit_file(file_id):
     return render_template('files/edit.html', file=file, content=content)
 
 
+@files_bp.route('/preview/<int:file_id>', methods=['POST'])
+@login_required
+def preview_file(file_id):
+    """Vorschau-Endpoint für Editor (nutzt gleiche Logik wie /view/)."""
+    file = File.query.get_or_404(file_id)
+    
+    # Check if file is viewable
+    viewable_extensions = {'.txt', '.md', '.markdown', '.json', '.xml', '.csv', '.log'}
+    file_ext = os.path.splitext(file.original_name)[1].lower()
+    
+    if file_ext not in viewable_extensions:
+        return jsonify({'error': 'Dateityp nicht unterstützt'}), 400
+    
+    content = request.form.get('content', '')
+    
+    # Process markdown if it's a markdown file
+    if file.name.endswith('.md'):
+        try:
+            from app.utils.markdown import process_markdown
+            processed_content = process_markdown(content, wiki_mode=False)
+        except Exception as e:
+            current_app.logger.error(f"Markdown processing error: {e}")
+            processed_content = content
+    else:
+        processed_content = content
+    
+    return jsonify({'html': processed_content})
+
+
 @files_bp.route('/view/<int:file_id>')
 @login_required
 def view_file(file_id):
@@ -759,9 +805,8 @@ def view_file(file_id):
     # Process markdown if it's a markdown file
     if file.name.endswith('.md'):
         try:
-            import markdown
-            md = markdown.Markdown(extensions=['tables', 'fenced_code', 'codehilite', 'nl2br'])
-            processed_content = md.convert(content)
+            from app.utils.markdown import process_markdown
+            processed_content = process_markdown(content, wiki_mode=False)
             current_app.logger.info(f"Markdown processed. Table detected: {'<table>' in processed_content}")
         except Exception as e:
             current_app.logger.error(f"Markdown processing error: {e}")

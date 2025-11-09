@@ -39,6 +39,30 @@
                 </div>
                 {% endif %}
                 
+                {% if event.is_master_event %}
+                <div class="mb-3">
+                    <strong><i class="bi bi-arrow-repeat"></i> Wiederkehrender Termin:</strong><br>
+                    {% if event.recurrence_type == 'daily' %}
+                        Täglich
+                    {% elif event.recurrence_type == 'weekly' %}
+                        Wöchentlich
+                    {% elif event.recurrence_type == 'monthly' %}
+                        Monatlich
+                    {% elif event.recurrence_type == 'yearly' %}
+                        Jährlich
+                    {% endif %}
+                    {% if event.recurrence_interval > 1 %}
+                        (alle {{ event.recurrence_interval }} {% if event.recurrence_type == 'daily' %}Tage{% elif event.recurrence_type == 'weekly' %}Wochen{% elif event.recurrence_type == 'monthly' %}Monate{% elif event.recurrence_type == 'yearly' %}Jahre{% endif %})
+                    {% endif %}
+                    {% if event.recurrence_end_date %}
+                        <br><small class="text-muted">Endet am: {{ event.recurrence_end_date.strftime('%d.%m.%Y') }}</small>
+                    {% endif %}
+                    <br><a href="{{ url_for('calendar.view_recurring_instances', event_id=event.id) }}" class="btn btn-sm btn-outline-primary mt-2">
+                        Alle Instanzen anzeigen
+                    </a>
+                </div>
+                {% endif %}
+                
                 <div class="mb-3">
                     <strong><i class="bi bi-person"></i> Erstellt von:</strong><br>
                     {{ event.creator.full_name }}
@@ -62,11 +86,19 @@
                         <i class="bi bi-pencil"></i> Bearbeiten
                     </a>
                     {% if current_user.is_admin %}
+                    {% if event.is_master_event %}
+                    <form method="POST" action="{{ url_for('calendar.delete_recurring_event_all', event_id=event.id) }}" class="d-inline">
+                        <button type="submit" class="btn btn-outline-danger" data-confirm-delete="Wiederkehrenden Termin und alle Instanzen wirklich löschen?">
+                            <i class="bi bi-trash"></i> Alle Instanzen löschen
+                        </button>
+                    </form>
+                    {% else %}
                     <form method="POST" action="{{ url_for('calendar.delete_event', event_id=event.id) }}" class="d-inline">
                         <button type="submit" class="btn btn-outline-danger" data-confirm-delete="Termin wirklich löschen?">
                             <i class="bi bi-trash"></i> Löschen
                         </button>
                     </form>
+                    {% endif %}
                     {% endif %}
                 </div>
                 {% elif user_participation and user_participation.status == 'removed' %}

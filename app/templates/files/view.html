@@ -3,6 +3,7 @@
 {% block title %}{{ file.name }} - Dateien{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/comments.css') }}">
 <style>
     .file-viewer {
         position: fixed;
@@ -148,13 +149,24 @@
     .markdown-content blockquote {
         border-left: 4px solid var(--accent-color);
         padding-left: 1rem;
+        padding-right: 1rem;
         margin: 1rem 0;
         font-style: italic;
         color: var(--bs-secondary);
+        background: var(--bs-secondary-bg);
+        border-radius: 0.25rem;
         word-wrap: break-word;
         overflow-wrap: break-word;
         hyphens: auto;
         max-width: 100%;
+    }
+    
+    .markdown-content blockquote p {
+        margin-bottom: 0.5rem;
+    }
+    
+    .markdown-content blockquote p:last-child {
+        margin-bottom: 0;
     }
     
     .markdown-content table {
@@ -235,6 +247,32 @@
         overflow-wrap: break-word;
         hyphens: auto;
         max-width: 100%;
+    }
+    
+    .markdown-content sup {
+        font-size: 0.75em;
+        vertical-align: super;
+        line-height: 0;
+    }
+    
+    .markdown-content sub {
+        font-size: 0.75em;
+        vertical-align: sub;
+        line-height: 0;
+    }
+    
+    .markdown-content hr {
+        border: none;
+        border-top: 2px solid var(--bs-border-color);
+        margin: 2rem 0;
+        width: 100%;
+    }
+    
+    .markdown-content img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 0.5rem;
+        margin: 1rem 0;
     }
     
     .text-content {
@@ -400,8 +438,12 @@
         {% else %}
             <div class="text-content">{{ content }}</div>
         {% endif %}
+        
+        {% set content_type='file' %}{% set content_id=file.id %}{% include 'comments/_comments.html' %}
     </div>
 </div>
+
+<div id="current-user-id" data-user-id="{{ current_user.id if current_user.is_authenticated else '' }}" style="display: none;"></div>
 
 <script>
 function closeViewer() {
@@ -415,4 +457,37 @@ document.addEventListener('keydown', function(e) {
     }
 });
 </script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/comments.js') }}"></script>
+{% if file.name.endswith('.md') %}
+<!-- MathJax für LaTeX-Formeln -->
+<script>
+window.MathJax = {
+    tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        processEscapes: true,
+        processEnvironments: true
+    },
+    options: {
+        ignoreHtmlClass: 'tex2jax_ignore',
+        processHtmlClass: 'tex2jax_process'
+    }
+};
+</script>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script>
+// Rendere MathJax nach dem Laden der Seite
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.MathJax && window.MathJax.typesetPromise) {
+        window.MathJax.typesetPromise().catch(function(err) {
+            console.error('MathJax rendering error:', err);
+        });
+    }
+});
+</script>
+{% endif %}
 {% endblock %}

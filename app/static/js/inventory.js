@@ -1641,17 +1641,18 @@ class BorrowScannerManager {
                 // SOFORTIGE Aktualisierung - keine Verzögerung
                 this.updateCartFromJSON(result);
                 
-                // Zusätzlich: Vollständiges Update nach kurzer Verzögerung
-                setTimeout(() => {
-                    const checkoutForm = document.getElementById('checkoutForm');
-                    if (!checkoutForm && result.cart_count > 0) {
-                        console.log('Lade vollständiges Update für Checkout-Formular...');
-                        this.updateCartDisplay().catch(err => {
-                            console.error('Update fehlgeschlagen, lade Seite neu:', err);
-                            window.location.reload();
+                // Prüfe ob Checkout-Formular benötigt wird (nur wenn noch keins vorhanden ist)
+                const checkoutForm = document.getElementById('checkoutForm');
+                if (!checkoutForm && result.cart_count > 0) {
+                    // Lade nur das Checkout-Formular nach, nicht die gesamte Seite
+                    // Warte etwas länger, damit updateCartFromJSON fertig ist
+                    setTimeout(() => {
+                        this.loadCheckoutForm().catch(err => {
+                            console.error('Checkout-Formular konnte nicht geladen werden:', err);
+                            // KEIN Reload hier - das würde den Warenkorb zurücksetzen
                         });
-                    }
-                }, 300);
+                    }, 500);
+                }
                 
                 return Promise.resolve();
             } else {
@@ -1705,9 +1706,13 @@ class BorrowScannerManager {
         // Prüfe ob Produkt bereits vorhanden ist
         const existingItem = cartItems.querySelector(`[data-product-id="${result.product.id}"]`);
         if (existingItem) {
-            console.log('⚠ Produkt bereits vorhanden');
+            console.log('⚠ Produkt bereits vorhanden, überspringe Hinzufügen');
             return;
         }
+        
+        // Verhindere, dass loadCheckoutForm den Warenkorb überschreibt
+        // Markiere dass wir gerade ein Produkt hinzufügen
+        cartItems.setAttribute('data-updating', 'true');
         
         // Entferne "Keine Produkte hinzugefügt" Nachricht
         const emptyMessage = cartItems.querySelector('p.text-muted');
@@ -1742,6 +1747,9 @@ class BorrowScannerManager {
         cartItems.appendChild(newItem);
         console.log('✓ Produkt zum DOM hinzugefügt');
         
+        // Entferne Update-Markierung
+        cartItems.removeAttribute('data-updating');
+        
         // Event-Listener für Remove-Button
         const removeBtn = newItem.querySelector('.remove-from-cart');
         if (removeBtn) {
@@ -1758,6 +1766,75 @@ class BorrowScannerManager {
         console.log('=== updateCartFromJSON FERTIG ===');
     }
     
+    async loadCheckoutForm() {
+        // Lade nur das Checkout-Formular nach, ohne die gesamte Seite neu zu laden
+        try {
+            // Prüfe ob Checkout-Formular bereits existiert
+            const existingCheckoutForm = document.getElementById('checkoutForm');
+            if (existingCheckoutForm) {
+                console.log('Checkout-Formular existiert bereits, überspringe Laden');
+                return;
+            }
+            
+            // Prüfe ob gerade ein Update läuft
+            const cartItemsContainer = document.getElementById('cartItems');
+            if (cartItemsContainer && cartItemsContainer.getAttribute('data-updating') === 'true') {
+                console.log('Warenkorb wird gerade aktualisiert, warte...');
+                setTimeout(() => this.loadCheckoutForm(), 200);
+                return;
+            }
+            
+            const response = await fetch('/inventory/borrow-scanner');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const html = await response.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            const newCheckoutForm = doc.querySelector('#checkoutForm');
+            
+            if (newCheckoutForm && cartItemsContainer) {
+                // Füge Checkout-Formular nach cartItems hinzu
+                const cartCardBody = cartItemsContainer.closest('.card-body');
+                if (cartCardBody) {
+                    // Prüfe ob bereits ein HR vorhanden ist
+                    let hr = cartCardBody.querySelector('hr');
+                    if (!hr) {
+                        hr = document.createElement('hr');
+                        cartCardBody.appendChild(hr);
+                    }
+                    
+                    // Füge Checkout-Formular hinzu
+                    cartCardBody.appendChild(newCheckoutForm.cloneNode(true));
+                    
+                    // Initialisiere Event-Listener für das neue Formular
+                    this.initCheckoutForm();
+                    console.log('✓ Checkout-Formular erfolgreich hinzugefügt');
+                }
+            } else {
+                console.warn('Checkout-Formular oder cartItems nicht gefunden');
+            }
+        } catch (error) {
+            console.error('Fehler beim Laden des Checkout-Formulars:', error);
+            // KEIN automatisches Reload - das würde den Warenkorb zurücksetzen
+        }
+    }
+    
+    initCheckoutForm() {
+        // Initialisiere Event-Listener für Checkout-Formular
+        const checkoutForm = document.getElementById('checkoutForm');
+        if (checkoutForm) {
+            const dateInput = document.getElementById('expected_return_date');
+            if (dateInput) {
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                dateInput.min = tomorrow.toISOString().split('T')[0];
+            }
+        }
+    }
+    
     escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
@@ -1766,7 +1843,19 @@ class BorrowScannerManager {
     
     async updateCartDisplay() {
         // Lade Warenkorb-Daten und aktualisiere die Anzeige
+        // WICHTIG: Diese Funktion sollte NUR verwendet werden wenn der Warenkorb leer ist
+        // oder wenn explizit eine vollständige Aktualisierung benötigt wird
         console.log('updateCartDisplay() aufgerufen');
+        
+        // Prüfe ob bereits Produkte im Warenkorb sind - wenn ja, überspringe
+        const currentCartItems = document.getElementById('cartItems');
+        if (currentCartItems) {
+            const existingProducts = currentCartItems.querySelectorAll('.cart-item[data-product-id]');
+            if (existingProducts.length > 0) {
+                console.log('⚠ updateCartDisplay() übersprungen - Warenkorb enthält bereits Produkte');
+                return;
+            }
+        }
         try {
             console.log('Lade Warenkorb-Daten...');
             const response = await fetch('/inventory/borrow-scanner');
@@ -1790,24 +1879,40 @@ class BorrowScannerManager {
                 newCheckoutForm: !!newCheckoutForm
             });
             
-            // Aktualisiere cartItems
+            // Aktualisiere cartItems NUR wenn keine Produkte vorhanden sind
+            // Verhindere Überschreibung wenn bereits Produkte im Warenkorb sind
             const currentCartItems = document.getElementById('cartItems');
             if (newCartItems && currentCartItems) {
-                console.log('Aktualisiere cartItems...');
-                const oldContent = currentCartItems.innerHTML;
-                currentCartItems.innerHTML = newCartItems.innerHTML;
-                console.log('cartItems aktualisiert. Alt:', oldContent.substring(0, 50), 'Neu:', currentCartItems.innerHTML.substring(0, 50));
+                // Prüfe ob bereits Produkte im Warenkorb sind
+                const existingProducts = currentCartItems.querySelectorAll('.cart-item[data-product-id]');
+                if (existingProducts.length > 0) {
+                    console.log('⚠ Warenkorb enthält bereits Produkte, überspringe Überschreibung');
+                    // Aktualisiere nur den Cart-Count, nicht die Items
+                } else {
+                    console.log('Aktualisiere cartItems...');
+                    const oldContent = currentCartItems.innerHTML;
+                    currentCartItems.innerHTML = newCartItems.innerHTML;
+                    console.log('cartItems aktualisiert. Alt:', oldContent.substring(0, 50), 'Neu:', currentCartItems.innerHTML.substring(0, 50));
+                }
             } else {
                 console.warn('cartItems nicht gefunden:', { newCartItems: !!newCartItems, currentCartItems: !!currentCartItems });
             }
             
-            // Aktualisiere cartCount
+            // Aktualisiere cartCount nur wenn keine Produkte vorhanden sind
+            // Wenn Produkte vorhanden sind, verwende die aktuelle Anzahl
             const currentCartCount = document.getElementById('cartCount');
-            if (newCartCount && currentCartCount) {
-                console.log('Aktualisiere cartCount von', currentCartCount.textContent, 'zu', newCartCount.textContent);
-                currentCartCount.textContent = newCartCount.textContent;
+            if (currentCartCount) {
+                const existingProducts = currentCartItems ? currentCartItems.querySelectorAll('.cart-item[data-product-id]').length : 0;
+                if (existingProducts > 0) {
+                    // Verwende die Anzahl der vorhandenen Produkte
+                    currentCartCount.textContent = existingProducts;
+                    console.log('⚠ Cart-Count basiert auf vorhandenen Produkten:', existingProducts);
+                } else if (newCartCount) {
+                    console.log('Aktualisiere cartCount von', currentCartCount.textContent, 'zu', newCartCount.textContent);
+                    currentCartCount.textContent = newCartCount.textContent;
+                }
             } else {
-                console.warn('cartCount nicht gefunden:', { newCartCount: !!newCartCount, currentCartCount: !!currentCartCount });
+                console.warn('cartCount nicht gefunden');
             }
             
             // Aktualisiere Checkout-Formular
@@ -2028,8 +2133,39 @@ class BorrowScannerManager {
             const result = await response.json();
             
             if (result.success) {
-                // Aktualisiere Warenkorb ohne Seite neu zu laden (Kamera bleibt offen)
-                await this.updateCartDisplay();
+                // Entferne nur das spezifische Produkt aus dem DOM, nicht den gesamten Warenkorb
+                const cartItems = document.getElementById('cartItems');
+                if (cartItems) {
+                    const productItem = cartItems.querySelector(`[data-product-id="${productId}"]`);
+                    if (productItem) {
+                        productItem.remove();
+                        console.log('✓ Produkt aus DOM entfernt');
+                    }
+                }
+                
+                // Aktualisiere Cart-Count
+                const cartCount = document.getElementById('cartCount');
+                if (cartCount && result.cart_count !== undefined) {
+                    cartCount.textContent = result.cart_count;
+                }
+                
+                // Entferne Checkout-Formular wenn Warenkorb leer ist
+                if (result.cart_count === 0) {
+                    const checkoutForm = document.getElementById('checkoutForm');
+                    if (checkoutForm) {
+                        const hr = checkoutForm.previousElementSibling;
+                        if (hr && hr.tagName === 'HR') {
+                            hr.remove();
+                        }
+                        checkoutForm.remove();
+                    }
+                    
+                    // Zeige "Keine Produkte" Nachricht
+                    const cartItems = document.getElementById('cartItems');
+                    if (cartItems && cartItems.querySelectorAll('.cart-item').length === 0) {
+                        cartItems.innerHTML = '<p class="text-muted text-center py-3">Keine Produkte hinzugefügt</p>';
+                    }
+                }
             }
         } catch (error) {
             console.error('Fehler:', error);

@@ -22,9 +22,7 @@
                     Alle Daten, die nicht im Backup enthalten sind, werden im Setup-Prozess neu angelegt.
                 </div>
                 
-                <form method="POST" enctype="multipart/form-data">
-                    <input type="hidden" name="action" value="import">
-                    
+                <form method="POST" enctype="multipart/form-data" id="backupForm">
                     <div class="mb-3">
                         <label for="backup_file" class="form-label fw-bold">Backup-Datei auswählen:</label>
                         <input type="file" class="form-control" id="backup_file" name="backup_file" accept=".teamportal">
@@ -110,12 +108,12 @@
                     </div>
                     
                     <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary btn-lg" onclick="return confirm('Sind Sie sicher, dass Sie das Backup importieren möchten?')">
+                        <button type="submit" name="action" value="import" class="btn btn-primary btn-lg" onclick="document.getElementById('backupForm').action = ''; return confirm('Sind Sie sicher, dass Sie das Backup importieren möchten?')">
                             <i class="bi bi-upload me-2"></i>Backup importieren
                         </button>
-                        <button type="submit" name="action" value="skip" class="btn btn-outline-secondary btn-lg">
+                        <a href="{{ url_for('setup.setup_step1') }}" class="btn btn-outline-secondary btn-lg">
                             <i class="bi bi-skip-forward me-2"></i>Überspringen und Setup starten
-                        </button>
+                        </a>
                     </div>
                 </form>
             </div>
@@ -130,6 +128,23 @@ document.addEventListener('DOMContentLoaded', function() {
     var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
         return new bootstrap.Popover(popoverTriggerEl);
     });
+});
+
+// Farbverlauf-Vorschau
+document.addEventListener('DOMContentLoaded', function() {
+    const body = document.body;
+    
+    // Setze den aktuell ausgewählten Farbverlauf beim Laden der Seite
+    {% if color_gradient %}
+    body.style.background = '{{ color_gradient }}';
+    body.style.backgroundAttachment = 'fixed';
+    body.style.backgroundSize = 'cover';
+    {% else %}
+    // Standard-Farbverlauf anwenden wenn kein Farbverlauf gesetzt ist
+    body.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+    body.style.backgroundAttachment = 'fixed';
+    body.style.backgroundSize = 'cover';
+    {% endif %}
 });
 </script>
 {% endblock %}

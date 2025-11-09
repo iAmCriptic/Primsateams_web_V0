@@ -27,7 +27,7 @@
     {% set enabled_widgets = dashboard_config.get('enabled_widgets', []) %}
     
     <!-- Upcoming Events Widget -->
-    {% if 'termine' in enabled_widgets %}
+    {% if 'termine' in enabled_widgets and is_module_enabled('module_calendar') %}
     <div class="col-12 col-md-6 col-lg-4">
         <div class="card widget" onclick="location.href='{{ url_for('calendar.index') }}'">
             <div class="card-body">
@@ -60,7 +60,7 @@
     {% endif %}
 
     <!-- Unread Messages Widget -->
-    {% if 'nachrichten' in enabled_widgets %}
+    {% if 'nachrichten' in enabled_widgets and is_module_enabled('module_chat') %}
     <div class="col-12 col-md-6 col-lg-4">
         <div class="card widget" onclick="location.href='{{ url_for('chat.index') }}'">
             <div class="card-body">
@@ -93,7 +93,7 @@
     {% endif %}
 
     <!-- Recent Emails Widget -->
-    {% if 'emails' in enabled_widgets %}
+    {% if 'emails' in enabled_widgets and is_module_enabled('module_email') %}
     <div class="col-12 col-md-6 col-lg-4">
         <div class="card widget" onclick="location.href='{{ url_for('email.index') }}'">
             <div class="card-body">
@@ -128,7 +128,7 @@
     {% endif %}
 
     <!-- Recent Files Widget -->
-    {% if 'dateien' in enabled_widgets %}
+    {% if 'dateien' in enabled_widgets and is_module_enabled('module_files') %}
     <div class="col-12 col-md-6 col-lg-4">
         <div class="card widget" onclick="location.href='{{ url_for('files.index') }}'">
             <div class="card-body">
@@ -161,7 +161,7 @@
     {% endif %}
 
     <!-- Recent Canvases Widget -->
-    {% if 'canvas' in enabled_widgets %}
+    {% if 'canvas' in enabled_widgets and is_module_enabled('module_canvas') %}
     <div class="col-12 col-md-6 col-lg-4">
         <div class="card widget" onclick="location.href='{{ url_for('canvas.index') }}'">
             <div class="card-body">
@@ -205,24 +205,27 @@
                 <div class="row g-3 mt-2">
                     {% set quick_access_links = dashboard_config.get('quick_access_links', []) %}
                     {% set link_map = {
-                        'files': {'url': url_for('files.index'), 'icon': 'bi-folder', 'label': 'Dateien'},
-                        'credentials': {'url': url_for('credentials.index'), 'icon': 'bi-key', 'label': 'Zugangsdaten'},
-                        'manuals': {'url': url_for('manuals.index'), 'icon': 'bi-book', 'label': 'Anleitungen'},
-                        'canvas': {'url': url_for('canvas.index'), 'icon': 'bi-palette', 'label': 'Canvas'},
-                        'chat': {'url': url_for('chat.index'), 'icon': 'bi-chat-dots', 'label': 'Chats'},
-                        'calendar': {'url': url_for('calendar.index'), 'icon': 'bi-calendar-event', 'label': 'Termine'},
-                        'email': {'url': url_for('email.index'), 'icon': 'bi-envelope', 'label': 'E-Mail'},
-                        'inventory': {'url': url_for('inventory.dashboard'), 'icon': 'bi-box-seam', 'label': 'Lagerverwaltung'}
+                        'files': {'url': url_for('files.index'), 'icon': 'bi-folder', 'label': 'Dateien', 'module': 'module_files'},
+                        'credentials': {'url': url_for('credentials.index'), 'icon': 'bi-key', 'label': 'Zugangsdaten', 'module': 'module_credentials'},
+                        'manuals': {'url': url_for('manuals.index'), 'icon': 'bi-book', 'label': 'Anleitungen', 'module': 'module_manuals'},
+                        'canvas': {'url': url_for('canvas.index'), 'icon': 'bi-palette', 'label': 'Canvas', 'module': 'module_canvas'},
+                        'chat': {'url': url_for('chat.index'), 'icon': 'bi-chat-dots', 'label': 'Chats', 'module': 'module_chat'},
+                        'calendar': {'url': url_for('calendar.index'), 'icon': 'bi-calendar-event', 'label': 'Termine', 'module': 'module_calendar'},
+                        'email': {'url': url_for('email.index'), 'icon': 'bi-envelope', 'label': 'E-Mail', 'module': 'module_email'},
+                        'inventory': {'url': url_for('inventory.dashboard'), 'icon': 'bi-box-seam', 'label': 'Lagerverwaltung', 'module': 'module_inventory'},
+                        'wiki': {'url': url_for('wiki.index'), 'icon': 'bi-journal-text', 'label': 'Wiki', 'module': 'module_wiki'}
                     } %}
                     {% for link_key in quick_access_links %}
                         {% if link_key in link_map %}
                             {% set link = link_map[link_key] %}
+                            {% if is_module_enabled(link.module) %}
                             <div class="col-6 col-md-3">
                                 <a href="{{ link.url }}" class="btn btn-outline-primary w-100">
                                     <i class="bi {{ link.icon }} d-block fs-3 mb-2"></i>
                                     {{ link.label }}
                                 </a>
                             </div>
+                            {% endif %}
                         {% endif %}
                     {% endfor %}
                 </div>

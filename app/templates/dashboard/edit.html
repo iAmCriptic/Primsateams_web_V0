@@ -165,6 +165,16 @@
                         </label>
                     </div>
                     {% endif %}
+                    
+                    {% if is_module_enabled('module_wiki') %}
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="link_wiki" id="link_wiki" {% if 'wiki' in quick_access_links %}checked{% endif %}>
+                        <label class="form-check-label" for="link_wiki">
+                            <i class="bi bi-journal-text me-2"></i>
+                            <strong>Wiki</strong>
+                        </label>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

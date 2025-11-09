@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Wiki - Team Portal{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/wiki.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="wiki-index">
+    <!-- Header mit Suche und Erstellen-Button -->
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="mb-0"><i class="bi bi-journal-text"></i> Wiki</h1>
+            <p class="text-muted">Wissensdatenbank</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('wiki.create') }}" class="btn btn-accent">
+                <i class="bi bi-plus-circle"></i> Erstellen
+            </a>
+        </div>
+    </div>
+    
+    <!-- Suche und Filter -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('wiki.index') }}" id="searchForm">
+                <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" 
+                                   class="form-control" 
+                                   name="q" 
+                                   placeholder="Suche in Titel, Inhalt..." 
+                                   value="{{ search_query }}">
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <select class="form-select" name="category" id="categoryFilter">
+                            <option value="">Alle Kategorien</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}" {% if selected_category == category.id %}selected{% endif %}>
+                                {{ category.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <select class="form-select" name="tag" id="tagFilter">
+                            <option value="">Alle Tags</option>
+                            {% for tag in tags %}
+                            <option value="{{ tag.id }}" {% if selected_tag == tag.id %}selected{% endif %}>
+                                {{ tag.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12 col-md-6">
+                        <select class="form-select form-select-sm" name="sort" id="sortFilter">
+                            <option value="updated" {% if sort_by == 'updated' %}selected{% endif %}>Zuletzt aktualisiert</option>
+                            <option value="created" {% if sort_by == 'created' %}selected{% endif %}>Neueste zuerst</option>
+                            <option value="title" {% if sort_by == 'title' %}selected{% endif %}>Titel (A-Z)</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-6 text-end">
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            <i class="bi bi-search"></i> Suchen
+                        </button>
+                        {% if search_query or selected_category or selected_tag %}
+                        <a href="{{ url_for('wiki.index') }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-x"></i> Zurücksetzen
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Wiki-Seiten Liste -->
+    {% if pages %}
+    <div class="row g-3">
+        {% for page in pages %}
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card wiki-page-card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title mb-0">
+                            <a href="{{ url_for('wiki.view', slug=page.slug) }}" class="text-decoration-none">
+                                {{ page.title }}
+                            </a>
+                        </h5>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{{ url_for('wiki.view', slug=page.slug) }}">
+                                    <i class="bi bi-eye"></i> Ansehen
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('wiki.edit', slug=page.slug) }}">
+                                    <i class="bi bi-pencil"></i> Bearbeiten
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('wiki.history', slug=page.slug) }}">
+                                    <i class="bi bi-clock-history"></i> Versionshistorie
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form method="POST" action="{{ url_for('wiki.delete', slug=page.slug) }}" class="d-inline">
+                                        <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Seite wirklich löschen?')">
+                                            <i class="bi bi-trash"></i> Löschen
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    {% if page.category %}
+                    <span class="badge" style="background-color: {{ page.category.color or '#0d6efd' }}">
+                        {{ page.category.name }}
+                    </span>
+                    {% endif %}
+                    
+                    {% if page.tags %}
+                    <div class="mt-2">
+                        {% for tag in page.tags %}
+                        <span class="badge bg-secondary me-1">{{ tag.name }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <p class="card-text text-muted small mt-2 mb-0">
+                        <i class="bi bi-person"></i> {{ page.creator.full_name }}<br>
+                        <i class="bi bi-calendar"></i> {{ page.updated_at.strftime('%d.%m.%Y %H:%M') }}
+                        {% if page.version_number > 1 %}
+                        <br><i class="bi bi-arrow-repeat"></i> Version {{ page.version_number }}
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i>
+        {% if search_query or selected_category or selected_tag %}
+        Keine Seiten gefunden. Versuchen Sie andere Suchkriterien.
+        {% else %}
+        Noch keine Wiki-Seiten vorhanden. Erstellen Sie die erste Seite!
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+

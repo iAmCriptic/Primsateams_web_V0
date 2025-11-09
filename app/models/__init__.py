@@ -1,7 +1,7 @@
 from .user import User
 from .chat import Chat, ChatMessage, ChatMember
 from .file import File, FileVersion, Folder
-from .calendar import CalendarEvent, EventParticipant
+from .calendar import CalendarEvent, EventParticipant, PublicCalendarFeed
 from .email import EmailMessage, EmailPermission, EmailAttachment
 from .credential import Credential
 from .manual import Manual
@@ -10,12 +10,14 @@ from .settings import SystemSettings
 from .whitelist import WhitelistEntry
 from .notification import NotificationSettings, ChatNotificationSettings, PushSubscription, NotificationLog
 from .inventory import Product, BorrowTransaction, ProductFolder
+from .wiki import WikiPage, WikiPageVersion, WikiCategory, WikiTag
+from .comment import Comment, CommentMention
 
 __all__ = [
     'User',
     'Chat', 'ChatMessage', 'ChatMember',
     'File', 'FileVersion', 'Folder',
-    'CalendarEvent', 'EventParticipant',
+    'CalendarEvent', 'EventParticipant', 'PublicCalendarFeed',
     'EmailMessage', 'EmailPermission', 'EmailAttachment',
     'Credential',
     'Manual',
@@ -23,7 +25,9 @@ __all__ = [
     'SystemSettings',
     'WhitelistEntry',
     'NotificationSettings', 'ChatNotificationSettings', 'PushSubscription', 'NotificationLog',
-    'Product', 'BorrowTransaction', 'ProductFolder'
+    'Product', 'BorrowTransaction', 'ProductFolder',
+    'WikiPage', 'WikiPageVersion', 'WikiCategory', 'WikiTag',
+    'Comment', 'CommentMention'
 ]
 
 

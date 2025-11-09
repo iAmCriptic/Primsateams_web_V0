@@ -50,11 +50,53 @@
             <button type="button" class="btn btn-outline-secondary" onclick="formatText('link')" title="Link">
                 <i class="bi bi-link-45deg"></i>
             </button>
-            <button type="button" class="btn btn-outline-secondary" onclick="formatText('code')" title="Code">
+            <button type="button" class="btn btn-outline-secondary" onclick="formatText('image')" title="Bild">
+                <i class="bi bi-image"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" onclick="formatText('code')" title="Inline Code">
                 <i class="bi bi-code"></i>
             </button>
-            <button type="button" class="btn btn-outline-secondary" onclick="formatText('list')" title="Liste">
+            <button type="button" class="btn btn-outline-secondary" onclick="formatText('codeBlock')" title="Code-Block">
+                <i class="bi bi-code-square"></i>
+            </button>
+        </div>
+        
+        <div class="vr"></div>
+        
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-secondary" onclick="formatText('list')" title="Unsortierte Liste">
                 <i class="bi bi-list-ul"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" onclick="formatText('orderedList')" title="Nummerierte Liste">
+                <i class="bi bi-list-ol"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" onclick="formatText('blockquote')" title="Zitat">
+                <i class="bi bi-quote"></i>
+            </button>
+        </div>
+        
+        <div class="vr"></div>
+        
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-secondary" onclick="formatText('superscript')" title="Hochgestellt">
+                <i class="bi bi-superscript"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" onclick="formatText('subscript')" title="Tiefgestellt">
+                <i class="bi bi-subscript"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" onclick="formatText('footnote')" title="Fußnote">
+                <i class="bi bi-asterisk"></i>
+            </button>
+        </div>
+        
+        <div class="vr"></div>
+        
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-secondary" onclick="insertTable()" title="Tabelle">
+                <i class="bi bi-table"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" onclick="insertHorizontalRule()" title="Horizontale Linie">
+                <i class="bi bi-hr"></i>
             </button>
         </div>
         
@@ -79,7 +121,7 @@
                 </form>
             </div>
             <div class="col-12" id="previewColumn" style="display: none;">
-                <div class="markdown-editor-preview" id="markdownPreview">
+                <div class="markdown-editor-preview markdown-content" id="markdownPreview">
                     <!-- Vorschau wird hier angezeigt -->
                 </div>
             </div>
@@ -188,48 +230,159 @@ function formatText(type) {
     const start = editor.selectionStart;
     const end = editor.selectionEnd;
     const selectedText = editor.value.substring(start, end);
+    const textBefore = editor.value.substring(0, start);
+    const textAfter = editor.value.substring(end);
+    const lineStart = textBefore.lastIndexOf('\n') + 1;
+    const currentLine = editor.value.substring(lineStart, end);
     
     let replacement = '';
+    let newCursorPos = start;
     
     switch(type) {
         case 'bold':
             replacement = `**${selectedText || 'Text'}**`;
+            newCursorPos = start + replacement.length;
             break;
         case 'italic':
             replacement = `*${selectedText || 'Text'}*`;
+            newCursorPos = start + replacement.length;
             break;
         case 'strikethrough':
             replacement = `~~${selectedText || 'Text'}~~`;
+            newCursorPos = start + replacement.length;
             break;
         case 'heading1':
             replacement = `# ${selectedText || 'Überschrift'}`;
+            newCursorPos = start + replacement.length;
             break;
         case 'heading2':
             replacement = `## ${selectedText || 'Überschrift'}`;
+            newCursorPos = start + replacement.length;
             break;
         case 'heading3':
             replacement = `### ${selectedText || 'Überschrift'}`;
+            newCursorPos = start + replacement.length;
             break;
         case 'link':
             replacement = `[${selectedText || 'Link-Text'}](URL)`;
+            newCursorPos = start + replacement.length - 4; // Cursor vor "URL"
             break;
         case 'code':
             replacement = `\`${selectedText || 'Code'}\``;
+            newCursorPos = start + replacement.length;
+            break;
+        case 'codeBlock':
+            replacement = `\`\`\`\n${selectedText || 'Code'}\n\`\`\``;
+            newCursorPos = start + replacement.length - 4; // Cursor vor schließenden ```
             break;
         case 'list':
-            replacement = `- ${selectedText || 'Listenpunkt'}`;
+            // Prüfe ob bereits eine Liste vorhanden ist
+            if (currentLine.trim().startsWith('- ') || currentLine.trim().startsWith('* ')) {
+                replacement = selectedText || 'Listenpunkt';
+            } else {
+                replacement = `- ${selectedText || 'Listenpunkt'}`;
+            }
+            newCursorPos = start + replacement.length;
+            break;
+        case 'orderedList':
+            // Prüfe ob bereits eine nummerierte Liste vorhanden ist
+            if (/^\d+\.\s/.test(currentLine.trim())) {
+                replacement = selectedText || 'Listenpunkt';
+            } else {
+                replacement = `1. ${selectedText || 'Listenpunkt'}`;
+            }
+            newCursorPos = start + replacement.length;
+            break;
+        case 'blockquote':
+            // Prüfe ob bereits ein Blockquote vorhanden ist
+            if (currentLine.trim().startsWith('> ')) {
+                replacement = selectedText || 'Zitat';
+            } else {
+                replacement = `> ${selectedText || 'Zitat'}`;
+            }
+            newCursorPos = start + replacement.length;
+            break;
+        case 'superscript':
+            replacement = `^${selectedText || 'Text'}^`;
+            newCursorPos = start + replacement.length;
+            break;
+        case 'subscript':
+            replacement = `~${selectedText || 'Text'}~`;
+            newCursorPos = start + replacement.length;
+            break;
+        case 'footnote':
+            replacement = `[^${selectedText || '1'}]`;
+            newCursorPos = start + replacement.length;
+            break;
+        case 'image':
+            replacement = `![${selectedText || 'Alt-Text'}](${selectedText ? 'URL' : 'URL'})`;
+            newCursorPos = start + replacement.length - 4; // Cursor vor "URL"
             break;
     }
     
     // Ersetze den ausgewählten Text
-    editor.value = editor.value.substring(0, start) + replacement + editor.value.substring(end);
+    editor.value = textBefore + replacement + textAfter;
     
-    // Setze Cursor nach dem eingefügten Text
-    const newCursorPos = start + replacement.length;
+    // Setze Cursor
     editor.setSelectionRange(newCursorPos, newCursorPos);
     editor.focus();
     
     // Trigger input event für Auto-save
+    editor.dispatchEvent(new Event('input'));
+}
+
+function insertTable() {
+    const editor = document.getElementById('markdownEditor');
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
+    
+    // Standard-Tabelle mit 2 Spalten und 2 Zeilen
+    const tableTemplate = `| Spalte 1 | Spalte 2 |
+|----------|----------|
+| Zeile 1  | Zeile 1  |
+| Zeile 2  | Zeile 2  |
+`;
+    
+    // Füge Tabelle ein
+    editor.value = editor.value.substring(0, start) + tableTemplate + editor.value.substring(end);
+    
+    // Setze Cursor nach der Tabelle
+    const newCursorPos = start + tableTemplate.length;
+    editor.setSelectionRange(newCursorPos, newCursorPos);
+    editor.focus();
+    
+    // Trigger input event
+    editor.dispatchEvent(new Event('input'));
+}
+
+function insertHorizontalRule() {
+    const editor = document.getElementById('markdownEditor');
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
+    const textBefore = editor.value.substring(0, start);
+    const textAfter = editor.value.substring(end);
+    
+    // Füge horizontale Linie ein (mit Leerzeilen davor und danach)
+    let hr = '\n---\n';
+    
+    // Prüfe ob bereits eine Leerzeile davor ist
+    if (textBefore.length > 0 && textBefore[textBefore.length - 1] !== '\n') {
+        hr = '\n' + hr;
+    }
+    
+    // Prüfe ob bereits eine Leerzeile danach ist
+    if (textAfter.length > 0 && textAfter[0] !== '\n') {
+        hr = hr + '\n';
+    }
+    
+    editor.value = textBefore + hr + textAfter;
+    
+    // Setze Cursor nach der Linie
+    const newCursorPos = start + hr.length;
+    editor.setSelectionRange(newCursorPos, newCursorPos);
+    editor.focus();
+    
+    // Trigger input event
     editor.dispatchEvent(new Event('input'));
 }
 
@@ -258,20 +411,41 @@ function updatePreview() {
     const editor = document.getElementById('markdownEditor');
     const preview = document.getElementById('markdownPreview');
     
-    // Einfache Markdown-zu-HTML Konvertierung
-    let html = editor.value
-        .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-        .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-        .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-        .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
-        .replace(/\*(.*?)\*/gim, '<em>$1</em>')
-        .replace(/~~(.*?)~~/gim, '<del>$1</del>')
-        .replace(/`(.*?)`/gim, '<code>$1</code>')
-        .replace(/\[([^\]]+)\]\(([^)]+)\)/gim, '<a href="$2">$1</a>')
-        .replace(/^- (.*$)/gim, '<li>$1</li>')
-        .replace(/\n/gim, '<br>');
+    // Nutze Preview-Endpoint für korrekte Markdown-Verarbeitung
+    const formData = new FormData();
+    formData.append('content', editor.value);
     
-    preview.innerHTML = html;
+    fetch('{{ url_for("files.preview_file", file_id=file.id) }}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        preview.innerHTML = data.html;
+        
+        // Triggere MathJax-Rendering nach Preview-Update
+        if (window.MathJax && window.MathJax.typesetPromise) {
+            window.MathJax.typesetPromise([preview]).catch(function(err) {
+                console.error('MathJax rendering error:', err);
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        // Fallback zu einfacher Konvertierung
+        let html = editor.value
+            .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+            .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+            .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+            .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/gim, '<em>$1</em>')
+            .replace(/~~(.*?)~~/gim, '<del>$1</del>')
+            .replace(/`(.*?)`/gim, '<code>$1</code>')
+            .replace(/\[([^\]]+)\]\(([^)]+)\)/gim, '<a href="$2">$1</a>')
+            .replace(/^- (.*$)/gim, '<li>$1</li>')
+            .replace(/\n/gim, '<br>');
+        preview.innerHTML = html;
+    });
 }
 
 // Escape key zum Schließen
@@ -281,6 +455,24 @@ document.addEventListener('keydown', function(e) {
     }
 });
 </script>
+
+<!-- MathJax für LaTeX-Formeln in Preview -->
+<script>
+window.MathJax = {
+    tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        processEscapes: true,
+        processEnvironments: true
+    },
+    options: {
+        ignoreHtmlClass: 'tex2jax_ignore',
+        processHtmlClass: 'tex2jax_process'
+    }
+};
+</script>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 {% endblock %}
 
 

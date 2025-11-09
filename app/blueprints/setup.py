@@ -50,6 +50,10 @@ def setup_import_backup():
     if not is_setup_needed():
         return redirect(url_for('auth.login'))
     
+    # Hole aktuellen Farbverlauf für Template
+    gradient_setting = SystemSettings.query.filter_by(key='color_gradient').first()
+    current_gradient = gradient_setting.value if gradient_setting else session.get('setup_color_gradient')
+    
     if request.method == 'POST':
         action = request.form.get('action')
         
@@ -61,16 +65,16 @@ def setup_import_backup():
             # Backup importieren
             if 'backup_file' not in request.files:
                 flash('Bitte wählen Sie eine Backup-Datei aus.', 'danger')
-                return render_template('setup/import_backup.html', categories=SUPPORTED_CATEGORIES)
+                return render_template('setup/import_backup.html', categories=SUPPORTED_CATEGORIES, color_gradient=current_gradient)
             
             file = request.files['backup_file']
             if file.filename == '':
                 flash('Bitte wählen Sie eine Backup-Datei aus.', 'danger')
-                return render_template('setup/import_backup.html', categories=SUPPORTED_CATEGORIES)
+                return render_template('setup/import_backup.html', categories=SUPPORTED_CATEGORIES, color_gradient=current_gradient)
             
             if not file.filename.endswith('.teamportal'):
                 flash('Ungültige Dateiendung. Bitte wählen Sie eine .teamportal-Datei aus.', 'danger')
-                return render_template('setup/import_backup.html', categories=SUPPORTED_CATEGORIES)
+                return render_template('setup/import_backup.html', categories=SUPPORTED_CATEGORIES, color_gradient=current_gradient)
             
             try:
                 # Temporäre Datei speichern
@@ -107,7 +111,7 @@ def setup_import_backup():
                     except:
                         pass
     
-    return render_template('setup/import_backup.html', categories=SUPPORTED_CATEGORIES)
+    return render_template('setup/import_backup.html', categories=SUPPORTED_CATEGORIES, color_gradient=current_gradient)
 
 
 @setup_bp.route('/setup/complete', methods=['GET', 'POST'])
@@ -313,7 +317,8 @@ def setup_complete():
                 'module_credentials': request.form.get('module_credentials') == 'on',
                 'module_manuals': request.form.get('module_manuals') == 'on',
                 'module_canvas': request.form.get('module_canvas') == 'on',
-                'module_inventory': request.form.get('module_inventory') == 'on'
+                'module_inventory': request.form.get('module_inventory') == 'on',
+                'module_wiki': request.form.get('module_wiki') == 'on'
             }
             
             for module_key, enabled in modules.items():
@@ -546,7 +551,8 @@ def setup_step3():
             'module_credentials': request.form.get('module_credentials') == 'on',
             'module_manuals': request.form.get('module_manuals') == 'on',
             'module_canvas': request.form.get('module_canvas') == 'on',
-            'module_inventory': request.form.get('module_inventory') == 'on'
+            'module_inventory': request.form.get('module_inventory') == 'on',
+            'module_wiki': request.form.get('module_wiki') == 'on'
         }
         
         session['setup_modules'] = modules
@@ -740,7 +746,8 @@ def setup_step4():
                 'module_credentials': True,
                 'module_manuals': True,
                 'module_canvas': True,
-                'module_inventory': True
+                'module_inventory': True,
+                'module_wiki': True
             })
             
             for module_key, enabled in modules.items():

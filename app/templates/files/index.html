@@ -77,139 +77,308 @@
     </div>
 </div>
 
-<!-- Folders -->
-<h5 class="mb-3">Ordner</h5>
+<!-- ============================================ -->
+<!-- GRID VIEW - ORDNER Sektion (IMMER sichtbar) -->
+<!-- ============================================ -->
+<div id="gridViewContainer" style="display: none;">
+    <!-- Ordner Überschrift - IMMER anzeigen -->
+    <h5 class="mb-3">Ordner</h5>
 
-<!-- Inline Folder Creation (Grid View) -->
-<div id="inlineFolderCreateGrid" class="row g-3 mb-4" style="display: none;">
-    <div class="col-12 col-md-6 col-lg-3">
-        <div class="card folder-item">
-            <div class="card-body">
-                <div class="text-center mb-3">
-                    <i class="bi bi-folder-fill text-warning fs-1"></i>
-                </div>
-                <form method="POST" action="{{ url_for('files.create_folder') }}" class="inline-create-form">
-                    <input type="hidden" name="parent_id" value="{{ current_folder.id if current_folder else '' }}">
-                    <input type="text" class="form-control form-control-sm" name="folder_name" placeholder="Ordnername" required autofocus>
-                    <div class="d-flex gap-2 mt-2">
-                        <button type="submit" class="btn btn-sm btn-accent flex-fill">
-                            <i class="bi bi-check"></i> Erstellen
-                        </button>
-                        <button type="button" class="btn btn-sm btn-secondary cancel-inline-create">
-                            <i class="bi bi-x"></i>
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Inline File Creation (Grid View) -->
-<div id="inlineFileCreateGrid" class="row g-3 mb-4" style="display: none;">
-    <div class="col-12 col-md-6 col-lg-3">
-        <div class="card file-item">
-            <div class="card-body">
-                <div class="text-center mb-3">
-                    <i class="bi bi-file-earmark fs-1 text-primary" id="inlineFileIcon"></i>
-                </div>
-                <form method="POST" class="inline-create-form" id="inlineFileForm">
-                    <input type="hidden" name="folder_id" value="{{ current_folder.id if current_folder else '' }}">
-                    <input type="text" class="form-control form-control-sm" name="filename" placeholder="Dateiname" required autofocus>
-                    <div class="d-flex gap-2 mt-2">
-                        <button type="submit" class="btn btn-sm btn-accent flex-fill">
-                            <i class="bi bi-check"></i> Erstellen
-                        </button>
-                        <button type="button" class="btn btn-sm btn-secondary cancel-inline-create">
-                            <i class="bi bi-x"></i>
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Folders Grid View -->
-<div id="foldersGridView" class="row g-3 mb-4">
-    {% if subfolders %}
-    {% for folder in subfolders %}
-    <div class="col-12 col-md-6 col-lg-3">
-        <div class="card folder-item" onclick="location.href='{{ url_for('files.browse_folder', folder_id=folder.id) }}'">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
+    <!-- Inline Folder Creation (Grid View) -->
+    <div id="inlineFolderCreateGrid" class="row g-3 mb-4" style="display: none;">
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card folder-item">
+                <div class="card-body">
+                    <div class="text-center mb-3">
                         <i class="bi bi-folder-fill text-warning fs-1"></i>
-                        <h6 class="mt-2 mb-0">{{ folder.name }}</h6>
                     </div>
-                    <div class="dropdown" onclick="event.stopPropagation()">
-                        <button class="btn btn-sm btn-link" data-bs-toggle="dropdown">
-                            <i class="bi bi-three-dots-vertical"></i>
-                        </button>
-                        <ul class="dropdown-menu">
-                            {% if files_dropbox_enabled and folder.is_dropbox %}
-                            <li>
-                                <a class="dropdown-item" href="#" onclick="openDropboxSettings({{ folder.id }}); return false;">
-                                    <i class="bi bi-gear"></i> Briefkasten bearbeiten
-                                </a>
-                            </li>
-                            {% elif files_dropbox_enabled %}
-                            <li>
-                                <form method="POST" action="{{ url_for('files.make_dropbox', folder_id=folder.id) }}" class="d-inline">
-                                    <button type="submit" class="dropdown-item">
-                                        <i class="bi bi-mailbox"></i> Zum Briefkasten machen
-                                    </button>
-                                </form>
-                            </li>
-                            {% endif %}
-                            {% if files_sharing_enabled %}
-                            <li><hr class="dropdown-divider"></li>
-                            {% if folder.share_enabled %}
-                            <li>
-                                <a class="dropdown-item" href="#" onclick="openShareSettings('folder', {{ folder.id }}); return false;">
-                                    <i class="bi bi-gear"></i> Freigabe bearbeiten
-                                </a>
-                            </li>
-                            <li>
-                                <form method="POST" action="{{ url_for('files.update_folder_share', folder_id=folder.id) }}" class="d-inline">
-                                    <input type="hidden" name="action" value="disable">
-                                    <button type="submit" class="dropdown-item">
-                                        <i class="bi bi-slash-circle"></i> Freigabe deaktivieren
-                                    </button>
-                                </form>
-                            </li>
-                            {% else %}
-                            <li>
-                                <a class="dropdown-item" href="#" onclick="openShareDialog('folder', {{ folder.id }}); return false;">
-                                    <i class="bi bi-share"></i> Freigeben
-                                </a>
-                            </li>
-                            {% endif %}
-                            {% endif %}
-                            <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <form method="POST" action="{{ url_for('files.rename_folder', folder_id=folder.id) }}" class="d-inline" onsubmit="return confirm('Ordner umbenennen?');">
-                                    <input type="hidden" name="new_name" value="{{ folder.name }}">
-                                    <button type="submit" class="dropdown-item">
-                                        <i class="bi bi-pencil"></i> Umbenennen
-                                    </button>
-                                </form>
-                            </li>
-                            <li>
-                                <form method="POST" action="{{ url_for('files.delete_folder', folder_id=folder.id) }}" class="d-inline">
-                                    <button type="submit" class="dropdown-item text-danger" data-confirm-delete="Ordner und alle Inhalte löschen?">
-                                        <i class="bi bi-trash"></i> Löschen
-                                    </button>
-                                </form>
-                            </li>
-                        </ul>
-                    </div>
+                    <form method="POST" action="{{ url_for('files.create_folder') }}" class="inline-create-form">
+                        <input type="hidden" name="parent_id" value="{{ current_folder.id if current_folder else '' }}">
+                        <input type="text" class="form-control form-control-sm" name="folder_name" placeholder="Ordnername" required autofocus>
+                        <div class="d-flex gap-2 mt-2">
+                            <button type="submit" class="btn btn-sm btn-accent flex-fill">
+                                <i class="bi bi-check"></i> Erstellen
+                            </button>
+                            <button type="button" class="btn btn-sm btn-secondary cancel-inline-create">
+                                <i class="bi bi-x"></i>
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
     </div>
-    {% endfor %}
-    {% endif %}
+
+    <!-- Folders Grid View - Nur anzeigen wenn Ordner vorhanden -->
+    <div id="foldersGridView" class="row g-3 mb-4">
+        {% if subfolders %}
+        {% for folder in subfolders %}
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card folder-item" onclick="location.href='{{ url_for('files.browse_folder', folder_id=folder.id) }}'">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <i class="bi bi-folder-fill text-warning fs-1"></i>
+                            <h6 class="mt-2 mb-0">{{ folder.name }}</h6>
+                        </div>
+                        <div class="dropdown" onclick="event.stopPropagation()">
+                            <button class="btn btn-sm btn-link" data-bs-toggle="dropdown">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                {% if files_dropbox_enabled and folder.is_dropbox %}
+                                <li>
+                                    <a class="dropdown-item" href="#" onclick="openDropboxSettings({{ folder.id }}); return false;">
+                                        <i class="bi bi-gear"></i> Briefkasten bearbeiten
+                                    </a>
+                                </li>
+                                {% elif files_dropbox_enabled %}
+                                <li>
+                                    <form method="POST" action="{{ url_for('files.make_dropbox', folder_id=folder.id) }}" class="d-inline">
+                                        <button type="submit" class="dropdown-item">
+                                            <i class="bi bi-mailbox"></i> Zum Briefkasten machen
+                                        </button>
+                                    </form>
+                                </li>
+                                {% endif %}
+                                {% if files_sharing_enabled %}
+                                <li><hr class="dropdown-divider"></li>
+                                {% if folder.share_enabled %}
+                                <li>
+                                    <a class="dropdown-item" href="#" onclick="openShareSettings('folder', {{ folder.id }}); return false;">
+                                        <i class="bi bi-gear"></i> Freigabe bearbeiten
+                                    </a>
+                                </li>
+                                <li>
+                                    <form method="POST" action="{{ url_for('files.update_folder_share', folder_id=folder.id) }}" class="d-inline">
+                                        <input type="hidden" name="action" value="disable">
+                                        <button type="submit" class="dropdown-item">
+                                            <i class="bi bi-slash-circle"></i> Freigabe deaktivieren
+                                        </button>
+                                    </form>
+                                </li>
+                                {% else %}
+                                <li>
+                                    <a class="dropdown-item" href="#" onclick="openShareDialog('folder', {{ folder.id }}); return false;">
+                                        <i class="bi bi-share"></i> Freigeben
+                                    </a>
+                                </li>
+                                {% endif %}
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form method="POST" action="{{ url_for('files.rename_folder', folder_id=folder.id) }}" class="d-inline" onsubmit="return confirm('Ordner umbenennen?');">
+                                        <input type="hidden" name="new_name" value="{{ folder.name }}">
+                                        <button type="submit" class="dropdown-item">
+                                            <i class="bi bi-pencil"></i> Umbenennen
+                                        </button>
+                                    </form>
+                                </li>
+                                <li>
+                                    <form method="POST" action="{{ url_for('files.delete_folder', folder_id=folder.id) }}" class="d-inline">
+                                        <button type="submit" class="dropdown-item text-danger" data-confirm-delete="Ordner und alle Inhalte löschen?">
+                                            <i class="bi bi-trash"></i> Löschen
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+    </div>
+
+    <!-- ============================================ -->
+    <!-- GRID VIEW - DATEIEN Sektion (IMMER sichtbar) -->
+    <!-- ============================================ -->
+    
+    <!-- Dateien Überschrift - IMMER anzeigen -->
+    <h5 class="mb-3">Dateien</h5>
+
+    <!-- Inline File Creation (Grid View) -->
+    <div id="inlineFileCreateGrid" class="row g-3 mb-4" style="display: none;">
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card file-item">
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <i class="bi bi-file-earmark fs-1 text-primary" id="inlineFileIcon"></i>
+                    </div>
+                    <form method="POST" class="inline-create-form" id="inlineFileForm">
+                        <input type="hidden" name="folder_id" value="{{ current_folder.id if current_folder else '' }}">
+                        <input type="text" class="form-control form-control-sm" name="filename" placeholder="Dateiname" required autofocus>
+                        <div class="d-flex gap-2 mt-2">
+                            <button type="submit" class="btn btn-sm btn-accent flex-fill">
+                                <i class="bi bi-check"></i> Erstellen
+                            </button>
+                            <button type="button" class="btn btn-sm btn-secondary cancel-inline-create">
+                                <i class="bi bi-x"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Files Grid View - Nur anzeigen wenn Dateien vorhanden -->
+    <div id="gridView" class="row g-3">
+        {% if files %}
+        {% for file in files %}
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card file-item h-100" 
+                 {% set file_ext = file.name[file.name.rfind('.'):] if '.' in file.name else '' %}
+                 {% if file.name.endswith(('.md', '.markdown')) %}
+                 onclick="location.href='{{ url_for('files.view_file', file_id=file.id) }}'" style="cursor: pointer;"
+                 {% elif onlyoffice_available and file_ext.lower() in ['.docx', '.doc', '.odt', '.rtf', '.txt', '.xlsx', '.xls', '.ods', '.csv', '.pptx', '.ppt', '.odp', '.pdf'] %}
+                 onclick="location.href='{{ url_for('files.edit_onlyoffice', file_id=file.id) }}'" style="cursor: pointer;"
+                 {% elif file.name.endswith('.txt') %}
+                 onclick="location.href='{{ url_for('files.view_file', file_id=file.id) }}'" style="cursor: pointer;"
+                 {% else %}
+                 onclick="location.href='{{ url_for('files.download_file', file_id=file.id) }}'" style="cursor: pointer;"
+                 {% endif %}>
+                <div class="card-body">
+                    <!-- File Preview/Icon -->
+                    <div class="text-center mb-3">
+                        {% if file.name.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')) %}
+                            <img src="{{ url_for('files.download_file', file_id=file.id) }}" 
+                                 class="file-preview img-fluid rounded" 
+                                 style="max-height: 120px; max-width: 100%; object-fit: cover;"
+                                 alt="Vorschau" 
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                            <i class="bi bi-file-earmark-image fs-1 text-success" style="display: none;"></i>
+                        {% elif file.name.endswith('.pdf') %}
+                            <div class="file-icon-preview bg-light rounded d-flex align-items-center justify-content-center" style="height: 120px;">
+                                <img src="{{ url_for('static', filename='img/PDF.png') }}" alt="PDF" class="file-type-icon" style="max-height: 80px; max-width: 80px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                <i class="bi bi-file-earmark-pdf fs-1 text-danger" style="display: none;"></i>
+                            </div>
+                        {% elif file.name.endswith(('.md', '.markdown')) %}
+                            <div class="file-icon-preview bg-light rounded d-flex align-items-center justify-content-center" style="height: 120px;">
+                                <img src="{{ url_for('static', filename='img/markdown.png') }}" alt="Markdown" class="file-type-icon" style="max-height: 80px; max-width: 80px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                <i class="bi bi-file-earmark-text fs-1 text-info" style="display: none;"></i>
+                            </div>
+                        {% elif file.name.endswith('.txt') %}
+                            <div class="text-preview bg-light rounded p-3" style="height: 120px; overflow: hidden;">
+                                <i class="bi bi-file-earmark-text fs-1 text-secondary mb-2"></i>
+                                <div class="text-muted small">Text-Datei</div>
+                            </div>
+                        {% elif file.name.endswith('.docx') %}
+                            <div class="file-icon-preview bg-light rounded d-flex align-items-center justify-content-center" style="height: 120px;">
+                                <img src="{{ url_for('static', filename='img/docx.png') }}" alt="DOCX" class="file-type-icon" style="max-height: 80px; max-width: 80px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                <i class="bi bi-file-earmark-word fs-1 text-primary" style="display: none;"></i>
+                            </div>
+                        {% elif file.name.endswith('.xlsx') %}
+                            <div class="file-icon-preview bg-light rounded d-flex align-items-center justify-content-center" style="height: 120px;">
+                                <img src="{{ url_for('static', filename='img/xlsx.png') }}" alt="XLSX" class="file-type-icon" style="max-height: 80px; max-width: 80px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                <i class="bi bi-file-earmark-spreadsheet fs-1 text-success" style="display: none;"></i>
+                            </div>
+                        {% elif file.name.endswith('.pptx') %}
+                            <div class="file-icon-preview bg-light rounded d-flex align-items-center justify-content-center" style="height: 120px;">
+                                <img src="{{ url_for('static', filename='img/pptx.png') }}" alt="PPTX" class="file-type-icon" style="max-height: 80px; max-width: 80px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                <i class="bi bi-file-earmark-slides fs-1 text-warning" style="display: none;"></i>
+                            </div>
+                        {% else %}
+                            <i class="bi bi-file-earmark fs-1 text-primary"></i>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- File Info -->
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1 text-truncate" title="{{ file.name }}">{{ file.name }}</h6>
+                            {% if file.version_number > 1 %}
+                            <span class="badge bg-info">v{{ file.version_number }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="dropdown" onclick="event.stopPropagation()">
+                            <button class="btn btn-sm btn-link" data-bs-toggle="dropdown">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{{ url_for('files.download_file', file_id=file.id) }}">
+                                    <i class="bi bi-download"></i> Herunterladen
+                                </a></li>
+                                {% if onlyoffice_available %}
+                                    {% set file_ext = file.name[file.name.rfind('.'):] if '.' in file.name else '' %}
+                                    {% if file_ext.lower() in ['.docx', '.doc', '.odt', '.rtf', '.txt', '.xlsx', '.xls', '.ods', '.csv', '.pptx', '.ppt', '.odp', '.pdf', '.md', '.markdown'] %}
+                                <li><a class="dropdown-item" href="{{ url_for('files.edit_onlyoffice', file_id=file.id) }}">
+                                    <i class="bi bi-file-earmark-text"></i> Mit ONLYOFFICE bearbeiten
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                    {% endif %}
+                                {% endif %}
+                                {% if file.name.endswith(('.txt', '.md')) %}
+                                <li><a class="dropdown-item" href="{{ url_for('files.view_file', file_id=file.id) }}">
+                                    <i class="bi bi-eye"></i> Anzeigen
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('files.edit_file', file_id=file.id) }}">
+                                    <i class="bi bi-pencil"></i> Bearbeiten
+                                </a></li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                {% if files_sharing_enabled %}
+                                <li><hr class="dropdown-divider"></li>
+                                {% if file.share_enabled %}
+                                <li><a class="dropdown-item" href="#" onclick="openShareSettings('file', {{ file.id }}); return false;">
+                                    <i class="bi bi-gear"></i> Freigabe bearbeiten
+                                </a></li>
+                                <li>
+                                    <form method="POST" action="{{ url_for('files.update_file_share', file_id=file.id) }}" class="d-inline">
+                                        <input type="hidden" name="action" value="disable">
+                                        <button type="submit" class="dropdown-item">
+                                            <i class="bi bi-slash-circle"></i> Freigabe deaktivieren
+                                        </button>
+                                    </form>
+                                </li>
+                                {% else %}
+                                <li><a class="dropdown-item" href="#" onclick="openShareDialog('file', {{ file.id }}); return false;">
+                                    <i class="bi bi-share"></i> Freigeben
+                                </a></li>
+                                {% endif %}
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="#" onclick="openFileDetails({{ file.id }})">
+                                    <i class="bi bi-info-circle"></i> Details & Versionen
+                                </a></li>
+                                <li>
+                                    <form method="POST" action="{{ url_for('files.rename_file', file_id=file.id) }}" class="d-inline" onsubmit="return confirm('Datei umbenennen?');">
+                                        <input type="hidden" name="new_name" value="{{ file.name }}">
+                                        <button type="submit" class="dropdown-item">
+                                            <i class="bi bi-pencil"></i> Umbenennen
+                                        </button>
+                                    </form>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form method="POST" action="{{ url_for('files.delete_file', file_id=file.id) }}" class="d-inline">
+                                        <button type="submit" class="dropdown-item text-danger" data-confirm-delete="Datei wirklich löschen?">
+                                            <i class="bi bi-trash"></i> Löschen
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <!-- File Details -->
+                    <small class="text-muted">
+                        {% if file.file_size > 1024*1024 %}
+                            {{ (file.file_size / (1024*1024))|round(1) }} MB
+                        {% else %}
+                            {{ (file.file_size / 1024)|round(1) }} KB
+                        {% endif %}
+                        <br>
+                        Von {{ file.uploader.full_name }}<br>
+                        {{ file.created_at.strftime('%d.%m.%Y %H:%M') }}
+                    </small>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+    </div>
 </div>
 
 <!-- Inline Folder Creation (List View) -->
@@ -250,243 +419,99 @@
     </div>
 </div>
 
-<!-- Folders List View -->
-<div id="foldersListView" class="list-group mb-4" style="display: none;">
-    {% if subfolders %}
-    {% for folder in subfolders %}
-    <div class="list-group-item d-flex justify-content-between align-items-center">
-        <div class="d-flex align-items-center" onclick="location.href='{{ url_for('files.browse_folder', folder_id=folder.id) }}'" style="cursor: pointer;">
-            <i class="bi bi-folder-fill text-warning fs-4 me-3"></i>
-            <span class="fw-medium">{{ folder.name }}</span>
-        </div>
-        <div class="dropdown">
-            <button class="btn btn-sm btn-link" data-bs-toggle="dropdown">
-                <i class="bi bi-three-dots-vertical"></i>
-            </button>
-            <ul class="dropdown-menu">
-                {% if files_dropbox_enabled and folder.is_dropbox %}
-                <li>
-                    <a class="dropdown-item" href="#" onclick="openDropboxSettings({{ folder.id }}); return false;">
-                        <i class="bi bi-gear"></i> Briefkasten bearbeiten
-                    </a>
-                </li>
-                {% elif files_dropbox_enabled %}
-                <li>
-                    <form method="POST" action="{{ url_for('files.make_dropbox', folder_id=folder.id) }}" class="d-inline">
-                        <button type="submit" class="dropdown-item">
-                            <i class="bi bi-mailbox"></i> Zum Briefkasten machen
-                        </button>
-                    </form>
-                </li>
-                {% endif %}
-                {% if files_sharing_enabled %}
-                <li><hr class="dropdown-divider"></li>
-                {% if folder.share_enabled %}
-                <li>
-                    <a class="dropdown-item" href="#" onclick="openShareSettings('folder', {{ folder.id }}); return false;">
-                        <i class="bi bi-gear"></i> Freigabe bearbeiten
-                    </a>
-                </li>
-                <li>
-                    <form method="POST" action="{{ url_for('files.update_folder_share', folder_id=folder.id) }}" class="d-inline">
-                        <input type="hidden" name="action" value="disable">
-                        <button type="submit" class="dropdown-item">
-                            <i class="bi bi-slash-circle"></i> Freigabe deaktivieren
-                        </button>
-                    </form>
-                </li>
-                {% else %}
-                <li>
-                    <a class="dropdown-item" href="#" onclick="openShareDialog('folder', {{ folder.id }}); return false;">
-                        <i class="bi bi-share"></i> Freigeben
-                    </a>
-                </li>
-                {% endif %}
-                {% endif %}
-                <li><hr class="dropdown-divider"></li>
-                <li>
-                    <form method="POST" action="{{ url_for('files.rename_folder', folder_id=folder.id) }}" class="d-inline" onsubmit="return confirm('Ordner umbenennen?');">
-                        <input type="hidden" name="new_name" value="{{ folder.name }}">
-                        <button type="submit" class="dropdown-item">
-                            <i class="bi bi-pencil"></i> Umbenennen
-                        </button>
-                    </form>
-                </li>
-                <li>
-                    <form method="POST" action="{{ url_for('files.delete_folder', folder_id=folder.id) }}" class="d-inline">
-                        <button type="submit" class="dropdown-item text-danger" data-confirm-delete="Ordner und alle Inhalte löschen?">
-                            <i class="bi bi-trash"></i> Löschen
-                        </button>
-                    </form>
-                </li>
-            </ul>
-        </div>
-    </div>
-    {% endfor %}
-</div>
-{% endif %}
+<!-- ============================================ -->
+<!-- LIST VIEW - ORDNER Sektion (IMMER sichtbar) -->
+<!-- ============================================ -->
+<div id="listViewContainer" style="display: none;">
+    <!-- Ordner Überschrift - IMMER anzeigen -->
+    <h5 class="mb-3">Ordner</h5>
 
-<!-- Files -->
-{% if files %}
-<h5 class="mb-3">Dateien</h5>
-
-<!-- Grid View -->
-<div id="gridView" class="row g-3">
-    {% for file in files %}
-    <div class="col-12 col-md-6 col-lg-4">
-        <div class="card file-item h-100" 
-             {% set file_ext = file.name[file.name.rfind('.'):] if '.' in file.name else '' %}
-             {% if file.name.endswith(('.md', '.markdown')) %}
-             onclick="location.href='{{ url_for('files.view_file', file_id=file.id) }}'" style="cursor: pointer;"
-             {% elif onlyoffice_available and file_ext.lower() in ['.docx', '.doc', '.odt', '.rtf', '.txt', '.xlsx', '.xls', '.ods', '.csv', '.pptx', '.ppt', '.odp', '.pdf'] %}
-             onclick="location.href='{{ url_for('files.edit_onlyoffice', file_id=file.id) }}'" style="cursor: pointer;"
-             {% elif file.name.endswith('.txt') %}
-             onclick="location.href='{{ url_for('files.view_file', file_id=file.id) }}'" style="cursor: pointer;"
-             {% else %}
-             onclick="location.href='{{ url_for('files.download_file', file_id=file.id) }}'" style="cursor: pointer;"
-             {% endif %}>
-            <div class="card-body">
-                <!-- File Preview/Icon -->
-                <div class="text-center mb-3">
-                    {% if file.name.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')) %}
-                        <img src="{{ url_for('files.download_file', file_id=file.id) }}" 
-                             class="file-preview img-fluid rounded" 
-                             style="max-height: 120px; max-width: 100%; object-fit: cover;"
-                             alt="Vorschau" 
-                             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                        <i class="bi bi-file-earmark-image fs-1 text-success" style="display: none;"></i>
-                    {% elif file.name.endswith('.pdf') %}
-                        <div class="file-icon-preview bg-light rounded d-flex align-items-center justify-content-center" style="height: 120px;">
-                            <img src="{{ url_for('static', filename='img/PDF.png') }}" alt="PDF" class="file-type-icon" style="max-height: 80px; max-width: 80px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                            <i class="bi bi-file-earmark-pdf fs-1 text-danger" style="display: none;"></i>
-                        </div>
-                    {% elif file.name.endswith(('.md', '.markdown')) %}
-                        <div class="file-icon-preview bg-light rounded d-flex align-items-center justify-content-center" style="height: 120px;">
-                            <img src="{{ url_for('static', filename='img/markdown.png') }}" alt="Markdown" class="file-type-icon" style="max-height: 80px; max-width: 80px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                            <i class="bi bi-file-earmark-text fs-1 text-info" style="display: none;"></i>
-                        </div>
-                    {% elif file.name.endswith('.txt') %}
-                        <div class="text-preview bg-light rounded p-3" style="height: 120px; overflow: hidden;">
-                            <i class="bi bi-file-earmark-text fs-1 text-secondary mb-2"></i>
-                            <div class="text-muted small">Text-Datei</div>
-                        </div>
-                    {% elif file.name.endswith('.docx') %}
-                        <div class="file-icon-preview bg-light rounded d-flex align-items-center justify-content-center" style="height: 120px;">
-                            <img src="{{ url_for('static', filename='img/docx.png') }}" alt="DOCX" class="file-type-icon" style="max-height: 80px; max-width: 80px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                            <i class="bi bi-file-earmark-word fs-1 text-primary" style="display: none;"></i>
-                        </div>
-                    {% elif file.name.endswith('.xlsx') %}
-                        <div class="file-icon-preview bg-light rounded d-flex align-items-center justify-content-center" style="height: 120px;">
-                            <img src="{{ url_for('static', filename='img/xlsx.png') }}" alt="XLSX" class="file-type-icon" style="max-height: 80px; max-width: 80px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                            <i class="bi bi-file-earmark-spreadsheet fs-1 text-success" style="display: none;"></i>
-                        </div>
-                    {% elif file.name.endswith('.pptx') %}
-                        <div class="file-icon-preview bg-light rounded d-flex align-items-center justify-content-center" style="height: 120px;">
-                            <img src="{{ url_for('static', filename='img/pptx.png') }}" alt="PPTX" class="file-type-icon" style="max-height: 80px; max-width: 80px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                            <i class="bi bi-file-earmark-slides fs-1 text-warning" style="display: none;"></i>
-                        </div>
-                    {% else %}
-                        <i class="bi bi-file-earmark fs-1 text-primary"></i>
+    <!-- Folders List View -->
+    <div id="foldersListView" class="list-group mb-4">
+        {% if subfolders %}
+        {% for folder in subfolders %}
+        <div class="list-group-item d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center" onclick="location.href='{{ url_for('files.browse_folder', folder_id=folder.id) }}'" style="cursor: pointer;">
+                <i class="bi bi-folder-fill text-warning fs-4 me-3"></i>
+                <span class="fw-medium">{{ folder.name }}</span>
+            </div>
+            <div class="dropdown">
+                <button class="btn btn-sm btn-link" data-bs-toggle="dropdown">
+                    <i class="bi bi-three-dots-vertical"></i>
+                </button>
+                <ul class="dropdown-menu">
+                    {% if files_dropbox_enabled and folder.is_dropbox %}
+                    <li>
+                        <a class="dropdown-item" href="#" onclick="openDropboxSettings({{ folder.id }}); return false;">
+                            <i class="bi bi-gear"></i> Briefkasten bearbeiten
+                        </a>
+                    </li>
+                    {% elif files_dropbox_enabled %}
+                    <li>
+                        <form method="POST" action="{{ url_for('files.make_dropbox', folder_id=folder.id) }}" class="d-inline">
+                            <button type="submit" class="dropdown-item">
+                                <i class="bi bi-mailbox"></i> Zum Briefkasten machen
+                            </button>
+                        </form>
+                    </li>
                     {% endif %}
-                </div>
-                
-                <!-- File Info -->
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <div class="flex-grow-1">
-                        <h6 class="mb-1 text-truncate" title="{{ file.name }}">{{ file.name }}</h6>
-                        {% if file.version_number > 1 %}
-                        <span class="badge bg-info">v{{ file.version_number }}</span>
-                        {% endif %}
-                    </div>
-                    <div class="dropdown" onclick="event.stopPropagation()">
-                        <button class="btn btn-sm btn-link" data-bs-toggle="dropdown">
-                            <i class="bi bi-three-dots-vertical"></i>
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{{ url_for('files.download_file', file_id=file.id) }}">
-                                <i class="bi bi-download"></i> Herunterladen
-                            </a></li>
-                            {% if onlyoffice_available %}
-                                {% set file_ext = file.name[file.name.rfind('.'):] if '.' in file.name else '' %}
-                                {% if file_ext.lower() in ['.docx', '.doc', '.odt', '.rtf', '.txt', '.xlsx', '.xls', '.ods', '.csv', '.pptx', '.ppt', '.odp', '.pdf', '.md', '.markdown'] %}
-                            <li><a class="dropdown-item" href="{{ url_for('files.edit_onlyoffice', file_id=file.id) }}">
-                                <i class="bi bi-file-earmark-text"></i> Mit ONLYOFFICE bearbeiten
-                            </a></li>
-                            <li><hr class="dropdown-divider"></li>
-                                {% endif %}
-                            {% endif %}
-                            {% if file.name.endswith(('.txt', '.md')) %}
-                            <li><a class="dropdown-item" href="{{ url_for('files.view_file', file_id=file.id) }}">
-                                <i class="bi bi-eye"></i> Anzeigen
-                            </a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('files.edit_file', file_id=file.id) }}">
-                                <i class="bi bi-pencil"></i> Bearbeiten
-                            </a></li>
-                            {% endif %}
-                            <li><hr class="dropdown-divider"></li>
-                            {% if files_sharing_enabled %}
-                            <li><hr class="dropdown-divider"></li>
-                            {% if file.share_enabled %}
-                            <li><a class="dropdown-item" href="#" onclick="openShareSettings('file', {{ file.id }}); return false;">
-                                <i class="bi bi-gear"></i> Freigabe bearbeiten
-                            </a></li>
-                            <li>
-                                <form method="POST" action="{{ url_for('files.update_file_share', file_id=file.id) }}" class="d-inline">
-                                    <input type="hidden" name="action" value="disable">
-                                    <button type="submit" class="dropdown-item">
-                                        <i class="bi bi-slash-circle"></i> Freigabe deaktivieren
-                                    </button>
-                                </form>
-                            </li>
-                            {% else %}
-                            <li><a class="dropdown-item" href="#" onclick="openShareDialog('file', {{ file.id }}); return false;">
-                                <i class="bi bi-share"></i> Freigeben
-                            </a></li>
-                            {% endif %}
-                            {% endif %}
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#" onclick="openFileDetails({{ file.id }})">
-                                <i class="bi bi-info-circle"></i> Details & Versionen
-                            </a></li>
-                            <li>
-                                <form method="POST" action="{{ url_for('files.rename_file', file_id=file.id) }}" class="d-inline" onsubmit="return confirm('Datei umbenennen?');">
-                                    <input type="hidden" name="new_name" value="{{ file.name }}">
-                                    <button type="submit" class="dropdown-item">
-                                        <i class="bi bi-pencil"></i> Umbenennen
-                                    </button>
-                                </form>
-                            </li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <form method="POST" action="{{ url_for('files.delete_file', file_id=file.id) }}" class="d-inline">
-                                    <button type="submit" class="dropdown-item text-danger" data-confirm-delete="Datei wirklich löschen?">
-                                        <i class="bi bi-trash"></i> Löschen
-                                    </button>
-                                </form>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-                
-                <!-- File Details -->
-                <small class="text-muted">
-                    {% if file.file_size > 1024*1024 %}
-                        {{ (file.file_size / (1024*1024))|round(1) }} MB
+                    {% if files_sharing_enabled %}
+                    <li><hr class="dropdown-divider"></li>
+                    {% if folder.share_enabled %}
+                    <li>
+                        <a class="dropdown-item" href="#" onclick="openShareSettings('folder', {{ folder.id }}); return false;">
+                            <i class="bi bi-gear"></i> Freigabe bearbeiten
+                        </a>
+                    </li>
+                    <li>
+                        <form method="POST" action="{{ url_for('files.update_folder_share', folder_id=folder.id) }}" class="d-inline">
+                            <input type="hidden" name="action" value="disable">
+                            <button type="submit" class="dropdown-item">
+                                <i class="bi bi-slash-circle"></i> Freigabe deaktivieren
+                            </button>
+                        </form>
+                    </li>
                     {% else %}
-                        {{ (file.file_size / 1024)|round(1) }} KB
+                    <li>
+                        <a class="dropdown-item" href="#" onclick="openShareDialog('folder', {{ folder.id }}); return false;">
+                            <i class="bi bi-share"></i> Freigeben
+                        </a>
+                    </li>
                     {% endif %}
-                    <br>
-                    Von {{ file.uploader.full_name }}<br>
-                    {{ file.created_at.strftime('%d.%m.%Y %H:%M') }}
-                </small>
+                    {% endif %}
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <form method="POST" action="{{ url_for('files.rename_folder', folder_id=folder.id) }}" class="d-inline" onsubmit="return confirm('Ordner umbenennen?');">
+                            <input type="hidden" name="new_name" value="{{ folder.name }}">
+                            <button type="submit" class="dropdown-item">
+                                <i class="bi bi-pencil"></i> Umbenennen
+                            </button>
+                        </form>
+                    </li>
+                    <li>
+                        <form method="POST" action="{{ url_for('files.delete_folder', folder_id=folder.id) }}" class="d-inline">
+                            <button type="submit" class="dropdown-item text-danger" data-confirm-delete="Ordner und alle Inhalte löschen?">
+                                <i class="bi bi-trash"></i> Löschen
+                            </button>
+                        </form>
+                    </li>
+                </ul>
             </div>
         </div>
+        {% endfor %}
+        {% endif %}
     </div>
-    {% endfor %}
-</div>
 
-<!-- List View -->
-<div id="listView" class="list-group" style="display: none;">
+    <!-- ============================================ -->
+    <!-- LIST VIEW - DATEIEN Sektion (IMMER sichtbar) -->
+    <!-- ============================================ -->
+    
+    <!-- Dateien Überschrift - IMMER anzeigen -->
+    <h5 class="mb-3">Dateien</h5>
+
+    <!-- List View -->
+    <div id="listView" class="list-group">
+    {% if files %}
     {% for file in files %}
         <div class="list-group-item">
             <div class="d-flex w-100 justify-content-between align-items-center">
@@ -503,18 +528,17 @@
                  {% endif %}>
                 <!-- File Icon -->
                 <div class="me-3">
-                    {% if file.name.endswith('.md') %}
-                    <i class="bi bi-file-earmark-text fs-4 text-info"></i>
+                    {% if file.name.endswith(('.md', '.markdown')) %}
+                    <img src="{{ url_for('static', filename='img/markdown.png') }}" alt="Markdown" class="file-type-icon-small" style="height: 32px; width: auto;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';">
+                    <i class="bi bi-file-earmark-text fs-4 text-info" style="display: none;"></i>
                     {% elif file.name.endswith('.txt') %}
                     <i class="bi bi-file-earmark-text fs-4 text-secondary"></i>
                     {% elif file.name.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')) %}
-                    <i class="bi bi-file-earmark-image fs-4 text-success"></i>
+                    <img src="{{ url_for('files.download_file', file_id=file.id) }}" alt="Bild" class="file-thumbnail" style="height: 32px; width: auto; max-width: 48px; object-fit: cover; border-radius: 4px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';">
+                    <i class="bi bi-file-earmark-image fs-4 text-success" style="display: none;"></i>
                     {% elif file.name.endswith('.pdf') %}
                     <img src="{{ url_for('static', filename='img/PDF.png') }}" alt="PDF" class="file-type-icon-small" style="height: 32px; width: auto;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';">
                     <i class="bi bi-file-earmark-pdf fs-4 text-danger" style="display: none;"></i>
-                    {% elif file.name.endswith(('.md', '.markdown')) %}
-                    <img src="{{ url_for('static', filename='img/markdown.png') }}" alt="Markdown" class="file-type-icon-small" style="height: 32px; width: auto;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';">
-                    <i class="bi bi-file-earmark-text fs-4 text-info" style="display: none;"></i>
                     {% elif file.name.endswith('.docx') %}
                     <img src="{{ url_for('static', filename='img/docx.png') }}" alt="DOCX" class="file-type-icon-small" style="height: 32px; width: auto;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';">
                     <i class="bi bi-file-earmark-word fs-4 text-primary" style="display: none;"></i>
@@ -603,8 +627,9 @@
         </div>
     </div>
     {% endfor %}
+    {% endif %}
+    </div>
 </div>
-{% endif %}
 
 {% if not subfolders and not files %}
 <div class="alert alert-info">
@@ -1181,20 +1206,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // View mode toggle
     const listViewBtn = document.getElementById('listViewBtn');
     const gridViewBtn = document.getElementById('gridViewBtn');
-    const listView = document.getElementById('listView');
-    const gridView = document.getElementById('gridView');
-    const foldersListView = document.getElementById('foldersListView');
-    const foldersGridView = document.getElementById('foldersGridView');
+    const listViewContainer = document.getElementById('listViewContainer');
+    const gridViewContainer = document.getElementById('gridViewContainer');
     
     if (listViewBtn && gridViewBtn) {
         listViewBtn.addEventListener('click', function() {
-            // Switch files view
-            if (listView) listView.style.display = 'block';
-            if (gridView) gridView.style.display = 'none';
+            // List View Container ANZEIGEN
+            if (listViewContainer) {
+                listViewContainer.style.display = 'block';
+            }
             
-            // Switch folders view
-            if (foldersListView) foldersListView.style.display = 'block';
-            if (foldersGridView) foldersGridView.style.display = 'none';
+            // Grid View Container AUSBLENDEN
+            if (gridViewContainer) {
+                gridViewContainer.style.display = 'none';
+            }
             
             // Switch inline creation views
             const inlineFolderGrid = document.getElementById('inlineFolderCreateGrid');
@@ -1217,13 +1242,15 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         gridViewBtn.addEventListener('click', function() {
-            // Switch files view
-            if (gridView) gridView.style.display = 'block';
-            if (listView) listView.style.display = 'none';
+            // Grid View Container ANZEIGEN - IMMER anzeigen, unabhängig von Ordnern oder Dateien!
+            if (gridViewContainer) {
+                gridViewContainer.style.display = 'block';
+            }
             
-            // Switch folders view
-            if (foldersGridView) foldersGridView.style.display = 'block';
-            if (foldersListView) foldersListView.style.display = 'none';
+            // List View Container AUSBLENDEN
+            if (listViewContainer) {
+                listViewContainer.style.display = 'none';
+            }
             
             // Switch inline creation views
             const inlineFolderGrid = document.getElementById('inlineFolderCreateGrid');
@@ -1245,10 +1272,31 @@ document.addEventListener('DOMContentLoaded', function() {
             localStorage.setItem('filesViewMode', 'grid');
         });
         
-        // Load saved view mode
+        // Initialisiere Standard-Ansicht: Grid View ist Standard
         const savedViewMode = localStorage.getItem('filesViewMode');
+        
         if (savedViewMode === 'list') {
-            listViewBtn.click();
+            // List View aktivieren
+            if (listViewContainer) {
+                listViewContainer.style.display = 'block';
+            }
+            if (gridViewContainer) {
+                gridViewContainer.style.display = 'none';
+            }
+            // Buttons
+            listViewBtn.classList.add('active');
+            gridViewBtn.classList.remove('active');
+        } else {
+            // Grid View ist Standard - IMMER anzeigen, unabhängig von Ordnern oder Dateien!
+            if (gridViewContainer) {
+                gridViewContainer.style.display = 'block';
+            }
+            if (listViewContainer) {
+                listViewContainer.style.display = 'none';
+            }
+            // Buttons
+            gridViewBtn.classList.add('active');
+            listViewBtn.classList.remove('active');
         }
     }
     

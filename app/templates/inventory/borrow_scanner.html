@@ -166,7 +166,22 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (result.success) {
                 manualInput.value = '';
-                window.location.reload();
+                // Verwende BorrowScannerManager statt Reload
+                if (window.borrowScannerManager) {
+                    window.borrowScannerManager.updateCartFromJSON(result);
+                    // Prüfe ob Checkout-Formular benötigt wird
+                    const checkoutForm = document.getElementById('checkoutForm');
+                    if (!checkoutForm && result.cart_count > 0) {
+                        setTimeout(() => {
+                            window.borrowScannerManager.loadCheckoutForm().catch(err => {
+                                console.error('Checkout-Formular konnte nicht geladen werden:', err);
+                            });
+                        }, 500);
+                    }
+                } else {
+                    // Fallback: Seite neu laden nur wenn Manager nicht verfügbar
+                    window.location.reload();
+                }
             } else {
                 alert(result.error || 'Fehler beim Hinzufügen zum Warenkorb.');
             }
@@ -206,7 +221,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 const result = await response.json();
                 if (result.success) {
-                    window.location.reload();
+                    // Verwende BorrowScannerManager statt Reload
+                    if (window.borrowScannerManager) {
+                        window.borrowScannerManager.removeFromCart(productId);
+                    } else {
+                        // Fallback: Seite neu laden nur wenn Manager nicht verfügbar
+                        window.location.reload();
+                    }
                 } else {
                     alert('Fehler beim Entfernen aus dem Warenkorb.');
                 }

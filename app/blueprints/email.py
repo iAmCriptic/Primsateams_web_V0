@@ -1463,23 +1463,43 @@ def compose():
 @email_bp.route('/sync', methods=['POST'])
 @login_required
 def sync_emails():
-    """Sync emails from IMAP server."""
+    """Sync emails from IMAP server (runs in background)."""
     if not check_email_permission('read'):
         return jsonify({'error': 'Nicht autorisiert'}), 403
-
     
+    # Hole die App-Instanz aus dem aktuellen Request-Kontext
+    app_instance = current_app._get_current_object()
     current_folder = request.form.get('folder', None)
     
-    if current_folder:
-        success, message = sync_emails_from_folder(current_folder)
-    else:
-        success, message = sync_emails_from_server()
+    # Starte Synchronisation im Hintergrund-Thread
+    def sync_in_background():
+        with app_instance.app_context():
+            try:
+                if current_folder:
+                    success, message = sync_emails_from_folder(current_folder)
+                else:
+                    success, message = sync_emails_from_server()
+                
+                # Flash-Messages werden in Session gespeichert
+                if success:
+                    flash(f'✅ {message} - E-Mails wurden mit bidirektionaler Synchronisation aktualisiert!', 'success')
+                else:
+                    flash(f'❌ FEHLER: {message} - Bitte IMAP-Konfiguration prüfen!', 'danger')
+            except Exception as e:
+                app_instance.logger.error(f"E-Mail-Synchronisation Fehler: {str(e)}")
+                flash(f'❌ FEHLER bei der Synchronisation: {str(e)}', 'danger')
     
-    if success:
-        flash(f'✅ {message} - E-Mails wurden mit bidirektionaler Synchronisation aktualisiert!', 'success')
-    else:
-        flash(f'❌ FEHLER: {message} - Bitte IMAP-Konfiguration prüfen!', 'danger')
-
+    # Starte Thread für Hintergrund-Synchronisation
+    thread = threading.Thread(target=sync_in_background)
+    thread.daemon = True
+    thread.start()
+    
+    # Gebe sofort Antwort zurück (für AJAX)
+    if request.headers.get('Content-Type', '').startswith('application'):
+        return jsonify({'success': True, 'message': 'Synchronisation gestartet'}), 202
+    
+    # Fallback für normale Form-Submits
+    flash('Synchronisation wurde gestartet. Die Seite wird automatisch aktualisiert.', 'info')
     return redirect(url_for('email.index'))
 
 

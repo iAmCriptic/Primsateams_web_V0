@@ -45,6 +45,75 @@
                         <input type="text" class="form-control" id="location" name="location" value="{{ event.location or '' }}">
                     </div>
                     
+                    <!-- Wiederkehrende Termine -->
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="is_recurring" name="is_recurring" {% if event.recurrence_type != 'none' %}checked{% endif %}>
+                            <label class="form-check-label" for="is_recurring">
+                                Wiederkehrender Termin
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div id="recurrence_options" style="display: {% if event.recurrence_type != 'none' %}block{% else %}none{% endif %};">
+                        <div class="mb-3">
+                            <label for="recurrence_type" class="form-label">Wiederholungstyp</label>
+                            <select class="form-select" id="recurrence_type" name="recurrence_type">
+                                <option value="none" {% if event.recurrence_type == 'none' %}selected{% endif %}>Keine Wiederholung</option>
+                                <option value="daily" {% if event.recurrence_type == 'daily' %}selected{% endif %}>Täglich</option>
+                                <option value="weekly" {% if event.recurrence_type == 'weekly' %}selected{% endif %}>Wöchentlich</option>
+                                <option value="monthly" {% if event.recurrence_type == 'monthly' %}selected{% endif %}>Monatlich</option>
+                                <option value="yearly" {% if event.recurrence_type == 'yearly' %}selected{% endif %}>Jährlich</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3" id="recurrence_interval_group">
+                            <label for="recurrence_interval" class="form-label">Intervall</label>
+                            <input type="number" class="form-control" id="recurrence_interval" name="recurrence_interval" value="{{ event.recurrence_interval or 1 }}" min="1">
+                            <small class="form-text text-muted" id="interval_help">z.B. alle 2 Wochen</small>
+                        </div>
+                        
+                        <div class="mb-3" id="recurrence_days_group" style="display: {% if event.recurrence_type == 'weekly' %}block{% else %}none{% endif %};">
+                            <label class="form-label">Wochentage</label>
+                            {% set recurrence_days_list = event.recurrence_days.split(',') if event.recurrence_days else [] %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="recurrence_days_check" value="0" id="day_mo" {% if '0' in recurrence_days_list %}checked{% endif %}>
+                                <label class="form-check-label" for="day_mo">Montag</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="recurrence_days_check" value="1" id="day_tu" {% if '1' in recurrence_days_list %}checked{% endif %}>
+                                <label class="form-check-label" for="day_tu">Dienstag</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="recurrence_days_check" value="2" id="day_we" {% if '2' in recurrence_days_list %}checked{% endif %}>
+                                <label class="form-check-label" for="day_we">Mittwoch</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="recurrence_days_check" value="3" id="day_th" {% if '3' in recurrence_days_list %}checked{% endif %}>
+                                <label class="form-check-label" for="day_th">Donnerstag</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="recurrence_days_check" value="4" id="day_fr" {% if '4' in recurrence_days_list %}checked{% endif %}>
+                                <label class="form-check-label" for="day_fr">Freitag</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="recurrence_days_check" value="5" id="day_sa" {% if '5' in recurrence_days_list %}checked{% endif %}>
+                                <label class="form-check-label" for="day_sa">Samstag</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="recurrence_days_check" value="6" id="day_su" {% if '6' in recurrence_days_list %}checked{% endif %}>
+                                <label class="form-check-label" for="day_su">Sonntag</label>
+                            </div>
+                            <input type="hidden" id="recurrence_days" name="recurrence_days" value="{{ event.recurrence_days or '' }}">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="recurrence_end_date" class="form-label">Wiederholung endet am (optional)</label>
+                            <input type="datetime-local" class="form-control" id="recurrence_end_date" name="recurrence_end_date" value="{% if event.recurrence_end_date %}{{ event.recurrence_end_date.strftime('%Y-%m-%dT%H:%M') }}{% endif %}">
+                            <small class="form-text text-muted">Wenn leer, wird unbegrenzt wiederholt</small>
+                        </div>
+                    </div>
+                    
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-accent">Änderungen speichern</button>
                         <a href="{{ url_for('calendar.view_event', event_id=event.id) }}" class="btn btn-outline-secondary">Abbrechen</a>
@@ -54,6 +123,65 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const isRecurringCheckbox = document.getElementById('is_recurring');
+    const recurrenceOptions = document.getElementById('recurrence_options');
+    const recurrenceType = document.getElementById('recurrence_type');
+    const recurrenceDaysGroup = document.getElementById('recurrence_days_group');
+    const recurrenceIntervalGroup = document.getElementById('recurrence_interval_group');
+    const intervalHelp = document.getElementById('interval_help');
+    const recurrenceDaysInput = document.getElementById('recurrence_days');
+    const dayCheckboxes = document.querySelectorAll('input[name="recurrence_days_check"]');
+    
+    // Toggle Wiederholungsoptionen
+    isRecurringCheckbox.addEventListener('change', function() {
+        recurrenceOptions.style.display = this.checked ? 'block' : 'none';
+        if (!this.checked) {
+            recurrenceType.value = 'none';
+        }
+        updateRecurrenceOptions();
+    });
+    
+    // Update Wiederholungsoptionen basierend auf Typ
+    recurrenceType.addEventListener('change', updateRecurrenceOptions);
+    
+    function updateRecurrenceOptions() {
+        const type = recurrenceType.value;
+        
+        // Wochentage nur bei wöchentlicher Wiederholung anzeigen
+        recurrenceDaysGroup.style.display = (type === 'weekly') ? 'block' : 'none';
+        
+        // Intervall-Hilfetext anpassen
+        if (type === 'daily') {
+            intervalHelp.textContent = 'z.B. alle 2 Tage';
+        } else if (type === 'weekly') {
+            intervalHelp.textContent = 'z.B. alle 2 Wochen';
+        } else if (type === 'monthly') {
+            intervalHelp.textContent = 'z.B. alle 2 Monate';
+        } else if (type === 'yearly') {
+            intervalHelp.textContent = 'z.B. alle 2 Jahre';
+        } else {
+            intervalHelp.textContent = '';
+        }
+    }
+    
+    // Wochentage sammeln
+    dayCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const selectedDays = Array.from(dayCheckboxes)
+                .filter(cb => cb.checked)
+                .map(cb => cb.value)
+                .join(',');
+            recurrenceDaysInput.value = selectedDays;
+        });
+    });
+    
+    // Initialisiere beim Laden
+    updateRecurrenceOptions();
+});
+</script>
 {% endblock %}
 
 

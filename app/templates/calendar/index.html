@@ -22,9 +22,20 @@
                 <i class="bi bi-list-ul"></i> <span class="d-none d-md-inline">Terminübersicht</span>
             </button>
         </div>
-        <a href="{{ url_for('calendar.create_event') }}" class="btn btn-accent">
-            <i class="bi bi-plus-circle"></i> <span class="d-none d-md-inline">Neuer Termin</span>
-        </a>
+        <div class="btn-group me-2 mb-2" role="group">
+            <a href="{{ url_for('calendar.create_event') }}" class="btn btn-accent">
+                <i class="bi bi-plus-circle"></i> <span class="d-none d-md-inline">Neuer Termin</span>
+            </a>
+            <button type="button" class="btn btn-accent dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                <span class="visually-hidden">Toggle Dropdown</span>
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="{{ url_for('calendar.export_calendar') }}"><i class="bi bi-download"></i> Kalender exportieren</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('calendar.import_calendar') }}"><i class="bi bi-upload"></i> Kalender importieren</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="{{ url_for('calendar.manage_feeds') }}"><i class="bi bi-share"></i> Öffentliche Kalender verwalten</a></li>
+            </ul>
+        </div>
     </div>
 </div>
 

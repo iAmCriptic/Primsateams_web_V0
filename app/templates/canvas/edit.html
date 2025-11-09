@@ -4,6 +4,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/canvas.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/comments.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -111,9 +112,25 @@
             <div class="canvas-active-users" id="canvas-active-users">
                 <!-- Wird dynamisch mit SocketIO gefüllt -->
             </div>
+            <button class="canvas-control-btn" id="comments-toggle-btn" title="Kommentare anzeigen/verstecken">
+                <i class="bi bi-chat-dots"></i>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Kommentar-Sidebar -->
+    <div id="canvas-comments-sidebar" class="canvas-comments-sidebar" style="display: none;">
+        <div class="canvas-comments-header">
+            <h5>Kommentare</h5>
+            <button class="btn-close" id="comments-close-btn"></button>
+        </div>
+        <div class="canvas-comments-content">
+            {% set content_type='canvas' %}{% set content_id=canvas.id %}{% include 'comments/_comments.html' %}
         </div>
     </div>
 </div>
+
+<div id="current-user-id" data-user-id="{{ current_user.id if current_user.is_authenticated else '' }}" style="display: none;"></div>
 
 <!-- Hidden Input für Bild-Upload -->
 <input type="file" id="image-upload-input" accept="image/*" style="display: none;">
@@ -123,6 +140,7 @@
 {% block extra_js %}
 <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 <script src="{{ url_for('static', filename='js/canvas.js') }}"></script>
+<script src="{{ url_for('static', filename='js/comments.js') }}"></script>
 <script>
     // Canvas-Konfiguration
     const canvasConfig = {
@@ -142,6 +160,60 @@
             const editor = new CanvasEditor(canvasConfig);
             editor.init();
         }
+        
+        // Kommentar-Sidebar Toggle
+        const commentsToggleBtn = document.getElementById('comments-toggle-btn');
+        const commentsCloseBtn = document.getElementById('comments-close-btn');
+        const commentsSidebar = document.getElementById('canvas-comments-sidebar');
+        
+        if (commentsToggleBtn && commentsSidebar) {
+            commentsToggleBtn.addEventListener('click', function() {
+                commentsSidebar.style.display = commentsSidebar.style.display === 'none' ? 'block' : 'none';
+            });
+        }
+        
+        if (commentsCloseBtn && commentsSidebar) {
+            commentsCloseBtn.addEventListener('click', function() {
+                commentsSidebar.style.display = 'none';
+            });
+        }
     });
 </script>
+
+<style>
+.canvas-comments-sidebar {
+    position: fixed;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 400px;
+    background: var(--bs-body-bg);
+    border-left: 1px solid var(--bs-border-color);
+    z-index: 1060;
+    overflow-y: auto;
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+}
+
+.canvas-comments-header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--bs-border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    background: var(--bs-body-bg);
+    z-index: 1;
+}
+
+.canvas-comments-content {
+    padding: 1rem;
+}
+
+@media (max-width: 768px) {
+    .canvas-comments-sidebar {
+        width: 100%;
+    }
+}
+</style>
 {% endblock %}
