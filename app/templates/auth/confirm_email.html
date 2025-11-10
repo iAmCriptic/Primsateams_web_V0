@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}E-Mail bestätigen - Prismateams{% endblock %}
+{% block title %}{{ _('auth.confirm_email.title') }} - {{ app_name or 'Prismateams' }}{% endblock %}
 
 {% block content %}
 <div class="auth-container" {% if color_gradient %}style="background: {{ color_gradient }}; background-attachment: fixed; background-size: cover;"{% endif %}>
@@ -15,32 +15,33 @@
                     {% endif %}
                     {{ app_name or 'Prismateams' }}
                 </h1>
-                <h5 class="text-center mb-4">E-Mail bestätigen</h5>
+                <h5 class="text-center mb-2">{{ _('auth.confirm_email.title') }}</h5>
+                <p class="text-center text-muted mb-4">{{ _('auth.confirm_email.subtitle') }}</p>
                 
                 <div class="alert alert-info">
                     <i class="bi bi-info-circle me-2"></i>
-                    <strong>Bestätigung erforderlich:</strong> Wir haben Ihnen eine E-Mail mit einem 6-stelligen Bestätigungscode gesendet.
+                    <strong>{{ _('auth.confirm_email.info_title') }}:</strong> {{ _('auth.confirm_email.info_message') }}
                 </div>
                 
                 <form method="POST">
                     <div class="mb-3">
-                        <label for="confirmation_code" class="form-label">Bestätigungscode</label>
+                        <label for="confirmation_code" class="form-label">{{ _('auth.confirm_email.code') }}</label>
                         <input type="text" class="form-control text-center" id="confirmation_code" name="confirmation_code" 
                                placeholder="123456" maxlength="6" pattern="[0-9]{6}" required autofocus>
-                        <div class="form-text">Geben Sie den 6-stelligen Code aus Ihrer E-Mail ein.</div>
+                        <div class="form-text">{{ _('auth.confirm_email.code_help') }}</div>
                     </div>
                     
                     <button type="submit" class="btn btn-accent w-100 mb-3">
                         <i class="bi bi-check-circle me-2"></i>
-                        E-Mail bestätigen
+                        {{ _('auth.confirm_email.submit') }}
                     </button>
                 </form>
                 
                 <div class="text-center">
-                    <p class="mb-2">Keine E-Mail erhalten?</p>
+                    <p class="mb-2">{{ _('auth.confirm_email.no_email') }}</p>
                     <a href="{{ url_for('auth.resend_confirmation') }}" class="btn btn-outline-primary">
                         <i class="bi bi-arrow-clockwise me-2"></i>
-                        E-Mail erneut senden
+                        {{ _('auth.confirm_email.resend_button') }}
                     </a>
                 </div>
                 
@@ -48,7 +49,7 @@
                 
                 <div class="alert alert-warning">
                     <i class="bi bi-exclamation-triangle me-2"></i>
-                    <strong>Hinweis:</strong> Der Bestätigungscode ist 24 Stunden gültig. Prüfen Sie auch Ihren Spam-Ordner.
+                    <strong>{{ _('auth.confirm_email.warning_title') }}:</strong> {{ _('auth.confirm_email.warning_message') }}
                 </div>
             </div>
         </div>

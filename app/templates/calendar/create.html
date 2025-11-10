@@ -1,46 +1,46 @@
 {% extends "base.html" %}
 
-{% block title %}Neuer Termin - Team Portal{% endblock %}
+{% block title %}{{ _('calendar.create.page_title') }}{% endblock %}
 
 {% block content %}
 <div class="row">
     <div class="col-lg-8 mx-auto">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('calendar.index') }}">Termine</a></li>
-                <li class="breadcrumb-item active">Neuer Termin</li>
+                <li class="breadcrumb-item"><a href="{{ url_for('calendar.index') }}">{{ _('calendar.create.breadcrumb.index') }}</a></li>
+                <li class="breadcrumb-item active">{{ _('calendar.create.breadcrumb.current') }}</li>
             </ol>
         </nav>
         
         <div class="card">
             <div class="card-header">
-                <h4 class="mb-0">Neuen Termin erstellen</h4>
+                <h4 class="mb-0">{{ _('calendar.create.card_title') }}</h4>
             </div>
             <div class="card-body">
                 <form method="POST">
                     <div class="mb-3">
-                        <label for="title" class="form-label">Titel</label>
+                        <label for="title" class="form-label">{{ _('calendar.create.form.title') }}</label>
                         <input type="text" class="form-control" id="title" name="title" required>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="description" class="form-label">Beschreibung (optional)</label>
+                        <label for="description" class="form-label">{{ _('calendar.create.form.description') }}</label>
                         <textarea class="form-control" id="description" name="description" rows="3"></textarea>
                     </div>
                     
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="start_time" class="form-label">Startzeit</label>
+                            <label for="start_time" class="form-label">{{ _('calendar.create.form.start_time') }}</label>
                             <input type="datetime-local" class="form-control" id="start_time" name="start_time" required>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="end_time" class="form-label">Endzeit</label>
+                            <label for="end_time" class="form-label">{{ _('calendar.create.form.end_time') }}</label>
                             <input type="datetime-local" class="form-control" id="end_time" name="end_time" required>
                         </div>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="location" class="form-label">Ort (optional)</label>
+                        <label for="location" class="form-label">{{ _('calendar.create.form.location') }}</label>
                         <input type="text" class="form-control" id="location" name="location">
                     </div>
                     
@@ -49,72 +49,51 @@
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="is_recurring" name="is_recurring">
                             <label class="form-check-label" for="is_recurring">
-                                Wiederkehrender Termin
+                                {{ _('calendar.create.form.recurrence.label') }}
                             </label>
                         </div>
                     </div>
                     
                     <div id="recurrence_options" style="display: none;">
                         <div class="mb-3">
-                            <label for="recurrence_type" class="form-label">Wiederholungstyp</label>
+                            <label for="recurrence_type" class="form-label">{{ _('calendar.create.form.recurrence.type_label') }}</label>
                             <select class="form-select" id="recurrence_type" name="recurrence_type">
-                                <option value="none">Keine Wiederholung</option>
-                                <option value="daily">Täglich</option>
-                                <option value="weekly">Wöchentlich</option>
-                                <option value="monthly">Monatlich</option>
-                                <option value="yearly">Jährlich</option>
+                                <option value="none">{{ _('calendar.create.form.recurrence.options.none') }}</option>
+                                <option value="daily">{{ _('calendar.create.form.recurrence.options.daily') }}</option>
+                                <option value="weekly">{{ _('calendar.create.form.recurrence.options.weekly') }}</option>
+                                <option value="monthly">{{ _('calendar.create.form.recurrence.options.monthly') }}</option>
+                                <option value="yearly">{{ _('calendar.create.form.recurrence.options.yearly') }}</option>
                             </select>
                         </div>
                         
                         <div class="mb-3" id="recurrence_interval_group">
-                            <label for="recurrence_interval" class="form-label">Intervall</label>
+                            <label for="recurrence_interval" class="form-label">{{ _('calendar.create.form.recurrence.interval_label') }}</label>
                             <input type="number" class="form-control" id="recurrence_interval" name="recurrence_interval" value="1" min="1">
-                            <small class="form-text text-muted" id="interval_help">z.B. alle 2 Wochen</small>
+                            <small class="form-text text-muted" id="interval_help">{{ current_translations.get('calendar', {}).get('create', {}).get('form', {}).get('recurrence', {}).get('interval_help', {}).get('default', '') }}</small>
                         </div>
                         
                         <div class="mb-3" id="recurrence_days_group" style="display: none;">
-                            <label class="form-label">Wochentage</label>
+                            <label class="form-label">{{ _('calendar.create.form.recurrence.days_label') }}</label>
+                            {% set weekday_names = current_translations.get('calendar', {}).get('create', {}).get('form', {}).get('recurrence', {}).get('weekday_names', []) %}
+                            {% for weekday in weekday_names %}
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="recurrence_days_check" value="0" id="day_mo">
-                                <label class="form-check-label" for="day_mo">Montag</label>
+                                <input class="form-check-input" type="checkbox" name="recurrence_days_check" value="{{ loop.index0 }}" id="day_{{ loop.index0 }}">
+                                <label class="form-check-label" for="day_{{ loop.index0 }}">{{ weekday }}</label>
                             </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="recurrence_days_check" value="1" id="day_tu">
-                                <label class="form-check-label" for="day_tu">Dienstag</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="recurrence_days_check" value="2" id="day_we">
-                                <label class="form-check-label" for="day_we">Mittwoch</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="recurrence_days_check" value="3" id="day_th">
-                                <label class="form-check-label" for="day_th">Donnerstag</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="recurrence_days_check" value="4" id="day_fr">
-                                <label class="form-check-label" for="day_fr">Freitag</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="recurrence_days_check" value="5" id="day_sa">
-                                <label class="form-check-label" for="day_sa">Samstag</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="recurrence_days_check" value="6" id="day_su">
-                                <label class="form-check-label" for="day_su">Sonntag</label>
-                            </div>
+                            {% endfor %}
                             <input type="hidden" id="recurrence_days" name="recurrence_days">
                         </div>
                         
                         <div class="mb-3">
-                            <label for="recurrence_end_date" class="form-label">Wiederholung endet am (optional)</label>
+                            <label for="recurrence_end_date" class="form-label">{{ _('calendar.create.form.recurrence.end_label') }}</label>
                             <input type="datetime-local" class="form-control" id="recurrence_end_date" name="recurrence_end_date">
-                            <small class="form-text text-muted">Wenn leer, wird unbegrenzt wiederholt</small>
+                            <small class="form-text text-muted">{{ _('calendar.create.form.recurrence.end_help') }}</small>
                         </div>
                     </div>
                     
                     <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-accent">Termin erstellen</button>
-                        <a href="{{ url_for('calendar.index') }}" class="btn btn-outline-secondary">Abbrechen</a>
+                        <button type="submit" class="btn btn-accent">{{ _('calendar.create.buttons.submit') }}</button>
+                        <a href="{{ url_for('calendar.index') }}" class="btn btn-outline-secondary">{{ _('calendar.create.buttons.cancel') }}</a>
                     </div>
                 </form>
             </div>
@@ -123,6 +102,7 @@
 </div>
 
 <script>
+const CAL_CREATE_I18N = {{ current_translations.get('calendar', {}).get('create', {})|tojson }};
 document.addEventListener('DOMContentLoaded', function() {
     const isRecurringCheckbox = document.getElementById('is_recurring');
     const recurrenceOptions = document.getElementById('recurrence_options');
@@ -130,6 +110,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const recurrenceDaysGroup = document.getElementById('recurrence_days_group');
     const recurrenceIntervalGroup = document.getElementById('recurrence_interval_group');
     const intervalHelp = document.getElementById('interval_help');
+    const intervalHelpTexts = CAL_CREATE_I18N.form?.recurrence?.interval_help || {};
     const recurrenceDaysInput = document.getElementById('recurrence_days');
     const dayCheckboxes = document.querySelectorAll('input[name="recurrence_days_check"]');
     
@@ -152,17 +133,7 @@ document.addEventListener('DOMContentLoaded', function() {
         recurrenceDaysGroup.style.display = (type === 'weekly') ? 'block' : 'none';
         
         // Intervall-Hilfetext anpassen
-        if (type === 'daily') {
-            intervalHelp.textContent = 'z.B. alle 2 Tage';
-        } else if (type === 'weekly') {
-            intervalHelp.textContent = 'z.B. alle 2 Wochen';
-        } else if (type === 'monthly') {
-            intervalHelp.textContent = 'z.B. alle 2 Monate';
-        } else if (type === 'yearly') {
-            intervalHelp.textContent = 'z.B. alle 2 Jahre';
-        } else {
-            intervalHelp.textContent = '';
-        }
+        intervalHelp.textContent = intervalHelpTexts[type] || intervalHelpTexts.default || '';
     }
     
     // Wochentage sammeln

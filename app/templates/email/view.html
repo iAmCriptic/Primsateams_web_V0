@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}{{ email.subject|decode_email_header }} - E-Mail{% endblock %}
+{% block title %}{{ email.subject|decode_email_header }} - {{ _('email.view.page_title_suffix') }}{% endblock %}
 
 {% block content %}
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{{ url_for('email.index') }}">E-Mail</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('email.index') }}">{{ _('email.view.breadcrumb.index') }}</a></li>
         <li class="breadcrumb-item active">{{ email.subject|decode_email_header }}</li>
     </ol>
 </nav>
@@ -15,13 +15,13 @@
     <div class="d-flex justify-content-end align-items-center">
         <!-- Zurück-Button wird jetzt global von base.html bereitgestellt -->
         <div class="btn-group" role="group">
-            <a class="btn btn-outline-secondary btn-lg" href="{{ url_for('email.reply', email_id=email.id) }}" title="Antworten">
+            <a class="btn btn-outline-secondary btn-lg" href="{{ url_for('email.reply', email_id=email.id) }}" title="{{ _('email.index.actions.reply') }}">
                 <i class="bi bi-reply"></i>
             </a>
-            <a class="btn btn-outline-secondary btn-lg" href="{{ url_for('email.reply_all', email_id=email.id) }}" title="Allen antworten">
+            <a class="btn btn-outline-secondary btn-lg" href="{{ url_for('email.reply_all', email_id=email.id) }}" title="{{ _('email.index.actions.reply_all') }}">
                 <i class="bi bi-reply-all"></i>
             </a>
-            <a class="btn btn-outline-secondary btn-lg" href="{{ url_for('email.forward', email_id=email.id) }}" title="Weiterleiten">
+            <a class="btn btn-outline-secondary btn-lg" href="{{ url_for('email.forward', email_id=email.id) }}" title="{{ _('email.index.actions.forward') }}">
                 <i class="bi bi-forward"></i>
             </a>
         </div>
@@ -33,13 +33,13 @@
         <h4 class="mb-0">{{ email.subject|decode_email_header }}</h4>
         <div class="d-flex align-items-center gap-2">
             <div class="btn-group" role="group">
-                <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('email.reply', email_id=email.id) }}" title="Antworten">
+                <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('email.reply', email_id=email.id) }}" title="{{ _('email.index.actions.reply') }}">
                     <i class="bi bi-reply"></i>
                 </a>
-                <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('email.reply_all', email_id=email.id) }}" title="Allen antworten">
+                <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('email.reply_all', email_id=email.id) }}" title="{{ _('email.index.actions.reply_all') }}">
                     <i class="bi bi-reply-all"></i>
                 </a>
-                <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('email.forward', email_id=email.id) }}" title="Weiterleiten">
+                <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('email.forward', email_id=email.id) }}" title="{{ _('email.index.actions.forward') }}">
                     <i class="bi bi-forward"></i>
                 </a>
             </div>
@@ -50,21 +50,21 @@
         <h5 class="mb-0">{{ email.subject|decode_email_header }}</h5>
     </div>
     <div class="px-3 pt-2 text-muted small">
-            <strong>Von:</strong> {{ email.sender|decode_email_header }}<br>
-            <strong>An:</strong> {{ email.recipients|decode_email_header }}<br>
+            <strong>{{ _('email.view.header.from') }}</strong> {{ email.sender|decode_email_header }}<br>
+            <strong>{{ _('email.view.header.to') }}</strong> {{ email.recipients|decode_email_header }}<br>
             {% if email.cc %}
-            <strong>CC:</strong> {{ email.cc|decode_email_header }}<br>
+            <strong>{{ _('email.view.header.cc') }}</strong> {{ email.cc|decode_email_header }}<br>
             {% endif %}
-            <strong>Datum:</strong> {{ email.received_at.strftime('%d.%m.%Y %H:%M') if email.received_at else email.sent_at.strftime('%d.%m.%Y %H:%M') }}
+            <strong>{{ _('email.view.header.date') }}</strong> {{ email.received_at.strftime('%d.%m.%Y %H:%M') if email.received_at else email.sent_at.strftime('%d.%m.%Y %H:%M') }}
     </div>
     <div class="card-body">
         {% if email.attachments %}
         <div class="attachments-section mb-3">
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <h6 class="mb-0">
-                    <i class="bi bi-paperclip"></i> Anhänge ({{ email.attachments|length }})
+                    <i class="bi bi-paperclip"></i> {{ _('email.view.attachments.title', count=email.attachments|length) }}
                 </h6>
-                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#attachmentsList" aria-expanded="true">
+                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#attachmentsList" aria-expanded="true" title="{{ _('email.view.attachments.collapse_close') }}">
                     <i class="bi bi-chevron-down" id="attachmentsToggleIcon"></i>
                 </button>
             </div>
@@ -95,19 +95,19 @@
                                     {% endif %}
                                     • {{ attachment.content_type }}
                                     {% if attachment.is_inline %}
-                                    • <span class="badge bg-info">Inline</span>
+                                    • <span class="badge bg-info">{{ _('email.view.attachments.inline_badge') }}</span>
                                     {% endif %}
                                 </small>
                             </div>
                         </div>
                         <div class="btn-group">
                             {% if attachment.content_type.startswith('image/') and not attachment.is_inline %}
-                            <button class="btn btn-sm btn-outline-info" onclick="previewAttachment({{ attachment.id }}, '{{ attachment.filename }}')">
+                            <button class="btn btn-sm btn-outline-info" onclick="previewAttachment({{ attachment.id }}, '{{ attachment.filename }}')" title="{{ _('email.view.attachments.preview') }}">
                                 <i class="bi bi-eye"></i>
                             </button>
                             {% endif %}
                             <a href="{{ url_for('email.download_attachment', attachment_id=attachment.id) }}" 
-                               class="btn btn-sm btn-outline-accent">
+                               class="btn btn-sm btn-outline-accent" title="{{ _('email.view.attachments.download') }}">
                                 <i class="bi bi-download"></i>
                             </a>
                         </div>
@@ -122,25 +122,25 @@
         <div class="email-content-wrapper">
             <div class="email-content-header mb-3">
                 <div class="d-flex justify-content-between align-items-center gap-2">
-                    <div class="btn-group btn-group-sm" role="group" aria-label="Ansicht umschalten">
+                    <div class="btn-group btn-group-sm" role="group" aria-label="{{ _('email.view.content.toggle_label') }}">
                         <button type="button" class="btn btn-outline-secondary active" id="htmlViewBtn" aria-pressed="true">
-                            <i class="bi bi-code-square me-1"></i>HTML
+                            <i class="bi bi-code-square me-1"></i>{{ _('email.view.content.tabs.html') }}
                         </button>
                         {% if email.body_text %}
                         <button type="button" class="btn btn-outline-secondary" id="textViewBtn" aria-pressed="false">
-                            <i class="bi bi-file-text me-1"></i>Plain Text
+                            <i class="bi bi-file-text me-1"></i>{{ _('email.view.content.tabs.plain') }}
                         </button>
                         {% endif %}
                     </div>
                     <!-- Mobile Zoom Controls -->
-                    <div class="d-md-none btn-group btn-group-sm" role="group" aria-label="Zoom">
-                        <button type="button" class="btn btn-outline-secondary" id="zoomOutBtn" title="Verkleinern">
+                    <div class="d-md-none btn-group btn-group-sm" role="group" aria-label="{{ _('email.view.zoom.label') }}">
+                        <button type="button" class="btn btn-outline-secondary" id="zoomOutBtn" title="{{ _('email.view.zoom.out') }}">
                             <i class="bi bi-dash"></i>
                         </button>
-                        <button type="button" class="btn btn-outline-secondary" id="zoomResetBtn" title="Zurücksetzen">
+                        <button type="button" class="btn btn-outline-secondary" id="zoomResetBtn" title="{{ _('email.view.zoom.reset') }}">
                             <i class="bi bi-arrow-counterclockwise"></i>
                         </button>
-                        <button type="button" class="btn btn-outline-secondary" id="zoomInBtn" title="Vergrößern">
+                        <button type="button" class="btn btn-outline-secondary" id="zoomInBtn" title="{{ _('email.view.zoom.in') }}">
                             <i class="bi bi-plus"></i>
                         </button>
                     </div>
@@ -157,25 +157,25 @@
         <div class="email-content-wrapper">
             <div class="email-content-header mb-3">
                 <div class="d-flex justify-content-between align-items-center gap-2">
-                    <div class="btn-group btn-group-sm" role="group" aria-label="Ansicht umschalten">
+                    <div class="btn-group btn-group-sm" role="group" aria-label="{{ _('email.view.content.toggle_label') }}">
                         <button type="button" class="btn btn-outline-secondary active" id="htmlViewBtn" aria-pressed="true">
-                            <i class="bi bi-code-square me-1"></i>HTML
+                            <i class="bi bi-code-square me-1"></i>{{ _('email.view.content.tabs.html') }}
                         </button>
                         {% if email.body_text %}
                         <button type="button" class="btn btn-outline-secondary" id="textViewBtn" aria-pressed="false">
-                            <i class="bi bi-file-text me-1"></i>Plain Text
+                            <i class="bi bi-file-text me-1"></i>{{ _('email.view.content.tabs.plain') }}
                         </button>
                         {% endif %}
                     </div>
                     <!-- Mobile Zoom Controls -->
-                    <div class="d-md-none btn-group btn-group-sm" role="group" aria-label="Zoom">
-                        <button type="button" class="btn btn-outline-secondary" id="zoomOutBtn2" title="Verkleinern">
+                    <div class="d-md-none btn-group btn-group-sm" role="group" aria-label="{{ _('email.view.zoom.label') }}">
+                        <button type="button" class="btn btn-outline-secondary" id="zoomOutBtn2" title="{{ _('email.view.zoom.out') }}">
                             <i class="bi bi-dash"></i>
                         </button>
-                        <button type="button" class="btn btn-outline-secondary" id="zoomResetBtn2" title="Zurücksetzen">
+                        <button type="button" class="btn btn-outline-secondary" id="zoomResetBtn2" title="{{ _('email.view.zoom.reset') }}">
                             <i class="bi bi-arrow-counterclockwise"></i>
                         </button>
-                        <button type="button" class="btn btn-outline-secondary" id="zoomInBtn2" title="Vergrößern">
+                        <button type="button" class="btn btn-outline-secondary" id="zoomInBtn2" title="{{ _('email.view.zoom.in') }}">
                             <i class="bi bi-plus"></i>
                         </button>
                     </div>
@@ -195,7 +195,7 @@
         {% else %}
         <div class="alert alert-warning">
             <i class="bi bi-exclamation-triangle"></i>
-            Kein E-Mail-Content verfügbar. Möglicherweise ist der Inhalt in einem Attachment gespeichert.
+            {{ _('email.view.content.alert_no_content') }}
         </div>
         {% endif %}
     </div>
@@ -206,16 +206,16 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="attachmentPreviewTitle">Anhang-Vorschau</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title" id="attachmentPreviewTitle">{{ _('email.view.modal.title') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ _('email.index.mobile.close') }}"></button>
             </div>
             <div class="modal-body text-center">
-                <img id="attachmentPreviewImage" src="" class="img-fluid" alt="Anhang-Vorschau">
+                <img id="attachmentPreviewImage" src="" class="img-fluid" alt="{{ _('email.view.modal.title') }}">
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('email.view.modal.close') }}</button>
                 <a id="attachmentDownloadLink" href="" class="btn btn-accent">
-                    <i class="bi bi-download"></i> Herunterladen
+                    <i class="bi bi-download"></i> {{ _('email.view.modal.download') }}
                 </a>
             </div>
         </div>

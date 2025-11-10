@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}Profil - Einstellungen{% endblock %}
+{% block title %}{{ _('settings.profile.page_title') }}{% endblock %}
 
 {% block content %}
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{{ url_for('settings.index') }}">Einstellungen</a></li>
-        <li class="breadcrumb-item active">Profil</li>
+        <li class="breadcrumb-item"><a href="{{ url_for('settings.index') }}">{{ _('settings.profile.breadcrumb_settings') }}</a></li>
+        <li class="breadcrumb-item active">{{ _('settings.profile.breadcrumb_profile') }}</li>
     </ol>
 </nav>
 
@@ -14,25 +14,25 @@
     <div class="col-lg-8 mx-auto">
         <div class="card">
             <div class="card-header">
-                <h4 class="mb-0">Profil bearbeiten</h4>
+                <h4 class="mb-0">{{ _('settings.profile.heading') }}</h4>
             </div>
             <div class="card-body">
                 <form method="POST" enctype="multipart/form-data">
                     <div class="text-center mb-4">
                         <div id="profile-picture-preview">
                             {% if user.profile_picture %}
-                            <img src="{{ url_for('settings.profile_picture', filename=user.profile_picture) }}" class="avatar-lg rounded-circle mb-2" alt="Profilbild" id="current-profile-pic">
+                            <img src="{{ url_for('settings.profile_picture', filename=user.profile_picture) }}" class="avatar-lg rounded-circle mb-2" alt="{{ _('settings.profile.picture.alt') }}" id="current-profile-pic">
                             {% else %}
                             <i class="bi bi-person-circle" style="font-size: 5rem;" id="default-profile-icon"></i>
                             {% endif %}
                         </div>
                         <div class="mt-2">
                             <label for="profile_picture" class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-upload"></i> Profilbild ändern
+                                <i class="bi bi-upload"></i> {{ _('settings.profile.picture.change_button') }}
                             </label>
                             <input type="file" id="profile_picture" name="profile_picture" class="d-none" accept="image/*" onchange="previewProfilePicture(this)">
                             <button type="button" class="btn btn-sm btn-outline-danger ms-2" onclick="removeProfilePicture()" id="remove-pic-btn" style="{% if user.profile_picture %}display: inline-block;{% else %}display: none;{% endif %}">
-                                <i class="bi bi-trash"></i> Entfernen
+                                <i class="bi bi-trash"></i> {{ _('settings.profile.picture.remove_button') }}
                             </button>
                         </div>
                         <div id="upload-error" class="text-danger mt-2" style="display: none;"></div>
@@ -40,35 +40,35 @@
                     
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="first_name" class="form-label">Vorname</label>
+                            <label for="first_name" class="form-label">{{ _('settings.profile.fields.first_name') }}</label>
                             <input type="text" class="form-control" id="first_name" name="first_name" value="{{ user.first_name }}" required>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="last_name" class="form-label">Nachname</label>
+                            <label for="last_name" class="form-label">{{ _('settings.profile.fields.last_name') }}</label>
                             <input type="text" class="form-control" id="last_name" name="last_name" value="{{ user.last_name }}" required>
                         </div>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="email" class="form-label">E-Mail</label>
+                        <label for="email" class="form-label">{{ _('settings.profile.fields.email') }}</label>
                         <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="phone" class="form-label">Telefon</label>
+                        <label for="phone" class="form-label">{{ _('settings.profile.fields.phone') }}</label>
                         <input type="tel" class="form-control" id="phone" name="phone" value="{{ user.phone or '' }}">
                     </div>
                     
                     <hr class="my-4">
                     
-                    <h5 class="mb-3">Benachrichtigungen</h5>
+                    <h5 class="mb-3">{{ _('settings.profile.notifications.heading') }}</h5>
                     <div class="mb-3">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="notifications_enabled" name="notifications_enabled" {% if user.notifications_enabled %}checked{% endif %}>
                             <label class="form-check-label" for="notifications_enabled">
-                                Push-Benachrichtigungen aktivieren
+                                {{ _('settings.profile.notifications.master_toggle') }}
                             </label>
-                            <div class="form-text">Erhalten Sie Benachrichtigungen auch wenn die App nicht geöffnet ist</div>
+                            <div class="form-text">{{ _('settings.profile.notifications.master_help') }}</div>
                         </div>
                     </div>
                     
@@ -76,9 +76,9 @@
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="chat_notifications" name="chat_notifications" {% if user.chat_notifications %}checked{% endif %}>
                             <label class="form-check-label" for="chat_notifications">
-                                Chat-Benachrichtigungen
+                                {{ _('settings.profile.notifications.chat_toggle') }}
                             </label>
-                            <div class="form-text">Benachrichtigungen für neue Chat-Nachrichten</div>
+                            <div class="form-text">{{ _('settings.profile.notifications.chat_help') }}</div>
                         </div>
                     </div>
                     
@@ -86,24 +86,24 @@
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="email_notifications" name="email_notifications" {% if user.email_notifications %}checked{% endif %}>
                             <label class="form-check-label" for="email_notifications">
-                                E-Mail-Benachrichtigungen
+                                {{ _('settings.profile.notifications.email_toggle') }}
                             </label>
-                            <div class="form-text">E-Mail-Benachrichtigungen für wichtige Ereignisse</div>
+                            <div class="form-text">{{ _('settings.profile.notifications.email_help') }}</div>
                         </div>
                     </div>
                     
                     <hr class="my-4">
                     
-                    <h5 class="mb-3">Passwort ändern</h5>
+                    <h5 class="mb-3">{{ _('settings.profile.password.heading') }}</h5>
                     <div class="mb-3">
-                        <label for="new_password" class="form-label">Neues Passwort (optional)</label>
+                        <label for="new_password" class="form-label">{{ _('settings.profile.password.label') }}</label>
                         <input type="password" class="form-control" id="new_password" name="new_password" minlength="8">
-                        <div class="form-text">Leer lassen, um Passwort nicht zu ändern</div>
+                        <div class="form-text">{{ _('settings.profile.password.help') }}</div>
                     </div>
                     
                     <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-accent">Änderungen speichern</button>
-                        <a href="{{ url_for('settings.index') }}" class="btn btn-outline-secondary">Abbrechen</a>
+                        <button type="submit" class="btn btn-accent">{{ _('settings.profile.save_button') }}</button>
+                        <a href="{{ url_for('settings.index') }}" class="btn btn-outline-secondary">{{ _('common.cancel') }}</a>
                     </div>
                 </form>
             </div>
@@ -120,32 +120,29 @@ function previewProfilePicture(input) {
     const errorDiv = document.getElementById('upload-error');
     const removeBtn = document.getElementById('remove-pic-btn');
     
-    // Verstecke Fehlermeldung
     errorDiv.style.display = 'none';
     
     if (file) {
-        // Validierung
         const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-        const maxSize = 5 * 1024 * 1024; // 5MB
+        const maxSize = 5 * 1024 * 1024;
         
         if (!allowedTypes.includes(file.type)) {
-            errorDiv.textContent = 'Nur JPG, PNG und GIF Dateien sind erlaubt.';
+            errorDiv.textContent = '{{ _('settings.profile.picture.error_type') }}';
             errorDiv.style.display = 'block';
             input.value = '';
             return;
         }
         
         if (file.size > maxSize) {
-            errorDiv.textContent = 'Die Datei ist zu groß. Maximale Größe: 5MB.';
+            errorDiv.textContent = '{{ _('settings.profile.picture.error_size') }}';
             errorDiv.style.display = 'block';
             input.value = '';
             return;
         }
         
-        // Erstelle Vorschau
         const reader = new FileReader();
         reader.onload = function(e) {
-            preview.innerHTML = `<img src="${e.target.result}" class="avatar-lg rounded-circle mb-2" alt="Profilbild Vorschau">`;
+            preview.innerHTML = `<img src="${e.target.result}" class="avatar-lg rounded-circle mb-2" alt="{{ _('settings.profile.picture.alt_preview') }}">`;
             removeBtn.style.display = 'inline-block';
         };
         reader.readAsDataURL(file);
@@ -153,8 +150,7 @@ function previewProfilePicture(input) {
 }
 
 function removeProfilePicture() {
-    if (confirm('Möchten Sie das Profilbild wirklich entfernen?')) {
-        // Sende AJAX-Request zum Entfernen des Profilbilds
+    if (confirm('{{ _('settings.profile.picture.remove_confirm') }}')) {
         fetch('{{ url_for("settings.remove_profile_picture") }}', {
             method: 'POST',
             headers: {
@@ -164,20 +160,18 @@ function removeProfilePicture() {
         })
         .then(response => {
             if (response.ok) {
-                // Aktualisiere die Seite nach erfolgreichem Entfernen
                 window.location.reload();
             } else {
-                alert('Fehler beim Entfernen des Profilbilds.');
+                alert('{{ _('settings.profile.picture.remove_error') }}');
             }
         })
         .catch(error => {
             console.error('Fehler:', error);
-            alert('Fehler beim Entfernen des Profilbilds.');
+            alert('{{ _('settings.profile.picture.remove_error') }}');
         });
     }
 }
 
-// Zeige Entfernen-Button wenn bereits ein Profilbild vorhanden ist
 document.addEventListener('DOMContentLoaded', function() {
     const currentPic = document.getElementById('current-profile-pic');
     const removeBtn = document.getElementById('remove-pic-btn');

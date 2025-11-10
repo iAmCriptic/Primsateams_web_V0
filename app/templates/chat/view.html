@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ get_chat_display_name(chat) }} - Chats{% endblock %}
+{% block title %}{{ get_chat_display_name(chat) }} - {{ _('chat.view.page_title_suffix') }}{% endblock %}
 
 {% block content %}
 <!-- Desktop Header -->
@@ -8,7 +8,7 @@
     <div class="desktop-chat-info">
         <nav aria-label="breadcrumb" class="mb-2">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('chat.index') }}"><i class="bi bi-arrow-left me-1"></i>Chats</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('chat.index') }}"><i class="bi bi-arrow-left me-1"></i>{{ _('chat.view.breadcrumb_chats') }}</a></li>
                 <li class="breadcrumb-item active">{{ get_chat_display_name(chat) }}</li>
             </ol>
         </nav>
@@ -35,7 +35,7 @@
             <div class="chat-title-info">
                 <h2 class="chat-title">{{ get_chat_display_name(chat) }}</h2>
                 <div class="chat-members-info">
-                    <span class="member-count">{{ members|length }} Mitglieder</span>
+                    <span class="member-count">{{ _('chat.view.member_count').format(count=members|length) }}</span>
                     <div class="member-avatars">
                         {% for member in members[:4] %}
                         <div class="member-avatar clickable-member" 
@@ -57,7 +57,7 @@
                         {% endfor %}
                         {% if members|length > 4 %}
                         <div class="member-avatar member-avatar-more clickable-member" 
-                             title="Alle Mitglieder anzeigen"
+                             title="{{ _('chat.view.member_more') }}"
                              onclick="showAllMembersModal()">
                             +{{ members|length - 4 }}
                         </div>
@@ -76,10 +76,10 @@
             <ul class="dropdown-menu dropdown-menu-end">
                 <li><a class="dropdown-item" href="#" onclick="toggleNotifications()">
                     <i class="bi bi-bell me-2" id="notification-icon"></i>
-                    <span id="notification-text">Benachrichtigungen stummschalten</span>
+                    <span id="notification-text">{{ _('chat.view.dropdown.mute') }}</span>
                 </a></li>
-                <li><a class="dropdown-item" href="#"><i class="bi bi-info-circle me-2"></i>Chat-Info</a></li>
-                <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>Einstellungen</a></li>
+                <li><a class="dropdown-item" href="#"><i class="bi bi-info-circle me-2"></i>{{ _('chat.view.dropdown.info') }}</a></li>
+                <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>{{ _('chat.view.dropdown.settings') }}</a></li>
             </ul>
         </div>
     </div>
@@ -114,7 +114,7 @@
         
         <div>
             <h6 class="mb-0 fw-bold text-white">{{ get_chat_display_name(chat) }}</h6>
-            <small class="text-white-50">{{ members|length }} Mitglieder</small>
+            <small class="text-white-50">{{ _('chat.view.member_count').format(count=members|length) }}</small>
         </div>
     </div>
     
@@ -126,7 +126,7 @@
         <ul class="dropdown-menu dropdown-menu-end">
             <li><a class="dropdown-item" href="#" onclick="showAllMembersModal()">
                 <i class="bi bi-people me-2"></i>
-                <span>Mitglieder</span>
+                <span>{{ _('chat.view.mobile_members') }}</span>
             </a></li>
         </ul>
     </div>
@@ -136,7 +136,7 @@
 <div class="chat-container">
     <div class="desktop-chat-sidebar d-none d-md-block">
         <div class="sidebar-header">
-            <h6 class="sidebar-title">Mitglieder</h6>
+            <h6 class="sidebar-title">{{ _('chat.view.members_title') }}</h6>
         </div>
         <div class="sidebar-members">
             {% for member in members %}
@@ -159,9 +159,9 @@
                         <span class="member-name">{{ member.full_name }}</span>
                         <small class="member-role text-muted">
                             {% if member.id == chat.created_by %}
-                                Admin
+                                {{ _('chat.view.member_role_admin') }}
                             {% else %}
-                                Mitglied
+                                {{ _('chat.view.member_role_member') }}
                             {% endif %}
                         </small>
                     </div>
@@ -180,7 +180,7 @@
             <div class="chat-message {% if message.sender_id == current_user.id %}own{% else %}other{% endif %}">
                 {% if message.message_type == 'text' %}
                     <div class="message-header">
-                        <strong>{% if message.sender_id == current_user.id %}Du{% else %}{{ message.sender.full_name if message.sender else 'Unbekannter Benutzer' }}{% endif %}</strong>
+                        <strong>{% if message.sender_id == current_user.id %}{{ _('chat.view.message.you') }}{% else %}{{ message.sender.full_name if message.sender else _('chat.view.message.unknown_user') }}{% endif %}</strong>
                     </div>
                     <div class="message-content">
                         {{ message.content }}
@@ -192,7 +192,7 @@
                     </div>
                 {% elif message.message_type == 'image' %}
                     <div class="message-header">
-                        <strong>{% if message.sender_id == current_user.id %}Du{% else %}{{ message.sender.full_name if message.sender else 'Unbekannter Benutzer' }}{% endif %}</strong>
+                        <strong>{% if message.sender_id == current_user.id %}{{ _('chat.view.message.you') }}{% else %}{{ message.sender.full_name if message.sender else _('chat.view.message.unknown_user') }}{% endif %}</strong>
                     </div>
                     <img src="{{ url_for('static', filename='../' + message.media_url) }}" class="img-fluid rounded" style="max-width: 300px;">
                     {% if message.content %}
@@ -205,7 +205,7 @@
                     </div>
                 {% elif message.message_type == 'video' %}
                     <div class="message-header">
-                        <strong>{% if message.sender_id == current_user.id %}Du{% else %}{{ message.sender.full_name if message.sender else 'Unbekannter Benutzer' }}{% endif %}</strong>
+                        <strong>{% if message.sender_id == current_user.id %}{{ _('chat.view.message.you') }}{% else %}{{ message.sender.full_name if message.sender else _('chat.view.message.unknown_user') }}{% endif %}</strong>
                     </div>
                     <video controls class="rounded" style="max-width: 300px;">
                         <source src="{{ url_for('static', filename='../' + message.media_url) }}">
@@ -220,7 +220,7 @@
                     </div>
                 {% elif message.message_type == 'voice' %}
                     <div class="message-header">
-                        <strong>{% if message.sender_id == current_user.id %}Du{% else %}{{ message.sender.full_name if message.sender else 'Unbekannter Benutzer' }}{% endif %}</strong>
+                        <strong>{% if message.sender_id == current_user.id %}{{ _('chat.view.message.you') }}{% else %}{{ message.sender.full_name if message.sender else _('chat.view.message.unknown_user') }}{% endif %}</strong>
                     </div>
                     <audio controls>
                         <source src="{{ url_for('static', filename='../' + message.media_url) }}">
@@ -240,8 +240,8 @@
             <div style="flex: 1; display: flex; align-items: center; justify-content: center; color: #6c757d; padding: 2rem;">
                 <div style="text-align: center;">
                     <i class="bi bi-chat-dots" style="font-size: 3rem; opacity: 0.5; margin-bottom: 1rem;"></i>
-                    <p style="margin: 0;">Noch keine Nachrichten in diesem Chat.</p>
-                    <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem;">Schreiben Sie die erste Nachricht!</p>
+                    <p style="margin: 0;">{{ _('chat.view.no_messages.title') }}</p>
+                    <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem;">{{ _('chat.view.no_messages.hint') }}</p>
                 </div>
             </div>
         {% endif %}
@@ -252,16 +252,16 @@
 <div class="chat-input-container d-md-none">
     <form id="message-form" method="POST" action="{{ url_for('chat.send_message', chat_id=chat.id) }}" enctype="multipart/form-data">
         <div class="mobile-input-group">
-            <button class="btn" type="button" onclick="document.getElementById('file-upload').click()" title="Datei anhängen">
+            <button class="btn" type="button" onclick="document.getElementById('file-upload').click()" title="{{ _('chat.view.input.attach') }}">
                 <i class="bi bi-paperclip"></i>
             </button>
-            <button class="btn" type="button" data-request-microphone onclick="startVoiceRecording()" title="Sprachnachricht">
+            <button class="btn" type="button" data-request-microphone onclick="startVoiceRecording()" title="{{ _('chat.view.input.voice') }}">
                 <i class="bi bi-mic" id="mic-icon"></i>
             </button>
             <input type="file" id="file-upload" name="file" class="d-none" accept="image/*,video/*,audio/*">
             <input type="text" id="message-input" class="form-control" name="content" 
-                   placeholder="Nachricht schreiben..." autocomplete="off">
-            <button class="btn" type="submit" id="send-button" title="Senden">
+                   placeholder="{{ _('chat.view.input.placeholder') }}" autocomplete="off">
+            <button class="btn" type="submit" id="send-button" title="{{ _('chat.view.input.send') }}">
                 <i class="bi bi-send-fill"></i>
             </button>
         </div>
@@ -275,15 +275,15 @@
 <div class="chat-input-container d-none d-md-block">
     <form id="message-form-desktop" method="POST" action="{{ url_for('chat.send_message', chat_id=chat.id) }}" enctype="multipart/form-data">
         <div class="input-group">
-            <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('file-upload-desktop').click()">
+            <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('file-upload-desktop').click()" title="{{ _('chat.view.input.attach') }}">
                 <i class="bi bi-paperclip"></i>
             </button>
-            <button class="btn btn-outline-secondary" type="button" data-request-microphone onclick="startVoiceRecording()">
+            <button class="btn btn-outline-secondary" type="button" data-request-microphone onclick="startVoiceRecording()" title="{{ _('chat.view.input.voice') }}">
                 <i class="bi bi-mic" id="mic-icon-desktop"></i>
             </button>
             <input type="file" id="file-upload-desktop" name="file" class="d-none" accept="image/*,video/*,audio/*">
-            <input type="text" id="message-input-desktop" class="form-control" name="content" placeholder="Nachricht schreiben..." autocomplete="off">
-            <button class="btn btn-accent" type="submit" id="send-button-desktop">
+            <input type="text" id="message-input-desktop" class="form-control" name="content" placeholder="{{ _('chat.view.input.placeholder') }}" autocomplete="off">
+            <button class="btn btn-accent" type="submit" id="send-button-desktop" title="{{ _('chat.view.input.send') }}">
                 <i class="bi bi-send"></i>
             </button>
         </div>
@@ -293,12 +293,22 @@
 {% endblock %}
 
 {% block extra_js %}
+{% set chat_view_js = current_translations.get('chat', {}).get('view', {}).get('js', {}) %}
 <script>
     const chatId = {{ chat.id }};
     const currentUserId = {{ current_user.id }};
     let lastMessageId = {{ messages[-1].id if messages else 0 }};
     let isPolling = true;
     let currentMemberCount = {{ members|length }};
+    const CHAT_I18N = {{ chat_view_js|tojson }};
+    const CHAT_TEXT = {
+        you: "{{ _('chat.view.message.you') }}",
+        unknownUser: "{{ _('chat.view.message.unknown_user') }}",
+        memberCount: "{{ _('chat.view.member_count') }}",
+        memberMore: "{{ _('chat.view.member_more') }}",
+        memberRoleAdmin: "{{ _('chat.view.member_role_admin') }}",
+        memberRoleMember: "{{ _('chat.view.member_role_member') }}"
+    };
     
     // Auto-scroll to bottom
     function scrollToBottom() {
@@ -314,7 +324,7 @@
     // Show selected file name
     document.getElementById('file-upload').addEventListener('change', function(e) {
         const fileName = e.target.files[0]?.name;
-        document.getElementById('file-name').textContent = fileName ? `Datei: ${fileName}` : '';
+        document.getElementById('file-name').textContent = fileName ? CHAT_I18N.file_label.replace('{filename}', fileName) : '';
     });
     
     // Send message via AJAX
@@ -352,11 +362,11 @@
                 scrollToBottom();
             } else {
                 const error = await response.json();
-                alert('Fehler beim Senden: ' + error.error);
+                alert(CHAT_I18N.send_error_prefix.replace('{error}', error.error || ''));
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('Fehler beim Senden der Nachricht');
+            alert(CHAT_I18N.send_error_generic);
         } finally {
             // Re-enable send button
             sendButton.disabled = false;
@@ -365,22 +375,31 @@
     });
     
     // Add new message to chat
+    function formatTime(value) {
+        const localeMap = { de: 'de-DE', en: 'en-US' };
+        const currentLocale = "{{ current_language }}";
+        const locale = localeMap[currentLocale] || currentLocale || 'en-US';
+        return new Date(value).toLocaleTimeString(locale, {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
     function addMessageToChat(message) {
         const container = document.getElementById('messages-container');
         const messageDiv = document.createElement('div');
         messageDiv.className = `chat-message ${parseInt(message.sender_id) === parseInt(currentUserId) ? 'own' : 'other'}`;
         
         // Parse the ISO string which should now be in local timezone
-        const time = new Date(message.created_at).toLocaleTimeString('de-DE', {
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        const time = formatTime(message.created_at);
+        const isOwnMessage = parseInt(message.sender_id) === parseInt(currentUserId);
+        const senderName = isOwnMessage ? CHAT_TEXT.you : (message.sender ? escapeHtml(message.sender) : CHAT_TEXT.unknownUser);
         
         let contentHtml = '';
         if (message.message_type === 'text') {
             contentHtml = `
                 <div class="message-header">
-                    <strong>${parseInt(message.sender_id) === parseInt(currentUserId) ? 'Du' : escapeHtml(message.sender)}</strong>
+                    <strong>${senderName}</strong>
                 </div>
                 <div class="message-content">
                     ${escapeHtml(message.content)}
@@ -394,7 +413,7 @@
         } else if (message.message_type === 'image') {
             contentHtml = `
                 <div class="message-header">
-                    <strong>${parseInt(message.sender_id) === parseInt(currentUserId) ? 'Du' : escapeHtml(message.sender)}</strong>
+                    <strong>${senderName}</strong>
                 </div>
                 <img src="/static/../${message.media_url}" class="img-fluid rounded" style="max-width: 300px;">
                 ${message.content ? `<p class="mt-2 mb-0">${escapeHtml(message.content)}</p>` : ''}
@@ -407,7 +426,7 @@
         } else if (message.message_type === 'video') {
             contentHtml = `
                 <div class="message-header">
-                    <strong>${parseInt(message.sender_id) === parseInt(currentUserId) ? 'Du' : escapeHtml(message.sender)}</strong>
+                    <strong>${senderName}</strong>
                 </div>
                 <video controls class="rounded" style="max-width: 300px;"><source src="/static/../${message.media_url}"></video>
                 ${message.content ? `<p class="mt-2 mb-0">${escapeHtml(message.content)}</p>` : ''}
@@ -420,7 +439,7 @@
         } else if (message.message_type === 'voice') {
             contentHtml = `
                 <div class="message-header">
-                    <strong>${parseInt(message.sender_id) === parseInt(currentUserId) ? 'Du' : escapeHtml(message.sender)}</strong>
+                    <strong>${senderName}</strong>
                 </div>
                 <audio controls><source src="/static/../${message.media_url}"></audio>
                 ${message.content ? `<p class="mt-2 mb-0">${escapeHtml(message.content)}</p>` : ''}
@@ -463,7 +482,7 @@
                     // Update member count in header
                     const memberCountElements = document.querySelectorAll('.member-count');
                     memberCountElements.forEach(el => {
-                        el.textContent = `${members.length} Mitglieder`;
+                        el.textContent = CHAT_TEXT.memberCount.replace('{count}', members.length);
                     });
                     
                     // Update desktop sidebar
@@ -491,7 +510,7 @@
                 ? `<img src="${escapeHtml(member.profile_picture)}" alt="${escapeHtml(member.full_name)}" class="member-avatar-small">`
                 : `<div class="member-avatar-small member-avatar-initial">${escapeHtml(member.full_name[0].toUpperCase())}</div>`;
             
-            const role = member.is_creator ? 'Admin' : 'Mitglied';
+            const role = member.is_creator ? CHAT_TEXT.memberRoleAdmin : CHAT_TEXT.memberRoleMember;
             
             return `
                 <div class="sidebar-member clickable-member" 
@@ -540,7 +559,7 @@
             `;
         }).join('') + (members.length > 4 ? `
             <div class="member-avatar member-avatar-more clickable-member" 
-                 title="Alle Mitglieder anzeigen"
+                 title="${CHAT_TEXT.memberMore}"
                  onclick="showAllMembersModal()">
                 +${members.length - 4}
             </div>
@@ -654,7 +673,7 @@
     // Desktop file upload handling
     document.getElementById('file-upload-desktop').addEventListener('change', function(e) {
         const fileName = e.target.files[0]?.name;
-        document.getElementById('file-name-desktop').textContent = fileName ? `Datei: ${fileName}` : '';
+        document.getElementById('file-name-desktop').textContent = fileName ? CHAT_I18N.file_label.replace('{filename}', fileName) : '';
     });
     
     // Desktop form submission
@@ -692,11 +711,11 @@
                 scrollToBottom();
             } else {
                 const error = await response.json();
-                alert('Fehler beim Senden: ' + error.error);
+                alert(CHAT_I18N.send_error_prefix.replace('{error}', error.error || ''));
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('Fehler beim Senden der Nachricht');
+            alert(CHAT_I18N.send_error_generic);
         } finally {
             // Re-enable send button
             sendButton.disabled = false;
@@ -713,10 +732,10 @@
         
         if (notificationsMuted) {
             icon.className = 'bi bi-bell-slash';
-            text.textContent = 'Benachrichtigungen aktivieren';
+            text.textContent = CHAT_I18N.unmute;
         } else {
             icon.className = 'bi bi-bell';
-            text.textContent = 'Benachrichtigungen stummschalten';
+            text.textContent = CHAT_I18N.mute;
         }
         
         // Store preference in localStorage
@@ -777,9 +796,9 @@
             
             // Zeige benutzerfreundliche Fehlermeldung
             if (typeof permissionManager !== 'undefined') {
-                permissionManager.showPermissionInfo('Mikrofon', 'Mikrofon-Zugriff ist für Sprachnachrichten erforderlich.');
+                permissionManager.showPermissionInfo(CHAT_I18N.permission_title, CHAT_I18N.permission_message);
             } else {
-                alert('Mikrofonzugriff wurde verweigert. Bitte erlauben Sie den Zugriff in Ihren Browser-Einstellungen.');
+                alert(CHAT_I18N.microphone_denied);
             }
         }
     }
@@ -806,7 +825,7 @@
             }
         } catch (error) {
             console.error('Error sending voice message:', error);
-            alert('Fehler beim Senden der Sprachnachricht');
+            alert(CHAT_I18N.voice_error);
         }
     }
 </script>
@@ -816,8 +835,8 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="memberModalLabel">Mitgliederprofil</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+                <h5 class="modal-title" id="memberModalLabel">{{ _('chat.view.modals.member_profile.title') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ _('chat.view.modals.member_profile.close') }}"></button>
             </div>
             <div class="modal-body">
                 <div class="member-profile">
@@ -841,7 +860,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('chat.view.modals.member_profile.close') }}</button>
             </div>
         </div>
     </div>
@@ -854,9 +873,9 @@
             <div class="modal-header">
                 <h5 class="modal-title" id="allMembersModalLabel">
                     <i class="bi bi-people me-2"></i>
-                    Alle Mitglieder
+                    {{ _('chat.view.modals.all_members.title') }}
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ _('chat.view.modals.all_members.close') }}"></button>
             </div>
             <div class="modal-body">
                 <div class="members-grid">
@@ -892,7 +911,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('chat.view.modals.all_members.close') }}</button>
             </div>
         </div>
     </div>

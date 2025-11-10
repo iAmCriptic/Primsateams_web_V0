@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, send_from_directory, abort, current_app, send_file
+from flask import Blueprint, render_template, request, redirect, url_for, flash, send_from_directory, abort, current_app, send_file, g, after_this_request
 from flask_login import login_required, current_user
 from app import db
 from app.models.user import User
@@ -13,6 +13,7 @@ from werkzeug.utils import secure_filename
 from datetime import datetime
 import os
 import tempfile
+from app.utils.i18n import available_languages, translate
 
 settings_bp = Blueprint('settings', __name__)
 
@@ -38,7 +39,7 @@ def profile():
         new_password = request.form.get('new_password', '').strip()
         if new_password:
             if len(new_password) < 8:
-                flash('Das Passwort muss mindestens 8 Zeichen lang sein.', 'danger')
+                flash(translate('settings.profile.flash_password_length'), 'danger')
                 return render_template('settings/profile.html', user=current_user)
             current_user.set_password(new_password)
         
@@ -56,7 +57,7 @@ def profile():
                     
                     max_size = 5 * 1024 * 1024  # 5MB in bytes
                     if file_size > max_size:
-                        flash(f'Profilbild ist zu groß. Maximale Größe: 5MB. Ihre Datei: {file_size / (1024*1024):.1f}MB', 'danger')
+                        flash(translate('settings.profile.flash_picture_too_large', size=file_size / (1024*1024)), 'danger')
                         return render_template('settings/profile.html', user=current_user)
                     
                     # Create filename with timestamp
@@ -82,21 +83,18 @@ def profile():
                         except OSError:
                             pass  # Ignore if file doesn't exist
                     
-                    # Update user profile picture path
-                    # Store only the filename in DB (avoid OS-specific separators)
                     current_user.profile_picture = filename
-                    flash('Profilbild wurde erfolgreich hochgeladen.', 'success')
+                    flash(translate('settings.profile.flash_picture_uploaded'), 'success')
                 else:
-                    flash('Ungültiger Dateityp. Nur PNG, JPG, JPEG und GIF Dateien sind erlaubt.', 'danger')
+                    flash(translate('settings.profile.flash_picture_invalid_type'), 'danger')
                     return render_template('settings/profile.html', user=current_user)
         
-        # Handle notification settings
         current_user.notifications_enabled = 'notifications_enabled' in request.form
         current_user.chat_notifications = 'chat_notifications' in request.form
         current_user.email_notifications = 'email_notifications' in request.form
         
         db.session.commit()
-        flash('Profil wurde aktualisiert.', 'success')
+        flash(translate('settings.profile.flash_profile_updated'), 'success')
         return redirect(url_for('settings.profile'))
     
     return render_template('settings/profile.html', user=current_user)
@@ -245,28 +243,46 @@ def notifications():
 @login_required
 def appearance():
     """Edit appearance settings."""
+    language_codes = list(available_languages())
+    selected_language = request.form.get('language') if request.method == 'POST' else current_user.language
+
     if request.method == 'POST':
         color_type = request.form.get('color_type', 'solid')
         accent_color = request.form.get('accent_color', '#0d6efd')
         accent_gradient = request.form.get('accent_gradient', '').strip()
         dark_mode = request.form.get('dark_mode') == 'on'
         oled_mode = request.form.get('oled_mode') == 'on'
-        
+
+        if selected_language and selected_language not in language_codes:
+            flash(translate('settings.appearance.flash_invalid_language'), 'danger')
+            return redirect(url_for('settings.appearance'))
+
         current_user.accent_color = accent_color
         current_user.dark_mode = dark_mode
-        current_user.oled_mode = oled_mode if dark_mode else False  # OLED nur wenn Dark Mode aktiv
-        
-        # Handle gradient vs solid color
+        current_user.oled_mode = oled_mode if dark_mode else False
+
         if color_type == 'gradient' and accent_gradient:
             current_user.accent_gradient = accent_gradient
         else:
             current_user.accent_gradient = None
-        
+
+        if selected_language:
+            current_user.language = selected_language
+            g.language = selected_language
+
         db.session.commit()
-        flash('Darstellungseinstellungen wurden aktualisiert.', 'success')
+        flash(translate('settings.appearance.flash_success'), 'success')
         return redirect(url_for('settings.appearance'))
-    
-    return render_template('settings/appearance.html', user=current_user)
+
+    language_options = []
+    for code in language_codes:
+        key = f'languages.{code}'
+        label = translate(key)
+        if label == key:
+            label = LANGUAGE_FALLBACK_NAMES.get(code, code.upper())
+        language_options.append({'code': code, 'label': label})
+
+    return render_template('settings/appearance.html', user=current_user, language_options=language_options)
 
 
 @settings_bp.route('/admin')
@@ -707,16 +723,30 @@ def admin_backup():
                 result = export_backup(categories, temp_path)
                 
                 if result['success']:
+                    @after_this_request
+                    def _cleanup_temp_file(response):
+                        try:
+                            os.unlink(temp_path)
+                        except OSError as cleanup_error:
+                            current_app.logger.warning(f'Temporäre Backup-Datei konnte nicht gelöscht werden: {cleanup_error}')
+                        return response
+                    
                     return send_file(
                         temp_path,
                         as_attachment=True,
-                        attachment_filename=f'backup_{timestamp}.prismateams',
+                        download_name=f'backup_{timestamp}.prismateams',
                         mimetype='application/json'
                     )
                 else:
+                    os.unlink(temp_path)
                     flash('Fehler beim Erstellen des Backups.', 'danger')
             except Exception as e:
                 current_app.logger.error(f"Fehler beim Export: {str(e)}")
+                try:
+                    if 'temp_path' in locals() and os.path.exists(temp_path):
+                        os.unlink(temp_path)
+                except OSError as cleanup_error:
+                    current_app.logger.warning(f'Temporäre Backup-Datei konnte nach Fehler nicht gelöscht werden: {cleanup_error}')
                 flash(f'Fehler beim Erstellen des Backups: {str(e)}', 'danger')
         
         elif action == 'import':
@@ -978,4 +1008,13 @@ def about():
     onlyoffice_enabled = is_onlyoffice_enabled()
     
     return render_template('settings/about.html', creator_name=creator_name, onlyoffice_enabled=onlyoffice_enabled)
+
+
+LANGUAGE_FALLBACK_NAMES = {
+    'de': 'Deutsch',
+    'en': 'English',
+    'pt': 'Português',
+    'es': 'Español',
+    'ru': 'Русский'
+}
 

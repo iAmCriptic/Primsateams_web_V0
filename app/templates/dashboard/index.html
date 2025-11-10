@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - Team Portal{% endblock %}
+{% block title %}{{ _('dashboard.page_title') }} - {{ app_name or 'Prismateams' }}{% endblock %}
 
 {% block content %}
 {% if setup_completed %}
@@ -8,11 +8,11 @@
     <div class="d-flex align-items-center">
         <i class="bi bi-check-circle-fill me-3 fs-4"></i>
         <div>
-            <h5 class="alert-heading mb-1">🎉 Setup erfolgreich abgeschlossen!</h5>
-            <p class="mb-0">Willkommen in Ihrem Team-Portal! Sie können jetzt weitere Benutzer über die Einstellungen hinzufügen.</p>
+            <h5 class="alert-heading mb-1">{{ _('dashboard.setup.success_title') }}</h5>
+            <p class="mb-0">{{ _('dashboard.setup.success_body') }}</p>
         </div>
     </div>
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ _('common.close') }}"></button>
 </div>
 {% endif %}
 
@@ -22,23 +22,23 @@
         <i class="bi bi-arrow-down-circle-fill me-3 fs-4"></i>
         <div class="flex-grow-1">
             <h5 class="alert-heading mb-2">
-                <i class="bi bi-download me-2"></i>Update verfügbar!
+                <i class="bi bi-download me-2"></i>{{ _('dashboard.update.title') }}
             </h5>
             <p class="mb-2">
-                Ein neues Update ist im Main-Branch auf GitHub verfügbar. 
+                {{ _('dashboard.update.description') }}
                 {% if update_info.latest_commit %}
-                <br><small class="text-muted">Neuester Commit: <code>{{ update_info.latest_commit }}</code></small>
+                <br><small class="text-muted">{{ _('dashboard.update.latest_commit') }} <code>{{ update_info.latest_commit }}</code></small>
                 {% endif %}
             </p>
             <div class="d-flex gap-2 flex-wrap">
                 <a href="https://github.com/iAmCriptic/Prismateams_web" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-github me-1"></i>GitHub öffnen
+                    <i class="bi bi-github me-1"></i>{{ _('dashboard.update.actions.open_github') }}
                 </a>
                 <button type="button" class="btn btn-sm btn-outline-secondary" onclick="dismissUpdateBanner()">
-                    <i class="bi bi-x-circle me-1"></i>Schließen
+                    <i class="bi bi-x-circle me-1"></i>{{ _('dashboard.update.actions.dismiss') }}
                 </button>
                 <button type="button" class="btn btn-sm btn-outline-secondary" onclick="disableUpdateNotifications()">
-                    <i class="bi bi-bell-slash me-1"></i>Nicht mehr anzeigen
+                    <i class="bi bi-bell-slash me-1"></i>{{ _('dashboard.update.actions.disable') }}
                 </button>
             </div>
         </div>
@@ -48,8 +48,8 @@
 
 <div class="row mb-4">
     <div class="col">
-        <h1>Willkommen, {{ current_user.first_name }}!</h1>
-        <p class="text-muted">Hier ist Ihre Übersicht</p>
+        <h1>{{ _('dashboard.welcome', name=current_user.first_name) }}</h1>
+        <p class="text-muted">{{ _('dashboard.overview_subtitle') }}</p>
     </div>
 </div>
 
@@ -64,11 +64,12 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="card-title mb-0">
                         <i class="bi bi-calendar-event widget-icon text-primary"></i>
-                        Termine
+                        {{ _('dashboard.widgets.calendar.title') }}
                     </h5>
                     <span class="badge bg-primary calendar-badge">{{ upcoming_events|length }}</span>
                 </div>
                 
+                {% set time_suffix = _('dashboard.widgets.common.time_suffix') %}
                 {% if upcoming_events %}
                     <div class="list-group list-group-flush flex-grow-1">
                         {% for event in upcoming_events %}
@@ -77,13 +78,13 @@
                                 <h6 class="mb-1">{{ event.title }}</h6>
                                 <small class="text-muted">{{ event.start_time.strftime('%d.%m.') }}</small>
                             </div>
-                            <small class="text-muted">{{ event.start_time.strftime('%H:%M') }} Uhr</small>
+                                <small class="text-muted">{{ event.start_time.strftime('%H:%M') }}{% if time_suffix %} {{ time_suffix }}{% endif %}</small>
                         </div>
                         {% endfor %}
                     </div>
                 {% else %}
                     <div class="d-flex align-items-center" style="min-height: 100px;">
-                        <p class="text-muted mb-0 w-100">Keine anstehenden Termine</p>
+                        <p class="text-muted mb-0 w-100">{{ _('dashboard.widgets.calendar.empty') }}</p>
                     </div>
                 {% endif %}
             </div>
@@ -99,7 +100,7 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="card-title mb-0">
                         <i class="bi bi-chat-dots widget-icon text-success"></i>
-                        Nachrichten
+                        {{ _('dashboard.widgets.chat.title') }}
                     </h5>
                     <span class="badge bg-primary notification-badge" id="chat-count-badge">0</span>
                 </div>
@@ -112,13 +113,13 @@
                                 <h6 class="mb-1">{{ message.sender.full_name }}</h6>
                                 <small class="text-muted">{{ message.created_at.strftime('%H:%M') }}</small>
                             </div>
-                            <p class="mb-0 text-truncate">{{ message.content or '[Datei]' }}</p>
+                            <p class="mb-0 text-truncate">{{ message.content or _('dashboard.widgets.chat.fallback_file') }}</p>
                         </div>
                         {% endfor %}
                     </div>
                 {% else %}
                     <div class="d-flex align-items-center" style="min-height: 100px;">
-                        <p class="text-muted mb-0 w-100">Keine neuen Nachrichten</p>
+                        <p class="text-muted mb-0 w-100">{{ _('dashboard.widgets.chat.empty') }}</p>
                     </div>
                 {% endif %}
             </div>
@@ -134,7 +135,7 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="card-title mb-0">
                         <i class="bi bi-envelope widget-icon text-info"></i>
-                        E-Mails
+                        {{ _('dashboard.widgets.email.title') }}
                     </h5>
                     <span class="badge bg-primary email-badge">{{ recent_emails|length }}</span>
                 </div>
@@ -146,7 +147,7 @@
                             <div class="d-flex w-100 justify-content-between">
                                 <h6 class="mb-1 text-truncate">{{ email.subject|decode_email_header }}</h6>
                                 {% if not email.is_read %}
-                                <span class="badge bg-danger">Neu</span>
+                                <span class="badge bg-danger">{{ _('dashboard.widgets.email.unread_badge') }}</span>
                                 {% endif %}
                             </div>
                             <small class="text-muted">{{ email.sender|decode_email_header }}</small>
@@ -155,7 +156,7 @@
                     </div>
                 {% else %}
                     <div class="d-flex align-items-center" style="min-height: 100px;">
-                        <p class="text-muted mb-0 w-100">Keine E-Mails</p>
+                        <p class="text-muted mb-0 w-100">{{ _('dashboard.widgets.email.empty') }}</p>
                     </div>
                 {% endif %}
             </div>
@@ -171,11 +172,12 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="card-title mb-0">
                         <i class="bi bi-folder widget-icon text-warning"></i>
-                        Letzte Dateien
+                        {{ _('dashboard.widgets.files.title') }}
                     </h5>
                     <span class="badge bg-primary files-badge">{{ recent_files|length }}</span>
                 </div>
                 
+                {% set time_suffix = _('dashboard.widgets.common.time_suffix') %}
                 {% if recent_files %}
                     <div class="list-group list-group-flush flex-grow-1">
                         {% for file in recent_files %}
@@ -195,13 +197,13 @@
                                 <h6 class="mb-1 text-truncate">{{ file.original_name }}</h6>
                                 <small class="text-muted">{{ file.updated_at.strftime('%d.%m.') }}</small>
                             </div>
-                            <small class="text-muted">{{ file.updated_at.strftime('%H:%M') }} Uhr</small>
+                            <small class="text-muted">{{ file.updated_at.strftime('%H:%M') }}{% if time_suffix %} {{ time_suffix }}{% endif %}</small>
                         </div>
                         {% endfor %}
                     </div>
                 {% else %}
                     <div class="d-flex align-items-center" style="min-height: 100px;">
-                        <p class="text-muted mb-0 w-100">Keine Dateien</p>
+                        <p class="text-muted mb-0 w-100">{{ _('dashboard.widgets.files.empty') }}</p>
                     </div>
                 {% endif %}
             </div>
@@ -217,11 +219,12 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="card-title mb-0">
                         <i class="bi bi-palette widget-icon text-danger"></i>
-                        Canvas
+                        {{ _('dashboard.widgets.canvas.title') }}
                     </h5>
                     <span class="badge bg-primary canvas-badge">{{ recent_canvases|length }}</span>
                 </div>
                 
+                {% set time_suffix = _('dashboard.widgets.common.time_suffix') %}
                 {% if recent_canvases %}
                     <div class="list-group list-group-flush flex-grow-1">
                         {% for canvas in recent_canvases %}
@@ -230,13 +233,13 @@
                                 <h6 class="mb-1 text-truncate">{{ canvas.name }}</h6>
                                 <small class="text-muted">{{ canvas.updated_at.strftime('%d.%m.') }}</small>
                             </div>
-                            <small class="text-muted">{{ canvas.updated_at.strftime('%H:%M') }} Uhr</small>
+                            <small class="text-muted">{{ canvas.updated_at.strftime('%H:%M') }}{% if time_suffix %} {{ time_suffix }}{% endif %}</small>
                         </div>
                         {% endfor %}
                     </div>
                 {% else %}
                     <div class="d-flex align-items-center" style="min-height: 100px;">
-                        <p class="text-muted mb-0 w-100">Keine Canvas</p>
+                        <p class="text-muted mb-0 w-100">{{ _('dashboard.widgets.canvas.empty') }}</p>
                     </div>
                 {% endif %}
             </div>
@@ -252,11 +255,12 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="card-title mb-0">
                         <i class="bi bi-journal-text widget-icon text-info"></i>
-                        Neue Wikieinträge
+                        {{ _('dashboard.widgets.wiki_new.title') }}
                     </h5>
                     <span class="badge bg-primary wiki-badge">{{ recent_wiki_pages|length }}</span>
                 </div>
                 
+                {% set time_suffix = _('dashboard.widgets.common.time_suffix') %}
                 {% if recent_wiki_pages %}
                     <div class="list-group list-group-flush flex-grow-1">
                         {% for page in recent_wiki_pages %}
@@ -265,13 +269,13 @@
                                 <h6 class="mb-1 text-truncate">{{ page.title }}</h6>
                                 <small class="text-muted">{{ page.updated_at.strftime('%d.%m.') }}</small>
                             </div>
-                            <small class="text-muted">{{ page.updated_at.strftime('%H:%M') }} Uhr</small>
+                            <small class="text-muted">{{ page.updated_at.strftime('%H:%M') }}{% if time_suffix %} {{ time_suffix }}{% endif %}</small>
                         </div>
                         {% endfor %}
                     </div>
                 {% else %}
                     <div class="d-flex align-items-center" style="min-height: 100px;">
-                        <p class="text-muted mb-0 w-100">Keine Wikieinträge</p>
+                        <p class="text-muted mb-0 w-100">{{ _('dashboard.widgets.wiki_new.empty') }}</p>
                     </div>
                 {% endif %}
             </div>
@@ -287,7 +291,7 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="card-title mb-0">
                         <i class="bi bi-star-fill widget-icon text-warning"></i>
-                        Meine Wikis
+                        {{ _('dashboard.widgets.wiki_favorites.title') }}
                     </h5>
                     <span class="badge bg-primary favorites-badge">{{ my_wiki_favorites|length }}</span>
                 </div>
@@ -308,7 +312,7 @@
                     </div>
                 {% else %}
                     <div class="d-flex align-items-center" style="min-height: 100px;">
-                        <p class="text-muted mb-0 w-100">Keine Favoriten</p>
+                        <p class="text-muted mb-0 w-100">{{ _('dashboard.widgets.wiki_favorites.empty') }}</p>
                     </div>
                 {% endif %}
             </div>
@@ -324,7 +328,7 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="card-title mb-0">
                         <i class="bi bi-box-arrow-right widget-icon text-success"></i>
-                        Meine Ausleihen
+                        {{ _('dashboard.widgets.borrows.title') }}
                     </h5>
                     <span class="badge bg-primary borrows-badge">{{ my_borrow_groups|length }}</span>
                 </div>
@@ -336,25 +340,25 @@
                             <div class="d-flex w-100 justify-content-between align-items-start">
                                 <div class="flex-grow-1">
                                     <h6 class="mb-1">
-                                        Ausleihe vom {{ group.borrow_date.strftime('%d.%m.%Y') }}
+                                        {{ _('dashboard.widgets.borrows.borrowed_on', date=group.borrow_date.strftime('%d.%m.%Y')) }}
                                     </h6>
                                     <small class="text-muted">
-                                        {{ group.product_count }} {% if group.product_count == 1 %}Artikel{% else %}Artikel{% endif %}
+                                        {{ _('dashboard.widgets.borrows.item_count', count=group.product_count) }}
                                     </small>
                                 </div>
                                 <div class="text-end">
                                     {% if group.is_overdue %}
-                                    <span class="badge bg-danger mb-1">Überfällig</span><br>
+                                    <span class="badge bg-danger mb-1">{{ _('dashboard.widgets.borrows.overdue') }}</span><br>
                                     {% endif %}
                                     <small class="text-muted">
-                                        Rückgabe: {{ group.expected_return_date.strftime('%d.%m.%Y') }}
+                                        {{ _('dashboard.widgets.borrows.return_by', date=group.expected_return_date.strftime('%d.%m.%Y')) }}
                                     </small>
                                     <br>
                                     <a href="{{ url_for('inventory.return_item') }}?transaction_number={{ group.transactions[0].transaction_number }}" 
                                        class="btn btn-sm btn-success mt-2" 
                                        onclick="event.stopPropagation();"
-                                       title="Zurückgeben">
-                                        <i class="bi bi-arrow-return-left"></i> Zurückgeben
+                                       title="{{ _('dashboard.widgets.borrows.return_button') }}">
+                                        <i class="bi bi-arrow-return-left"></i> {{ _('dashboard.widgets.borrows.return_button') }}
                                     </a>
                                 </div>
                             </div>
@@ -363,7 +367,7 @@
                     </div>
                 {% else %}
                     <div class="d-flex align-items-center" style="min-height: 100px;">
-                        <p class="text-muted mb-0 w-100">Keine aktiven Ausleihen</p>
+                        <p class="text-muted mb-0 w-100">{{ _('dashboard.widgets.borrows.empty') }}</p>
                     </div>
                 {% endif %}
             </div>
@@ -378,20 +382,20 @@
             <div class="card-body">
                 <h5 class="card-title">
                     <i class="bi bi-speedometer2"></i>
-                    Schnellzugriff
+                    {{ _('dashboard.quick_access.title') }}
                 </h5>
                 <div class="row g-3 mt-2">
                     {% set quick_access_links = dashboard_config.get('quick_access_links', []) %}
                     {% set link_map = {
-                        'files': {'url': url_for('files.index'), 'icon': 'bi-folder', 'label': 'Dateien', 'module': 'module_files'},
-                        'credentials': {'url': url_for('credentials.index'), 'icon': 'bi-key', 'label': 'Zugangsdaten', 'module': 'module_credentials'},
-                        'manuals': {'url': url_for('manuals.index'), 'icon': 'bi-book', 'label': 'Anleitungen', 'module': 'module_manuals'},
-                        'canvas': {'url': url_for('canvas.index'), 'icon': 'bi-palette', 'label': 'Canvas', 'module': 'module_canvas'},
-                        'chat': {'url': url_for('chat.index'), 'icon': 'bi-chat-dots', 'label': 'Chats', 'module': 'module_chat'},
-                        'calendar': {'url': url_for('calendar.index'), 'icon': 'bi-calendar-event', 'label': 'Termine', 'module': 'module_calendar'},
-                        'email': {'url': url_for('email.index'), 'icon': 'bi-envelope', 'label': 'E-Mail', 'module': 'module_email'},
-                        'inventory': {'url': url_for('inventory.dashboard'), 'icon': 'bi-box-seam', 'label': 'Lagerverwaltung', 'module': 'module_inventory'},
-                        'wiki': {'url': url_for('wiki.index'), 'icon': 'bi-journal-text', 'label': 'Wiki', 'module': 'module_wiki'}
+                        'files': {'url': url_for('files.index'), 'icon': 'bi-folder', 'label_key': 'layout.nav.files', 'module': 'module_files'},
+                        'credentials': {'url': url_for('credentials.index'), 'icon': 'bi-key', 'label_key': 'layout.nav.credentials', 'module': 'module_credentials'},
+                        'manuals': {'url': url_for('manuals.index'), 'icon': 'bi-book', 'label_key': 'layout.nav.manuals', 'module': 'module_manuals'},
+                        'canvas': {'url': url_for('canvas.index'), 'icon': 'bi-palette', 'label_key': 'layout.nav.canvas', 'module': 'module_canvas'},
+                        'chat': {'url': url_for('chat.index'), 'icon': 'bi-chat-dots', 'label_key': 'layout.nav.chats', 'module': 'module_chat'},
+                        'calendar': {'url': url_for('calendar.index'), 'icon': 'bi-calendar-event', 'label_key': 'layout.nav.calendar', 'module': 'module_calendar'},
+                        'email': {'url': url_for('email.index'), 'icon': 'bi-envelope', 'label_key': 'layout.nav.email', 'module': 'module_email'},
+                        'inventory': {'url': url_for('inventory.dashboard'), 'icon': 'bi-box-seam', 'label_key': 'layout.nav.inventory', 'module': 'module_inventory'},
+                        'wiki': {'url': url_for('wiki.index'), 'icon': 'bi-journal-text', 'label_key': 'layout.nav.wiki', 'module': 'module_wiki'}
                     } %}
                     {% for link_key in quick_access_links %}
                         {% if link_key in link_map %}
@@ -400,7 +404,7 @@
                             <div class="col-6 col-md-3">
                                 <a href="{{ link.url }}" class="btn btn-outline-primary w-100">
                                     <i class="bi {{ link.icon }} d-block fs-3 mb-2"></i>
-                                    {{ link.label }}
+                                    {{ _(link.label_key) }}
                                 </a>
                             </div>
                             {% endif %}
@@ -416,7 +420,7 @@
     <div class="col-12 text-center">
         <a href="{{ url_for('dashboard.edit') }}" class="btn btn-outline-secondary">
             <i class="bi bi-pencil-square me-2"></i>
-            Dashboard Bearbeiten
+            {{ _('dashboard.quick_access.edit_dashboard') }}
         </a>
     </div>
 </div>

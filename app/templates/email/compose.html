@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Neue E-Mail - Team Portal{% endblock %}
+{% block title %}{{ _('email.compose.page_title') }}{% endblock %}
 
 {% block extra_css %}
 <!-- Quill Editor CSS -->
@@ -149,6 +149,92 @@
         color: #e2e8f0;
     }
     
+    .email-preview-wrapper {
+        background: var(--bs-body-bg);
+        border-top: 1px solid var(--bs-border-color);
+    }
+    
+    .email-preview-wrapper.collapsed .email-preview-body {
+        display: none;
+    }
+    
+    .email-preview-header {
+        padding: 0.75rem 1rem;
+        background: var(--bs-secondary-bg);
+        border-bottom: 1px solid var(--bs-border-color);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+    
+    .email-preview-toggle {
+        border: none;
+        background: none;
+        color: var(--bs-link-color);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 0;
+    }
+    
+    .email-preview-toggle .chevron {
+        transition: transform 0.2s ease;
+    }
+    
+    .email-preview-wrapper:not(.collapsed) .email-preview-toggle .chevron {
+        transform: rotate(90deg);
+    }
+    
+    .email-preview-body {
+        padding: 1.5rem;
+        background: var(--bs-body-bg);
+    }
+    
+    .email-preview-content {
+        background: #f4f6f8;
+        border-radius: 0.75rem;
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+        min-height: 260px;
+        position: relative;
+    }
+    
+    [data-bs-theme="dark"] .email-preview-content {
+        background: #111827;
+        border-color: #1f2937;
+    }
+    
+    .email-preview-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 3rem 1rem;
+        color: #64748b;
+        font-size: 0.95rem;
+        text-align: center;
+    }
+    
+    [data-bs-theme="dark"] .email-preview-placeholder {
+        color: #94a3b8;
+    }
+    
+    .email-preview-spinner {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.7);
+    }
+    
+    [data-bs-theme="dark"] .email-preview-spinner {
+        background: rgba(15, 23, 42, 0.7);
+    }
+    
     .email-composer-footer {
         background: var(--bs-secondary-bg);
         border-top: 1px solid var(--bs-border-color);
@@ -163,15 +249,15 @@
     <div class="col-lg-10 mx-auto">
         <nav aria-label="breadcrumb" class="d-none d-md-block">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('email.index') }}">E-Mail</a></li>
-                <li class="breadcrumb-item active">Neue E-Mail</li>
+                <li class="breadcrumb-item"><a href="{{ url_for('email.index') }}">{{ _('email.compose.breadcrumb.index') }}</a></li>
+                <li class="breadcrumb-item active">{{ _('email.compose.breadcrumb.current') }}</li>
             </ol>
         </nav>
         
         <div class="email-compose-wrapper">
         <div class="card email-composer">
             <div class="email-composer-header">
-                <h4 class="mb-0"><i class="bi bi-pencil-square me-2"></i>Neue E-Mail verfassen</h4>
+                <h4 class="mb-0"><i class="bi bi-pencil-square me-2"></i>{{ _('email.compose.card_title') }}</h4>
             </div>
             <div class="card-body p-0">
                 <form method="POST" action="{{ url_for('email.compose') }}" enctype="multipart/form-data" id="emailComposeForm">
@@ -183,18 +269,18 @@
                     
                     <div class="p-3 border-bottom">
                         <div class="mb-3">
-                            <label for="to" class="form-label fw-bold">An</label>
-                            <input type="text" class="form-control" id="to" name="to" placeholder="empfaenger@example.com" value="{{ to|default('') }}" required>
-                            <div class="form-text">Mehrere Empfänger mit Komma trennen</div>
+                            <label for="to" class="form-label fw-bold">{{ _('email.compose.form.to') }}</label>
+                            <input type="text" class="form-control" id="to" name="to" placeholder="{{ _('email.compose.form.to_placeholder') }}" value="{{ to|default('') }}" required>
+                            <div class="form-text">{{ _('email.compose.form.to_help') }}</div>
                         </div>
                         
                         <div class="mb-3">
-                            <label for="cc" class="form-label fw-bold">CC (optional)</label>
-                            <input type="text" class="form-control" id="cc" name="cc" placeholder="cc@example.com" value="{{ cc|default('') }}">
+                            <label for="cc" class="form-label fw-bold">{{ _('email.compose.form.cc') }}</label>
+                            <input type="text" class="form-control" id="cc" name="cc" placeholder="{{ _('email.compose.form.cc_placeholder') }}" value="{{ cc|default('') }}">
                         </div>
                         
                         <div class="mb-3">
-                            <label for="subject" class="form-label fw-bold">Betreff</label>
+                            <label for="subject" class="form-label fw-bold">{{ _('email.compose.form.subject') }}</label>
                             <input type="text" class="form-control" id="subject" name="subject" value="{{ subject|default('') }}" required>
                         </div>
                     </div>
@@ -208,21 +294,38 @@
                             <div id="editor"></div>
                         </div>
                     </div>
+                    <div class="email-preview-wrapper collapsed" id="emailPreviewWrapper">
+                        <div class="email-preview-header">
+                            <button type="button" class="email-preview-toggle" id="emailPreviewToggle" aria-expanded="false">
+                                <span class="chevron"><i class="bi bi-chevron-right"></i></span>
+                                <span>{{ _('email.compose.preview.toggle') }}</span>
+                            </button>
+                            <span class="text-muted small" id="emailPreviewStatus">{{ _('email.compose.preview.status_hidden') }}</span>
+                        </div>
+                        <div class="email-preview-body">
+                            <div class="email-preview-content" id="emailPreviewContent">
+                                <div class="email-preview-placeholder">
+                                    <i class="bi bi-envelope-paper"></i>
+                                    <span>{{ _('email.compose.preview.placeholder') }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="email-composer-footer">
                         <div class="mb-3">
                             <label for="attachments" class="form-label fw-bold">
-                                <i class="bi bi-paperclip me-1"></i>Anhänge (optional)
+                                <i class="bi bi-paperclip me-1"></i>{{ _('email.compose.attachments.label') }}
                             </label>
                             <input type="file" class="form-control" id="attachments" name="attachments" multiple>
-                            <div class="form-text">Mehrere Dateien auswählen möglich</div>
+                            <div class="form-text">{{ _('email.compose.attachments.help') }}</div>
                         </div>
-                        <div class="form-text mb-3">Der E-Mail-Footer wird automatisch hinzugefügt.</div>
+                        <div class="form-text mb-3">{{ _('email.compose.attachments.footer_note') }}</div>
                         <div class="d-flex gap-2">
                             <button type="submit" class="btn btn-accent">
-                                <i class="bi bi-send me-1"></i> Senden
+                                <i class="bi bi-send me-1"></i> {{ _('email.compose.buttons.send') }}
                             </button>
                             <a href="{{ url_for('email.index') }}" class="btn btn-outline-secondary">
-                                <i class="bi bi-x me-1"></i> Abbrechen
+                                <i class="bi bi-x me-1"></i> {{ _('email.compose.buttons.cancel') }}
                             </a>
                         </div>
                     </div>
@@ -238,9 +341,15 @@
 <!-- Quill Editor JS -->
 <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 <script>
+const EMAIL_COMPOSE = {{ current_translations.get('email', {}).get('compose', {})|tojson }};
+const EDITOR_I18N = EMAIL_COMPOSE.editor || {};
+const PREVIEW_I18N = EMAIL_COMPOSE.preview || {};
+const COMPOSE_MESSAGES = EMAIL_COMPOSE.messages || {};
+
 document.addEventListener('DOMContentLoaded', function() {
     // Check if mobile
     var isMobile = window.matchMedia('(max-width: 767.98px)').matches;
+    var previewUrl = "{{ url_for('email.preview_custom_email') }}";
     
     // Mobile-optimized toolbar (fewer options, horizontal scroll)
     var mobileToolbarOptions = [
@@ -275,14 +384,22 @@ document.addEventListener('DOMContentLoaded', function() {
         modules: {
             toolbar: toolbarOptions
         },
-        placeholder: 'Schreiben Sie hier Ihre E-Mail...'
+        placeholder: EDITOR_I18N.placeholder || ''
     });
+    var previewContent = document.getElementById('emailPreviewContent');
+    var previewStatus = document.getElementById('emailPreviewStatus');
+    var subjectInput = document.getElementById('subject');
+    var previewSpinner = null;
+    var previewDebounce;
+    var previewRequestId = 0;
+    var previewWrapper = document.getElementById('emailPreviewWrapper');
+    var previewToggle = document.getElementById('emailPreviewToggle');
+    var previewOpen = false;
     
     // Mobile: Focus management for keyboard
     if (isMobile) {
         var toInput = document.getElementById('to');
         var ccInput = document.getElementById('cc');
-        var subjectInput = document.getElementById('subject');
         
         // Auto-focus first empty field
         if (toInput && !toInput.value) {
@@ -308,6 +425,114 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    function setPreviewPlaceholder() {
+        if (previewSpinner) {
+            previewSpinner.remove();
+            previewSpinner = null;
+        }
+        previewContent.innerHTML = '<div class="email-preview-placeholder"><i class="bi bi-envelope-paper"></i><span>' + (PREVIEW_I18N.placeholder || '') + '</span></div>';
+        previewStatus.textContent = PREVIEW_I18N.status_hidden || '';
+    }
+    
+    function setPreviewLoading() {
+        if (previewSpinner) {
+            previewSpinner.remove();
+        }
+        previewSpinner = document.createElement('div');
+        previewSpinner.className = 'email-preview-spinner';
+        const loadingLabel = PREVIEW_I18N.loading_label || '';
+        previewSpinner.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">' + loadingLabel + '</span></div>';
+        previewContent.appendChild(previewSpinner);
+        previewStatus.textContent = PREVIEW_I18N.status_loading || '';
+    }
+    
+    function setPreviewError(message) {
+        if (previewSpinner) {
+            previewSpinner.remove();
+            previewSpinner = null;
+        }
+        const errorMessage = message || PREVIEW_I18N.error_loading || '';
+        previewContent.innerHTML = '<div class="email-preview-placeholder text-danger"><i class="bi bi-exclamation-triangle"></i><span>' + errorMessage + '</span></div>';
+        previewStatus.textContent = PREVIEW_I18N.error_title || '';
+    }
+    
+    function applyPreview(html) {
+        if (previewSpinner) {
+            previewSpinner.remove();
+            previewSpinner = null;
+        }
+        previewContent.innerHTML = html;
+        previewStatus.textContent = PREVIEW_I18N.status_ready || '';
+    }
+    
+    function updatePreview() {
+        if (!previewOpen) {
+            return;
+        }
+        var textContent = quill.getText().trim();
+        if (!textContent) {
+            setPreviewPlaceholder();
+            return;
+        }
+        var htmlContent = quill.root.innerHTML;
+        setPreviewLoading();
+        var body = {
+            subject: subjectInput ? subjectInput.value : '',
+            body: htmlContent
+        };
+        var requestId = ++previewRequestId;
+        fetch(previewUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify(body)
+        }).then(function(response) {
+            if (!response.ok) {
+                const template = COMPOSE_MESSAGES.server_error || '';
+                const message = template.includes('{status}') ? template.replace('{status}', response.status) : template || ('Server error ' + response.status);
+                throw new Error(message);
+            }
+            return response.json();
+        }).then(function(data) {
+            if (requestId !== previewRequestId) {
+                return;
+            }
+            if (data && data.html) {
+                applyPreview(data.html);
+            } else if (data && data.error) {
+                setPreviewError(data.error);
+            } else {
+                setPreviewError(PREVIEW_I18N.unknown_response || '');
+            }
+        }).catch(function(error) {
+            console.error(error);
+            if (requestId === previewRequestId) {
+                setPreviewError(error.message || PREVIEW_I18N.error_loading || '');
+            }
+        });
+    }
+    
+    function schedulePreview() {
+        clearTimeout(previewDebounce);
+        previewDebounce = setTimeout(updatePreview, 350);
+    }
+    
+    function togglePreview() {
+        previewOpen = !previewOpen;
+        previewWrapper.classList.toggle('collapsed', !previewOpen);
+        previewToggle.setAttribute('aria-expanded', previewOpen ? 'true' : 'false');
+        previewStatus.textContent = previewOpen ? (PREVIEW_I18N.status_loading || '') : (PREVIEW_I18N.status_hidden || '');
+        if (previewOpen) {
+            updatePreview();
+        }
+    }
+    
+    if (previewToggle) {
+        previewToggle.addEventListener('click', togglePreview);
+    }
+    
     // Set initial content if body exists
     {% if body is defined and body %}
     var initialContent = {{ body|tojson|safe }};
@@ -329,13 +554,18 @@ document.addEventListener('DOMContentLoaded', function() {
         // If only whitespace, show error
         if (!textContent.trim()) {
             e.preventDefault();
-            alert('Bitte geben Sie eine Nachricht ein.');
+            alert(COMPOSE_MESSAGES.validation_error || '');
             return false;
         }
         
         // Set HTML content to hidden field
         document.getElementById('bodyHtml').value = htmlContent;
     });
+    
+    quill.on('text-change', schedulePreview);
+    if (subjectInput) {
+        subjectInput.addEventListener('input', schedulePreview);
+    }
 });
 </script>
 {% endblock %}

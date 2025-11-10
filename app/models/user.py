@@ -32,11 +32,15 @@ class User(UserMixin, db.Model):
     accent_gradient = db.Column(db.String(255), nullable=True)  # CSS gradient string
     dark_mode = db.Column(db.Boolean, default=False)
     oled_mode = db.Column(db.Boolean, default=False)  # OLED Dark Mode mit echtem Schwarz
+    language = db.Column(db.String(10), default='de', nullable=False)
     
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     last_login = db.Column(db.DateTime, nullable=True)
+    
+    # Localization
+    language = db.Column(db.String(10), default='de', nullable=False)
     
     # Push Notifications
     push_subscription = db.Column(db.Text, nullable=True)  # JSON string of push subscription

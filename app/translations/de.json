@@ -1,0 +1,1078 @@
+{
+  "layout": {
+    "meta": {
+      "description": "Prismateams – Zusammenarbeit, Kommunikation und Organisation an einem Ort."
+    },
+    "nav": {
+      "dashboard": "Dashboard",
+      "chats": "Chats",
+      "files": "Dateien",
+      "calendar": "Kalender",
+      "email": "E-Mails",
+      "credentials": "Zugangsdaten",
+      "manuals": "Handbücher",
+      "canvas": "Canvas",
+      "inventory": "Inventar",
+      "wiki": "Wiki",
+      "settings": "Einstellungen",
+      "profile": "Profil",
+      "logout": "Abmelden",
+      "more": "Mehr",
+      "back": "Zurück"
+    }
+  },
+  "common": {
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "create": "Erstellen",
+    "search": "Suchen",
+    "filter": "Filtern",
+    "yes": "Ja",
+    "no": "Nein",
+    "close": "Schließen",
+    "confirm": "Bestätigen",
+    "loading": "Laden...",
+    "actions": "Aktionen",
+    "status": "Status",
+    "active": "Aktiv",
+    "inactive": "Inaktiv",
+    "optional": "Optional",
+    "required": "Erforderlich",
+    "language": "Sprache",
+    "select_language": "Sprache auswählen"
+  },
+  "auth": {
+    "login": {
+      "title": "Anmelden",
+      "subtitle": "Melde dich mit deinen Zugangsdaten an, um fortzufahren.",
+      "email": "E-Mail-Adresse",
+      "password": "Passwort",
+      "remember_me": "Angemeldet bleiben",
+      "submit": "Anmelden",
+      "register_link_prefix": "Neu bei Prismateams?",
+      "register_link_cta": "Jetzt registrieren"
+    },
+    "register": {
+      "title": "Registrieren",
+      "subtitle": "Erstelle dein Konto für Prismateams.",
+      "first_name": "Vorname",
+      "last_name": "Nachname",
+      "email": "E-Mail-Adresse",
+      "phone_optional": "Telefonnummer (optional)",
+      "password": "Passwort",
+      "password_help": "Mindestens 12 Zeichen, Groß- und Kleinbuchstaben, Zahlen und Sonderzeichen.",
+      "confirm_password": "Passwort bestätigen",
+      "dark_mode_label": "Dunkelmodus aktivieren",
+      "dark_mode_help": "Du kannst diese Einstellung jederzeit in deinem Profil ändern.",
+      "submit": "Konto erstellen",
+      "login_link_prefix": "Schon registriert?",
+      "login_link_cta": "Hier anmelden"
+    },
+    "confirm_email": {
+      "title": "E-Mail bestätigen",
+      "subtitle": "Gib den Bestätigungscode ein, den wir dir gesendet haben.",
+      "info_title": "Hinweis",
+      "info_message": "Der Code ist 15 Minuten gültig. Prüfe bitte auch deinen Spam-Ordner.",
+      "code": "Bestätigungscode",
+      "code_help": "Den Code findest du in der E-Mail mit dem Betreff \"E-Mail bestätigen\".",
+      "submit": "Code bestätigen",
+      "no_email": "Keine E-Mail erhalten?",
+      "resend_button": "Code erneut senden",
+      "warning_title": "Wichtig",
+      "warning_message": "Ohne bestätigte E-Mail-Adresse stehen nur eingeschränkte Funktionen zur Verfügung."
+    }
+  },
+  "dashboard": {
+    "page_title": "Dashboard",
+    "setup": {
+      "success_title": "🎉 Setup erfolgreich abgeschlossen!",
+      "success_body": "Willkommen in Ihrem Team-Portal! Sie können jetzt weitere Benutzer über die Einstellungen hinzufügen."
+    },
+    "update": {
+      "title": "Update verfügbar!",
+      "description": "Ein neues Update ist im Main-Branch auf GitHub verfügbar.",
+      "latest_commit": "Neuester Commit:",
+      "actions": {
+        "open_github": "GitHub öffnen",
+        "dismiss": "Schließen",
+        "disable": "Nicht mehr anzeigen"
+      }
+    },
+    "welcome": "Willkommen, {name}!",
+    "overview_subtitle": "Hier ist Ihre Übersicht",
+    "widgets": {
+      "common": {
+        "time_suffix": "Uhr"
+      },
+      "calendar": {
+        "title": "Termine",
+        "empty": "Keine anstehenden Termine"
+      },
+      "chat": {
+        "title": "Nachrichten",
+        "fallback_file": "[Datei]",
+        "empty": "Keine neuen Nachrichten"
+      },
+      "email": {
+        "title": "E-Mails",
+        "unread_badge": "Neu",
+        "empty": "Keine E-Mails"
+      },
+      "files": {
+        "title": "Letzte Dateien",
+        "empty": "Keine Dateien"
+      },
+      "canvas": {
+        "title": "Canvas",
+        "empty": "Keine Canvas"
+      },
+      "wiki_new": {
+        "title": "Neue Wikieinträge",
+        "empty": "Keine Wikieinträge"
+      },
+      "wiki_favorites": {
+        "title": "Meine Wikis",
+        "empty": "Keine Favoriten"
+      },
+      "borrows": {
+        "title": "Meine Ausleihen",
+        "borrowed_on": "Ausleihe vom {date}",
+        "item_count": "{count} Artikel",
+        "overdue": "Überfällig",
+        "return_by": "Rückgabe: {date}",
+        "return_button": "Zurückgeben",
+        "empty": "Keine aktiven Ausleihen"
+      }
+    },
+    "quick_access": {
+      "title": "Schnellzugriff",
+      "edit_dashboard": "Dashboard bearbeiten"
+    }
+  },
+  "languages": {
+    "de": "Deutsch",
+    "en": "English",
+    "pt": "Português",
+    "es": "Español",
+    "ru": "Русский"
+  },
+  "settings": {
+    "appearance": {
+      "page_title": "Darstellung - Einstellungen",
+      "breadcrumb_settings": "Einstellungen",
+      "breadcrumb_appearance": "Darstellung",
+      "heading": "Darstellung anpassen",
+      "language_label": "Sprache",
+      "language_help": "Wähle die Sprache für Oberfläche und Systemmeldungen.",
+      "accent_section_title": "Akzentfarbe & Farbverlauf",
+      "color_type_label": "Farbe oder Verlauf",
+      "color_type_solid": "Einfarbig",
+      "color_type_gradient": "Farbverlauf",
+      "accent_color_label": "Akzentfarbe",
+      "preview": "Vorschau",
+      "gradient_label": "Farbverlauf",
+      "gradient_start": "Startfarbe",
+      "gradient_end": "Endfarbe",
+      "gradient_direction": "Richtung",
+      "gradient_direction_diag_rt": "Diagonal (↗)",
+      "gradient_direction_horizontal": "Horizontal (→)",
+      "gradient_direction_vertical": "Vertikal (↓)",
+      "gradient_direction_diag_lt": "Diagonal (↖)",
+      "presets_label": "Vordefinierte Farbverläufe",
+      "presets": {
+        "purple_blue": "Lila-Blau",
+        "pink_red": "Pink-Rot",
+        "blue_cyan": "Blau-Cyan",
+        "green_teal": "Grün-Türkis",
+        "pink_yellow": "Pink-Gelb",
+        "pastel": "Pastell"
+      },
+      "design_section_label": "Design-Modus",
+      "dark_mode": "Dark Mode",
+      "oled_mode": "OLED-Modus (echtes Schwarz)",
+      "oled_help": "Nutzt echtes Schwarz (#000000) für OLED-Displays. Erfordert aktivierten Dark Mode.",
+      "save_button": "Änderungen speichern",
+      "flash_success": "Darstellungseinstellungen wurden aktualisiert.",
+      "flash_invalid_language": "Die ausgewählte Sprache ist nicht verfügbar."
+    },
+    "index": {
+      "page_title": "Einstellungen - Team Portal",
+      "heading": "Einstellungen",
+      "cards": {
+        "profile": {
+          "title": "Profil",
+          "description": "Persönliche Daten und Passwort ändern",
+          "button": "Bearbeiten"
+        },
+        "appearance": {
+          "title": "Darstellung",
+          "description": "Akzentfarbe, Sprache und Dark Mode anpassen",
+          "button": "Bearbeiten"
+        },
+        "notifications": {
+          "title": "Benachrichtigungen",
+          "description": "Push-Benachrichtigungen für Chat, Dateien, E-Mails und Termine",
+          "button": "Bearbeiten"
+        },
+        "about": {
+          "title": "Über",
+          "description": "Informationen über PrismaTeams, Version und Ersteller",
+          "button": "Öffnen"
+        },
+        "admin": {
+          "title": "Administration",
+          "description": "Benutzerverwaltung und System-Einstellungen",
+          "button": "Öffnen"
+        }
+      }
+    },
+    "profile": {
+      "page_title": "Profil - Einstellungen",
+      "breadcrumb_settings": "Einstellungen",
+      "breadcrumb_profile": "Profil",
+      "heading": "Profil bearbeiten",
+      "picture": {
+        "alt": "Profilbild",
+        "alt_preview": "Profilbild Vorschau",
+        "change_button": "Profilbild ändern",
+        "remove_button": "Entfernen",
+        "remove_confirm": "Möchten Sie das Profilbild wirklich entfernen?",
+        "remove_error": "Fehler beim Entfernen des Profilbilds.",
+        "error_type": "Nur JPG, PNG und GIF Dateien sind erlaubt.",
+        "error_size": "Die Datei ist zu groß. Maximale Größe: 5MB."
+      },
+      "fields": {
+        "first_name": "Vorname",
+        "last_name": "Nachname",
+        "email": "E-Mail",
+        "phone": "Telefon"
+      },
+      "notifications": {
+        "heading": "Benachrichtigungen",
+        "master_toggle": "Push-Benachrichtigungen aktivieren",
+        "master_help": "Erhalten Sie Benachrichtigungen auch wenn die App nicht geöffnet ist",
+        "chat_toggle": "Chat-Benachrichtigungen",
+        "chat_help": "Benachrichtigungen für neue Chat-Nachrichten",
+        "email_toggle": "E-Mail-Benachrichtigungen",
+        "email_help": "E-Mail-Benachrichtigungen für wichtige Ereignisse"
+      },
+      "password": {
+        "heading": "Passwort ändern",
+        "label": "Neues Passwort (optional)",
+        "help": "Leer lassen, um Passwort nicht zu ändern"
+      },
+      "save_button": "Änderungen speichern",
+      "flash_password_length": "Das Passwort muss mindestens 8 Zeichen lang sein.",
+      "flash_picture_too_large": "Profilbild ist zu groß. Maximale Größe: 5MB. Ihre Datei: {size:.1f}MB",
+      "flash_picture_invalid_type": "Ungültiger Dateityp. Nur PNG, JPG, JPEG und GIF Dateien sind erlaubt.",
+      "flash_picture_uploaded": "Profilbild wurde erfolgreich hochgeladen.",
+      "flash_profile_updated": "Profil wurde aktualisiert."
+    },
+    "notifications": {
+      "page_title": "Benachrichtigungen - Einstellungen",
+      "breadcrumb_settings": "Einstellungen",
+      "breadcrumb_notifications": "Benachrichtigungen",
+      "permissions": {
+        "title": "Browser-Berechtigungen",
+        "description": "Diese Berechtigungen sind erforderlich, damit die Anwendung alle Funktionen nutzen kann.",
+        "push": {
+          "title": "Push-Benachrichtigungen",
+          "description": "Serverbasierte Benachrichtigungen für Chat, Dateien und E-Mails",
+          "activate": "Push aktivieren",
+          "test": "Test senden",
+          "cooldown_label": "Cooldown aktiv",
+          "cooldown_timer": "2:00"
+        },
+        "microphone": {
+          "title": "Mikrofon-Zugriff",
+          "description": "Erforderlich für Sprachnachrichten im Chat",
+          "request": "Berechtigung anfordern"
+        },
+        "app": {
+          "title": "App-Installation",
+          "description": "Installieren Sie die App auf Ihrem Gerät für bessere Benachrichtigungen",
+          "install": "App installieren"
+        }
+      },
+      "status": {
+        "title": "Push-Benachrichtigungs-Status",
+        "browser_title": "Browser-Unterstützung",
+        "browser_description": "Web Push API wird unterstützt",
+        "worker_title": "Service Worker",
+        "worker_description": "Service Worker ist aktiv",
+        "info_strong": "Serverbasierte Benachrichtigungen:",
+        "info_message": "Sie erhalten Push-Benachrichtigungen auch wenn der Browser geschlossen ist. Das System funktioniert über den Server und ist nicht auf lokales Polling angewiesen.",
+        "https_warning": "Wichtig: Push-Benachrichtigungen funktionieren nur über HTTPS. Über HTTP sind sie nicht verfügbar.",
+        "push_alert_title": "Push-Benachrichtigungen nicht aktiviert:",
+        "push_alert_step1": "Klicken Sie auf \"Push-Benachrichtigungen aktivieren\"",
+        "push_alert_step2": "Erteilen Sie die Browser-Berechtigung wenn gefragt",
+        "push_alert_step3": "Versuchen Sie dann den \"Test senden\" Button"
+      },
+      "chat": {
+        "title": "Chat-Benachrichtigungen",
+        "toggle": "Chat-Benachrichtigungen aktivieren",
+        "help": "Erhalten Sie Benachrichtigungen für neue Chat-Nachrichten",
+        "table_title": "Chat-spezifische Einstellungen",
+        "table": {
+          "chat": "Chat",
+          "notifications": "Benachrichtigungen"
+        }
+      },
+      "files": {
+        "title": "Datei-Benachrichtigungen",
+        "toggle": "Datei-Benachrichtigungen aktivieren",
+        "help": "Erhalten Sie Benachrichtigungen für Datei-Änderungen",
+        "new": "Neue Dateien",
+        "new_help": "Benachrichtigungen für neu hochgeladene Dateien",
+        "modified": "Geänderte Dateien",
+        "modified_help": "Benachrichtigungen für geänderte Dateien"
+      },
+      "email": {
+        "title": "E-Mail-Benachrichtigungen",
+        "toggle": "E-Mail-Benachrichtigungen aktivieren",
+        "help": "Erhalten Sie Benachrichtigungen für neue E-Mails"
+      },
+      "calendar": {
+        "title": "Kalender-Benachrichtigungen",
+        "toggle": "Kalender-Benachrichtigungen aktivieren",
+        "help": "Erhalten Sie Erinnerungen für Termine",
+        "filter_question": "Für welche Events möchten Sie Benachrichtigungen erhalten?",
+        "filter_all": "Alle Events",
+        "filter_selective": "Nur bestimmte Events",
+        "filter_participating": "Ich nehme teil",
+        "filter_not_participating": "Ich nehme nicht teil",
+        "filter_no_response": "Keine Antwort",
+        "reminders_title": "Erinnerungszeiten",
+        "reminders_help": "Wählen Sie aus, wann Sie an Termine erinnert werden möchten:",
+        "reminder_30min": "30 Minuten vorher",
+        "reminder_1h": "1 Stunde vorher",
+        "reminder_2h": "2 Stunden vorher",
+        "reminder_6h": "6 Stunden vorher",
+        "reminder_8h": "8 Stunden vorher",
+        "reminder_1d": "1 Tag vorher",
+        "reminder_2d": "2 Tage vorher"
+      },
+      "save_button": "Einstellungen speichern",
+      "js": {
+        "checking": "Prüfe...",
+        "permission_granted": "Erteilt",
+        "permission_denied": "Verweigert",
+        "permission_prompt": "Nicht erteilt",
+        "permission_unsupported": "Nicht unterstützt",
+        "permission_unknown": "Unbekannt",
+        "toast_push_enabled_title": "Benachrichtigungen aktiviert",
+        "toast_push_enabled_message": "Sie erhalten jetzt Push-Benachrichtigungen.",
+        "toast_push_denied_title": "Benachrichtigungen verweigert",
+        "toast_push_denied_message": "Sie können Benachrichtigungen in den Browser-Einstellungen aktivieren.",
+        "toast_mic_enabled_title": "Mikrofon aktiviert",
+        "toast_mic_enabled_message": "Sie können jetzt Sprachnachrichten aufnehmen.",
+        "toast_mic_denied_title": "Mikrofon verweigert",
+        "toast_mic_denied_message": "Mikrofon-Zugriff ist für Sprachnachrichten erforderlich.",
+        "toast_app_installed_title": "App installiert",
+        "toast_app_installed_message": "Die App wurde erfolgreich installiert!"
+      }
+    },
+    "about": {
+      "page_title": "Über PrismaTeams - Einstellungen",
+      "breadcrumb_settings": "Einstellungen",
+      "breadcrumb_about": "Über PrismaTeams",
+      "heading": "Über PrismaTeams",
+      "logo_alt": "PrismaTeams Logo",
+      "section_product_title": "PrismaTeams",
+      "section_product_description": "PrismaTeams ist eine umfassende Team-Kollaborationsplattform, die Ihnen hilft, effizient mit Ihrem Team zu kommunizieren, zu organisieren und zusammenzuarbeiten. Die Plattform bietet Funktionen für Chat, Dateiverwaltung, Kalender, E-Mail-Verwaltung und vieles mehr.",
+      "author_label": "Autor:",
+      "copyright": "Copyright © Enrico R. Matzke 2025. Alle Rechte vorbehalten.",
+      "section_repository_title": "GitHub Repository",
+      "section_repository_description": "Das Quellcode-Repository finden Sie auf GitHub:",
+      "section_repository_button": "GitHub Repository öffnen",
+      "section_system_title": "Über Dieses System",
+      "version_label": "Version:",
+      "version_value": "V2.1.5 - Stable Release",
+      "creator_label": "Ersteller:",
+      "onlyoffice_label": "OnlyOffice Integration:",
+      "onlyoffice_active": "Aktiv",
+      "onlyoffice_inactive": "Nicht aktiv",
+      "back_button": "Zurück zu Einstellungen"
+    },
+    "admin": {
+      "page_title": "Administration - Einstellungen",
+      "breadcrumb_settings": "Einstellungen",
+      "breadcrumb_admin": "Administration",
+      "heading": "Administration",
+      "sections": {
+        "users": {
+          "title": "Benutzerverwaltung"
+        },
+        "email": {
+          "title": "E-Mail-Verwaltung"
+        },
+        "system": {
+          "title": "System-Einstellungen"
+        },
+        "inventory": {
+          "title": "Lagerverwaltung"
+        }
+      },
+      "cards": {
+        "open_button": "Öffnen",
+        "test_button": "Testen",
+        "configure_button": "Konfigurieren",
+        "user_management": {
+          "title": "Benutzerverwaltung",
+          "description": "Benutzer aktivieren, bearbeiten und verwalten"
+        },
+        "confirmation_codes": {
+          "title": "Bestätigungscodes",
+          "description": "Ausstehende E-Mail-Bestätigungscodes anzeigen"
+        },
+        "whitelist": {
+          "title": "Whitelist-Verwaltung",
+          "description": "E-Mail-Adressen und Domains für automatische Aktivierung"
+        },
+        "email_permissions": {
+          "title": "E-Mail-Berechtigungen",
+          "description": "Lese- und Sende-Berechtigungen verwalten"
+        },
+        "email_test": {
+          "title": "E-Mail-Test",
+          "description": "E-Mail-Konfiguration testen und prüfen"
+        },
+        "email_footer": {
+          "title": "E-Mail-Footer",
+          "description": "E-Mail-Footer-Template mit Variablen konfigurieren"
+        },
+        "system_settings": {
+          "title": "System-Einstellungen",
+          "description": "Globale System-Einstellungen verwalten"
+        },
+        "modules": {
+          "title": "Module",
+          "description": "Module aktivieren oder deaktivieren"
+        },
+        "backup": {
+          "title": "Import/Export",
+          "description": "Backups erstellen und wiederherstellen"
+        },
+        "inventory_categories": {
+          "title": "Lager-Kategorien",
+          "description": "Kategorien für Produkte verwalten"
+        },
+        "inventory_permissions": {
+          "title": "Ausleihe-Berechtigungen",
+          "description": "Berechtigungen für Artikelausleihe verwalten"
+        }
+      }
+    }
+  },
+  "chat": {
+    "index": {
+      "page_title": "Chats - Team Portal",
+      "heading": "Chats",
+      "subtitle": "Verwalten Sie Ihre Team-Chats und Direktnachrichten",
+      "new_chat": "Neuer Chat",
+      "main_badge": "Haupt-Chat",
+      "main_description": "Team-weiter Chat für alle Mitglieder",
+      "open": "Öffnen",
+      "group_title": "Gruppen-Chats",
+      "member_count": "{count} Mitglieder",
+      "direct_title": "Direktnachrichten",
+      "direct_label": "Direktnachricht",
+      "empty": "Sie haben noch keine Gruppen-Chats oder Direktnachrichten.",
+      "empty_cta": "Erstellen Sie einen neuen Chat!"
+    },
+    "view": {
+      "page_title_suffix": "Chats",
+      "breadcrumb_chats": "Chats",
+      "members_title": "Mitglieder",
+      "member_role_admin": "Admin",
+      "member_role_member": "Mitglied",
+      "member_count": "{count} Mitglieder",
+      "member_more": "Alle Mitglieder anzeigen",
+      "dropdown": {
+        "mute": "Benachrichtigungen stummschalten",
+        "info": "Chat-Info",
+        "settings": "Einstellungen"
+      },
+      "mobile_members": "Mitglieder",
+      "no_messages": {
+        "title": "Noch keine Nachrichten in diesem Chat.",
+        "hint": "Schreiben Sie die erste Nachricht!"
+      },
+      "message": {
+        "you": "Du",
+        "unknown_user": "Unbekannter Benutzer"
+      },
+      "input": {
+        "attach": "Datei anhängen",
+        "voice": "Sprachnachricht",
+        "placeholder": "Nachricht schreiben...",
+        "send": "Senden"
+      },
+      "modals": {
+        "member_profile": {
+          "title": "Mitgliederprofil",
+          "close": "Schließen"
+        },
+        "all_members": {
+          "title": "Alle Mitglieder",
+          "close": "Schließen"
+        }
+      },
+      "js": {
+        "file_label": "Datei: {filename}",
+        "send_error_prefix": "Fehler beim Senden: {error}",
+        "send_error_generic": "Fehler beim Senden der Nachricht",
+        "voice_error": "Fehler beim Senden der Sprachnachricht",
+        "mute": "Benachrichtigungen stummschalten",
+        "unmute": "Benachrichtigungen aktivieren",
+        "permission_title": "Mikrofon",
+        "permission_message": "Mikrofon-Zugriff ist für Sprachnachrichten erforderlich.",
+        "microphone_denied": "Mikrofonzugriff wurde verweigert. Bitte erlauben Sie den Zugriff in Ihren Browser-Einstellungen."
+      }
+    }
+  },
+  "files": {
+    "index": {
+      "page_title": "Dateien - Team Portal",
+      "heading": "Dateien",
+      "breadcrumb_root": "Root",
+      "view_toggle": {
+        "list": "Listenansicht",
+        "grid": "Rasteransicht"
+      },
+      "new_button": "NEU",
+      "dropdown": {
+        "upload_files": "Dateien hochladen",
+        "upload_folder": "Ordner hochladen",
+        "create_folder": "Ordner erstellen",
+        "create_word": "Word-Dokument erstellen (.docx)",
+        "create_excel": "Excel-Tabelle erstellen (.xlsx)",
+        "create_powerpoint": "PowerPoint-Präsentation erstellen (.pptx)",
+        "create_markdown": "Markdown-Datei erstellen (.md)"
+      },
+      "sections": {
+        "folders": "Ordner",
+        "files": "Dateien"
+      },
+      "inline": {
+        "folder_name_placeholder": "Ordnername",
+        "file_name_placeholder": "Dateiname",
+        "word_name_placeholder": "Word-Dokument Name",
+        "excel_name_placeholder": "Excel-Tabelle Name",
+        "powerpoint_name_placeholder": "PowerPoint-Präsentation Name",
+        "markdown_name_placeholder": "Markdown-Datei Name"
+      },
+      "buttons": {
+        "upload": "Hochladen"
+      },
+      "folder_actions": {
+        "dropbox_edit": "Briefkasten bearbeiten",
+        "dropbox_make": "Zum Briefkasten machen",
+        "share_edit": "Freigabe bearbeiten",
+        "share_disable": "Freigabe deaktivieren",
+        "share": "Freigeben",
+        "rename": "Umbenennen",
+        "delete": "Löschen"
+      },
+      "file_actions": {
+        "download": "Herunterladen",
+        "edit_onlyoffice": "Mit ONLYOFFICE bearbeiten",
+        "view": "Anzeigen",
+        "edit": "Bearbeiten",
+        "share_edit": "Freigabe bearbeiten",
+        "share_disable": "Freigabe deaktivieren",
+        "share": "Freigeben",
+        "details": "Details & Versionen",
+        "rename": "Umbenennen",
+        "delete": "Löschen"
+      },
+      "labels": {
+        "text_file": "Text-Datei",
+        "uploaded_by": "Von {name}",
+        "empty_folder": "Dieser Ordner ist leer. Laden Sie Dateien hoch oder erstellen Sie einen neuen Ordner."
+      },
+      "modals": {
+        "create_entry": {
+          "title": "Neue Datei/Ordner erstellen",
+          "markdown_button": "Markdown-Datei (.md)",
+          "folder_button": "Neuer Ordner"
+        },
+        "markdown": {
+          "title": "Markdown-Datei erstellen",
+          "filename_label": "Dateiname (ohne .md)",
+          "content_label": "Inhalt",
+          "placeholder": "# Titel\\n\\nHier können Sie Markdown-Inhalt schreiben..."
+        },
+        "upload": {
+          "title": "Datei hochladen",
+          "file_label": "Datei auswählen (max. 100MB pro Datei)",
+          "file_help": "Maximale Dateigröße: 100MB pro Datei",
+          "folder_label": "Oder Ordner auswählen",
+          "folder_help": "Dateien größer als 100MB werden übersprungen"
+        },
+        "new_folder": {
+          "title": "Neuer Ordner",
+          "name_label": "Ordnername"
+        },
+        "side_menu": {
+          "title": "Datei-Details",
+          "loading": "Lade Datei-Details...",
+          "info_title": "Datei-Informationen",
+          "versions_title": "Versionen",
+          "no_versions": "Keine Versionen verfügbar",
+          "actions_title": "Aktionen",
+          "download": "Herunterladen",
+          "view": "Anzeigen",
+          "edit": "Bearbeiten",
+          "info_labels": {
+            "name": "Name",
+            "size": "Größe",
+            "type": "Typ",
+            "uploader": "Hochgeladen von",
+            "created": "Erstellt",
+            "version": "Version"
+          },
+          "version_label": "Version {number}",
+          "current_suffix": " (aktuell)",
+          "download_button": "Download"
+        },
+        "dropbox": {
+          "title": "Briefkasten bearbeiten",
+          "link_label": "Briefkasten-Link",
+          "copy_button": "Kopieren",
+          "copy_success": "Kopiert!",
+          "info_text": "Teilen Sie diesen Link, damit externe Nutzer Dateien hochladen können.",
+          "password_section": "Passwort-Schutz",
+          "password_enabled": "Ein Passwort ist aktiviert.",
+          "password_placeholder": "Passwort setzen (optional)",
+          "password_change": "Passwort ändern",
+          "password_set": "Passwort setzen",
+          "password_remove": "Passwort entfernen",
+          "expires_label": "Ablaufdatum (optional)",
+          "expires_hint": "Nach diesem Datum ist die Freigabe nicht mehr verfügbar.",
+          "regenerate": "Neuen Link generieren",
+          "regenerate_hint": "Der alte Link wird ungültig.",
+          "disable": "Briefkasten deaktivieren",
+          "password_label_change": "Passwort ändern",
+          "password_label_set": "Passwort setzen (optional)",
+          "password_keep_hint": "Leer lassen um unverändert zu lassen",
+          "regenerate_title": "Link neu generieren",
+          "disable_title": "Briefkasten deaktivieren"
+        },
+        "share": {
+          "title_file": "Datei freigeben",
+          "title_folder": "Ordner freigeben",
+          "password_label": "Passwort (optional)",
+          "expires_label": "Ablaufdatum (optional)",
+          "info_text": "Der Empfänger wird beim ersten Zugriff nach seinem Namen gefragt.",
+          "create_button": "Freigabe erstellen",
+          "link_label": "Freigabe-Link",
+          "guest_info": "Aktueller Gast: {name}",
+          "save_button": "Speichern",
+          "disable_button": "Freigabe deaktivieren",
+          "close_button": "Schließen",
+          "password_keep_label": "Passwort (leer lassen = unverändert)",
+          "expires_label_compact": "Ablaufdatum",
+          "edit_title": "Freigabe bearbeiten",
+          "password_help": "Schützt die Freigabe mit einem Passwort.",
+          "expires_help": "Nach diesem Datum ist die Freigabe nicht mehr verfügbar."
+        }
+      },
+      "alerts": {
+        "rename_folder": "Ordner umbenennen?",
+        "delete_folder": "Ordner und alle Inhalte löschen?",
+        "rename_file": "Datei umbenennen?",
+        "delete_file": "Datei wirklich löschen?",
+        "dropbox_disable": "Briefkasten wirklich deaktivieren?"
+      },
+      "messages": {
+        "upload_error": "Fehler beim Hochladen der Dateien.",
+        "upload_folder_error": "Fehler beim Hochladen des Ordners.",
+        "select_prompt": "Bitte wählen Sie eine Datei oder einen Ordner aus.",
+        "progress": "Lade...",
+        "file_details_error": "Fehler beim Laden der Datei-Details",
+        "settings_error": "Fehler beim Laden der Einstellungen",
+        "file_too_large": "Die Datei ist zu groß. Maximale Größe: 100MB pro Datei"
+      }
+    }
+  },
+  "email": {
+    "index": {
+      "page_title": "E-Mail - Team Portal",
+      "heading": "E-Mail",
+      "mobile": {
+        "folders_title": "E-Mail-Ordner",
+        "close": "Schließen"
+      },
+      "buttons": {
+        "compose": "Neue E-Mail",
+        "sync": "Synchronisieren"
+      },
+      "folder_default": "Posteingang",
+      "labels": {
+        "new_badge": "Neu",
+        "move_to_folder": "In Ordner verschieben",
+        "empty": "Keine E-Mails vorhanden",
+        "options_title": "Optionen"
+      },
+      "actions": {
+        "view": "Anzeigen",
+        "reply": "Antworten",
+        "reply_all": "Allen antworten",
+        "forward": "Weiterleiten",
+        "delete": "Löschen"
+      },
+      "confirm": {
+        "delete_email": "E-Mail wirklich löschen?"
+      },
+      "folders": {
+        "INBOX": "Posteingang",
+        "Sent": "Gesendet",
+        "Sent Messages": "Gesendet",
+        "Drafts": "Entwürfe",
+        "Trash": "Papierkorb",
+        "Deleted Messages": "Gelöschte Nachrichten",
+        "Spam": "Spam",
+        "Junk": "Spam",
+        "Archive": "Archiv"
+      },
+      "messages": {
+        "sync_failed": "Synchronisation fehlgeschlagen",
+        "sync_error": "Fehler bei der Synchronisation. Bitte versuchen Sie es erneut."
+      }
+    },
+    "compose": {
+      "page_title": "Neue E-Mail - Team Portal",
+      "breadcrumb": {
+        "index": "E-Mail",
+        "current": "Neue E-Mail"
+      },
+      "card_title": "Neue E-Mail verfassen",
+      "form": {
+        "to": "An",
+        "to_placeholder": "empfaenger@example.com",
+        "to_help": "Mehrere Empfänger mit Komma trennen",
+        "cc": "CC (optional)",
+        "cc_placeholder": "cc@example.com",
+        "subject": "Betreff"
+      },
+      "editor": {
+        "placeholder": "Schreiben Sie hier Ihre E-Mail..."
+      },
+      "preview": {
+        "toggle": "E-Mail Vorschau",
+        "status_hidden": "Ausgeblendet",
+        "status_loading": "Aktualisiere...",
+        "status_ready": "Aktualisiert",
+        "placeholder": "Geben Sie Inhalt ein, um eine Vorschau der formatierten E-Mail zu sehen.",
+        "loading_label": "Laden...",
+        "error_loading": "Vorschau konnte nicht geladen werden.",
+        "error_title": "Fehler",
+        "unknown_response": "Unbekannte Antwort für die Vorschau erhalten."
+      },
+      "attachments": {
+        "label": "Anhänge (optional)",
+        "help": "Mehrere Dateien auswählen möglich",
+        "footer_note": "Der E-Mail-Footer wird automatisch hinzugefügt."
+      },
+      "buttons": {
+        "send": "Senden",
+        "cancel": "Abbrechen"
+      },
+      "messages": {
+        "server_error": "Serverfehler {status}",
+        "validation_error": "Bitte geben Sie eine Nachricht ein."
+      }
+    },
+    "view": {
+      "page_title_suffix": "E-Mail",
+      "breadcrumb": {
+        "index": "E-Mail"
+      },
+      "header": {
+        "from": "Von:",
+        "to": "An:",
+        "cc": "CC:",
+        "date": "Datum:"
+      },
+      "attachments": {
+        "title": "Anhänge ({count})",
+        "collapse_close": "Anhänge ein- oder ausklappen",
+        "inline_badge": "Inline",
+        "preview": "Vorschau",
+        "download": "Herunterladen"
+      },
+      "content": {
+        "toggle_label": "Ansicht wechseln",
+        "tabs": {
+          "html": "HTML",
+          "plain": "Text"
+        },
+        "alert_no_content": "Kein E-Mail-Inhalt verfügbar. Möglicherweise ist der Inhalt in einem Anhang gespeichert."
+      },
+      "zoom": {
+        "label": "Zoom",
+        "out": "Verkleinern",
+        "reset": "Zurücksetzen",
+        "in": "Vergrößern"
+      },
+      "modal": {
+        "title": "Anhang-Vorschau",
+        "close": "Schließen",
+        "download": "Herunterladen"
+      }
+    }
+  },
+  "credentials": {
+    "index": {
+      "page_title": "Zugangsdaten - Team Portal",
+      "heading": "Zugangsdaten",
+      "new_button": "Neu hinzufügen",
+      "password_placeholder": "********",
+      "labels": {
+        "username": "Benutzername",
+        "password": "Passwort",
+        "notes": "Notizen",
+        "empty_message": "Keine Zugangsdaten gespeichert.",
+        "empty_hint": "Fügen Sie die ersten Zugangsdaten hinzu!"
+      },
+      "actions": {
+        "edit": "Bearbeiten",
+        "delete_confirm": "Zugangsdaten wirklich löschen?"
+      },
+      "messages": {
+        "copy_success": "In die Zwischenablage kopiert!",
+        "password_error": "Passwort konnte nicht geladen werden."
+      }
+    },
+    "form": {
+      "fields": {
+        "website_name": "Website-Name",
+        "website_url": "Website-URL",
+        "username": "Benutzername",
+        "password": "Passwort",
+        "notes": "Notizen (optional)"
+      },
+      "placeholders": {
+        "website_name": "z.B. GitHub",
+        "website_url": "https://example.com"
+      },
+      "buttons": {
+        "save": "Speichern",
+        "update": "Änderungen speichern",
+        "cancel": "Abbrechen"
+      },
+      "create": {
+        "page_title": "Zugangsdaten hinzufügen - Team Portal",
+        "breadcrumb": {
+          "index": "Zugangsdaten",
+          "current": "Neu hinzufügen"
+        },
+        "card_title": "Neue Zugangsdaten hinzufügen"
+      },
+      "edit": {
+        "page_title_suffix": "Zugangsdaten",
+        "breadcrumb": {
+          "index": "Zugangsdaten",
+          "current": "Bearbeiten"
+        },
+        "card_title": "Zugangsdaten bearbeiten",
+        "password_help": "Leer lassen, um Passwort nicht zu ändern"
+      }
+    }
+  },
+  "calendar": {
+    "index": {
+      "page_title": "Termine - Team Portal",
+      "heading": "Termine",
+      "view_buttons": {
+        "month": "Monatsansicht",
+        "week": "Wochenansicht",
+        "day": "Tagesansicht",
+        "list": "Terminübersicht"
+      },
+      "new_event": "Neuer Termin",
+      "dropdown": {
+        "toggle": "Menü öffnen",
+        "export": "Kalender exportieren",
+        "import": "Kalender importieren",
+        "feeds": "Öffentliche Kalender verwalten"
+      },
+      "month_names": [
+        "Januar", "Februar", "März", "April", "Mai", "Juni",
+        "Juli", "August", "September", "Oktober", "November", "Dezember"
+      ],
+      "weekday_short": ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"],
+      "weekday_long": ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"],
+      "list": {
+        "details": "Details",
+        "time_suffix": "Uhr",
+        "statuses": {
+          "accepted": "Zugesagt",
+          "declined": "Abgesagt",
+          "removed": "Entfernt",
+          "pending": "Ausstehend"
+        },
+        "empty": {
+          "message": "Keine Termine vorhanden.",
+          "hint": "Erstellen Sie den ersten Termin!"
+        }
+      },
+      "week": {
+        "title_prefix": "Woche",
+        "time_column": "Zeit",
+        "today": "Heute",
+        "range_separator": " - "
+      },
+      "day": {
+        "title": "Tag",
+        "today": "Heute"
+      },
+      "events": {
+        "location_prefix": " - ",
+        "tooltip": "{title} - {time}{location}"
+      },
+      "js": {
+        "no_events": "Keine Termine gefunden.",
+        "error_loading": "Fehler beim Laden der Termine."
+      }
+    },
+    "create": {
+      "page_title": "Neuer Termin - Team Portal",
+      "breadcrumb": {
+        "index": "Termine",
+        "current": "Neuer Termin"
+      },
+      "card_title": "Neuen Termin erstellen",
+      "form": {
+        "title": "Titel",
+        "description": "Beschreibung (optional)",
+        "start_time": "Startzeit",
+        "end_time": "Endzeit",
+        "location": "Ort (optional)",
+        "recurrence": {
+          "label": "Wiederkehrender Termin",
+          "type_label": "Wiederholungstyp",
+          "options": {
+            "none": "Keine Wiederholung",
+            "daily": "Täglich",
+            "weekly": "Wöchentlich",
+            "monthly": "Monatlich",
+            "yearly": "Jährlich"
+          },
+          "interval_label": "Intervall",
+          "interval_help": {
+            "default": "z.B. alle 2 Wochen",
+            "daily": "z.B. alle 2 Tage",
+            "weekly": "z.B. alle 2 Wochen",
+            "monthly": "z.B. alle 2 Monate",
+            "yearly": "z.B. alle 2 Jahre"
+          },
+          "days_label": "Wochentage",
+          "weekday_names": ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"],
+          "end_label": "Wiederholung endet am (optional)",
+          "end_help": "Wenn leer, wird unbegrenzt wiederholt"
+        }
+      },
+      "buttons": {
+        "submit": "Termin erstellen",
+        "cancel": "Abbrechen"
+      }
+    },
+    "view": {
+      "page_title_suffix": "Termine",
+      "breadcrumb": {
+        "index": "Termine"
+      },
+      "date_label": "Datum",
+      "time_label": "Uhrzeit",
+      "time_suffix": "Uhr",
+      "location_label": "Ort",
+      "recurrence_label": "Wiederkehrender Termin:",
+      "recurrence_types": {
+        "daily": "Täglich",
+        "weekly": "Wöchentlich",
+        "monthly": "Monatlich",
+        "yearly": "Jährlich"
+      },
+      "recurrence_interval": {
+        "daily": "alle {count} Tage",
+        "weekly": "alle {count} Wochen",
+        "monthly": "alle {count} Monate",
+        "yearly": "alle {count} Jahre"
+      },
+      "recurrence_end": "Endet am: {date}",
+      "recurrence_button": "Alle Instanzen anzeigen",
+      "created_by": "Erstellt von:",
+      "buttons": {
+        "accept": "Zusagen",
+        "decline": "Absagen",
+        "edit": "Bearbeiten",
+        "delete": "Löschen",
+        "delete_all": "Alle Instanzen löschen"
+      },
+      "confirm": {
+        "delete_single": "Termin wirklich löschen?",
+        "delete_recurring": "Wiederkehrenden Termin und alle Instanzen wirklich löschen?",
+        "remove_participant": "Teilnehmer entfernen?"
+      },
+      "statuses": {
+        "accepted": "Zugesagt",
+        "declined": "Abgesagt",
+        "removed": "Entfernt",
+        "pending": "Ausstehend"
+      },
+      "alerts": {
+        "removed": "Sie wurden von diesem Termin entfernt und können nicht mehr teilnehmen."
+      },
+      "participants_title": "Teilnehmer"
+    },
+    "edit": {
+      "page_title_suffix": "Termine bearbeiten",
+      "breadcrumb": {
+        "index": "Termine",
+        "current": "Bearbeiten"
+      },
+      "card_title": "Termin bearbeiten",
+      "buttons": {
+        "submit": "Änderungen speichern",
+        "cancel": "Abbrechen"
+      }
+    }
+  },
+  "manuals": {
+    "index": {
+      "page_title": "Bedienungsanleitungen - Team Portal",
+      "heading": "Bedienungsanleitungen",
+      "upload_button": "Anleitung hochladen",
+      "actions": {
+        "view": "Ansehen",
+        "delete_confirm": "Anleitung wirklich löschen?"
+      },
+      "empty": {
+        "message": "Keine Anleitungen vorhanden.",
+        "hint": "Laden Sie die erste Anleitung hoch!"
+      }
+    },
+    "upload": {
+      "page_title": "Anleitung hochladen - Team Portal",
+      "breadcrumb": {
+        "index": "Anleitungen",
+        "current": "Hochladen"
+      },
+      "card_title": "Anleitung hochladen",
+      "form": {
+        "title": "Titel",
+        "title_placeholder": "z.B. Benutzerhandbuch",
+        "file": "PDF-Datei",
+        "file_help": "Nur PDF-Dateien sind erlaubt"
+      },
+      "buttons": {
+        "submit": "Hochladen",
+        "cancel": "Abbrechen"
+      }
+    }
+  }
+}

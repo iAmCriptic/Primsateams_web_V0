@@ -1,0 +1,153 @@
+{
+  "layout": {
+    "meta": {
+      "description": "Prismateams – colaboração, comunicação e organização em um só lugar."
+    },
+    "nav": {
+      "dashboard": "Painel",
+      "chats": "Conversas",
+      "files": "Arquivos",
+      "calendar": "Calendário",
+      "email": "E-mails",
+      "credentials": "Credenciais",
+      "manuals": "Manuais",
+      "canvas": "Canvas",
+      "inventory": "Inventário",
+      "wiki": "Wiki",
+      "settings": "Configurações",
+      "profile": "Perfil",
+      "logout": "Sair",
+      "more": "Mais",
+      "back": "Voltar"
+    }
+  },
+  "common": {
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "create": "Criar",
+    "search": "Pesquisar",
+    "filter": "Filtrar",
+    "yes": "Sim",
+    "no": "Não",
+    "close": "Fechar",
+    "confirm": "Confirmar",
+    "loading": "Carregando...",
+    "actions": "Ações",
+    "status": "Status",
+    "active": "Ativo",
+    "inactive": "Inativo",
+    "optional": "Opcional",
+    "required": "Obrigatório",
+    "language": "Idioma",
+    "select_language": "Selecionar idioma"
+  },
+  "auth": {
+    "login": {
+      "title": "Entrar",
+      "subtitle": "Faça login com suas credenciais para continuar.",
+      "email": "Endereço de e-mail",
+      "password": "Senha",
+      "remember_me": "Manter conectado",
+      "submit": "Entrar",
+      "register_link_prefix": "Novo no Prismateams?",
+      "register_link_cta": "Criar uma conta"
+    },
+    "register": {
+      "title": "Registrar",
+      "subtitle": "Crie sua conta Prismateams.",
+      "first_name": "Nome",
+      "last_name": "Sobrenome",
+      "email": "Endereço de e-mail",
+      "phone_optional": "Telefone (opcional)",
+      "password": "Senha",
+      "password_help": "Pelo menos 12 caracteres com letras maiúsculas, minúsculas, números e símbolos.",
+      "confirm_password": "Confirmar senha",
+      "dark_mode_label": "Ativar modo escuro",
+      "dark_mode_help": "Você pode alterar esta configuração a qualquer momento no perfil.",
+      "submit": "Criar conta",
+      "login_link_prefix": "Já possui conta?",
+      "login_link_cta": "Entre aqui"
+    },
+    "confirm_email": {
+      "title": "Confirmar e-mail",
+      "subtitle": "Insira o código de verificação que enviamos.",
+      "info_title": "Informação",
+      "info_message": "O código é válido por 15 minutos. Verifique também a pasta de spam.",
+      "code": "Código de verificação",
+      "code_help": "Você encontra o código no e-mail com o assunto \"Confirmar e-mail\".",
+      "submit": "Confirmar código",
+      "no_email": "Não recebeu o e-mail?",
+      "resend_button": "Reenviar código",
+      "warning_title": "Importante",
+      "warning_message": "Sem o e-mail confirmado apenas recursos limitados estarão disponíveis."
+    }
+  },
+  "dashboard": {
+    "page_title": "Painel",
+    "setup": {
+      "success_title": "🎉 Configuração concluída!",
+      "success_body": "Bem-vindo ao seu portal da equipe! Agora você pode adicionar mais usuários nas configurações."
+    },
+    "update": {
+      "title": "Atualização disponível!",
+      "description": "Uma nova atualização está disponível no branch principal do GitHub.",
+      "latest_commit": "Último commit:",
+      "actions": {
+        "open_github": "Abrir GitHub",
+        "dismiss": "Fechar",
+        "disable": "Não mostrar novamente"
+      }
+    },
+    "welcome": "Bem-vindo, {name}!",
+    "overview_subtitle": "Aqui está a sua visão geral",
+    "widgets": {
+      "common": {
+        "time_suffix": ""
+      },
+      "calendar": {
+        "title": "Próximos eventos",
+        "empty": "Nenhum evento próximo"
+      },
+      "chat": {
+        "title": "Mensagens",
+        "fallback_file": "[Arquivo]",
+        "empty": "Nenhuma nova mensagem"
+      },
+      "email": {
+        "title": "E-mails",
+        "unread_badge": "Novo",
+        "empty": "Nenhum e-mail"
+      },
+      "files": {
+        "title": "Arquivos recentes",
+        "empty": "Nenhum arquivo"
+      },
+      "canvas": {
+        "title": "Canvas",
+        "empty": "Nenhum canvas"
+      },
+      "wiki_new": {
+        "title": "Novas páginas wiki",
+        "empty": "Nenhuma página wiki"
+      },
+      "wiki_favorites": {
+        "title": "Meus wikis",
+        "empty": "Nenhum favorito"
+      },
+      "borrows": {
+        "title": "Meus empréstimos",
+        "borrowed_on": "Empréstimo de {date}",
+        "item_count": "{count} itens",
+        "overdue": "Em atraso",
+        "return_by": "Devolver até {date}",
+        "return_button": "Devolver",
+        "empty": "Nenhum empréstimo ativo"
+      }
+    },
+    "quick_access": {
+      "title": "Acesso rápido",
+      "edit_dashboard": "Editar painel"
+  }
+}

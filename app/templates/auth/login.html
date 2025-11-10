@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Anmelden - Prismateams{% endblock %}
+{% block title %}{{ _('auth.login.title') }} - {{ app_name or 'Prismateams' }}{% endblock %}
 
 {% block content %}
 <div class="auth-container" {% if color_gradient %}style="background: {{ color_gradient }}; background-attachment: fixed; background-size: cover;"{% endif %}>
@@ -17,16 +17,17 @@
                     {% endif %}
                     {{ app_name or 'Prismateams' }}
                 </h1>
-                <h5 class="text-center mb-4">Anmelden</h5>
+                <h5 class="text-center mb-2">{{ _('auth.login.title') }}</h5>
+                <p class="text-center text-muted mb-4">{{ _('auth.login.subtitle') }}</p>
                 
                 <form method="POST">
                     <div class="mb-3">
-                        <label for="email" class="form-label">E-Mail-Adresse</label>
+                        <label for="email" class="form-label">{{ _('auth.login.email') }}</label>
                         <input type="email" class="form-control" id="email" name="email" required autofocus>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="password" class="form-label">Passwort</label>
+                        <label for="password" class="form-label">{{ _('auth.login.password') }}</label>
                         <div class="input-group">
                             <input type="password" class="form-control" id="password" name="password" required>
                             <button class="btn btn-outline-secondary password-toggle" type="button">
@@ -38,17 +39,18 @@
                     <div class="mb-3 form-check">
                         <input type="checkbox" class="form-check-input" id="remember" name="remember">
                         <label class="form-check-label" for="remember">
-                            Angemeldet bleiben
+                            {{ _('auth.login.remember_me') }}
                         </label>
                     </div>
                     
-                    <button type="submit" class="btn btn-accent w-100">Anmelden</button>
+                    <button type="submit" class="btn btn-accent w-100">{{ _('auth.login.submit') }}</button>
                 </form>
                 
                 <hr class="my-4">
                 
                 <p class="text-center mb-0">
-                    Noch kein Konto? <a href="{{ url_for('auth.register') }}">Registrieren</a>
+                    {{ _('auth.login.register_link_prefix') }}
+                    <a href="{{ url_for('auth.register') }}">{{ _('auth.login.register_link_cta') }}</a>
                 </p>
             </div>
         </div>

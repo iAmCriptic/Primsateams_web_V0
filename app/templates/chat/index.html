@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Chats - Team Portal{% endblock %}
+{% block title %}{{ _('chat.index.page_title') }}{% endblock %}
 
 {% block content %}
 <div class="chats-page-header">
@@ -8,14 +8,14 @@
         <div class="col">
             <h1 class="chats-title">
                 <i class="bi bi-chat-dots me-2"></i> 
-                Chats
+                {{ _('chat.index.heading') }}
             </h1>
-            <p class="chats-subtitle text-muted">Verwalten Sie Ihre Team-Chats und Direktnachrichten</p>
+            <p class="chats-subtitle text-muted">{{ _('chat.index.subtitle') }}</p>
         </div>
         <div class="col-auto">
             <a href="{{ url_for('chat.create_chat') }}" class="btn btn-accent btn-lg">
                 <i class="bi bi-plus-circle me-2"></i> 
-                Neuer Chat
+                {{ _('chat.index.new_chat') }}
             </a>
         </div>
     </div>
@@ -39,14 +39,14 @@
         <div class="chat-card-info">
             <h5 class="chat-card-title">
                 {{ main_chat.name }}
-                <span class="badge bg-primary ms-2">Haupt-Chat</span>
+                <span class="badge bg-primary ms-2">{{ _('chat.index.main_badge') }}</span>
             </h5>
-            <p class="chat-card-description">Team-weiter Chat für alle Mitglieder</p>
+            <p class="chat-card-description">{{ _('chat.index.main_description') }}</p>
         </div>
         <div class="chat-card-actions">
             <a href="{{ url_for('chat.view_chat', chat_id=main_chat.id) }}" class="btn btn-primary">
                 <i class="bi bi-arrow-right-circle me-1"></i> 
-                Öffnen
+                {{ _('chat.index.open') }}
             </a>
         </div>
     </div>
@@ -58,7 +58,7 @@
 <div class="chats-section">
     <h4 class="section-title">
         <i class="bi bi-people-fill me-2"></i>
-        Gruppen-Chats
+        {{ _('chat.index.group_title') }}
     </h4>
     <div class="row g-4">
         {% for chat in group_chats %}
@@ -72,12 +72,12 @@
                     </div>
                     <div class="chat-card-info">
                         <h5 class="chat-card-title">{{ chat.name }}</h5>
-                        <p class="chat-card-description">{{ chat.members|length }} Mitglieder</p>
+                        <p class="chat-card-description">{{ _('chat.index.member_count').format(count=chat.members|length) }}</p>
                     </div>
                     <div class="chat-card-actions">
                         <a href="{{ url_for('chat.view_chat', chat_id=chat.id) }}" class="btn btn-outline-primary btn-sm">
                             <i class="bi bi-arrow-right-circle me-1"></i>
-                            Öffnen
+                            {{ _('chat.index.open') }}
                         </a>
                     </div>
                 </div>
@@ -93,7 +93,7 @@
 <div class="chats-section">
     <h4 class="section-title">
         <i class="bi bi-person-circle me-2"></i>
-        Direktnachrichten
+        {{ _('chat.index.direct_title') }}
     </h4>
     <div class="direct-messages-list">
         {% for chat in direct_chats %}
@@ -103,7 +103,7 @@
             </div>
             <div class="direct-message-info">
                 <h6 class="direct-message-name">{{ get_chat_display_name(chat) }}</h6>
-                <small class="direct-message-status text-muted">Direktnachricht</small>
+                <small class="direct-message-status text-muted">{{ _('chat.index.direct_label') }}</small>
             </div>
             <div class="direct-message-arrow">
                 <i class="bi bi-chevron-right"></i>
@@ -117,7 +117,7 @@
 {% if not group_chats and not direct_chats %}
 <div class="alert alert-info mt-3">
     <i class="bi bi-info-circle"></i>
-    Sie haben noch keine Gruppen-Chats oder Direktnachrichten. Erstellen Sie einen neuen Chat!
+    {{ _('chat.index.empty') }} {{ _('chat.index.empty_cta') }}
 </div>
 {% endif %}
 {% endblock %}

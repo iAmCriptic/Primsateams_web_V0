@@ -4,7 +4,11 @@ from flask_login import LoginManager
 from flask_mail import Mail
 from flask_socketio import SocketIO
 from config import config
+import json
 import os
+import subprocess
+import sys
+from app.utils.i18n import register_i18n
 
 # Initialize extensions
 db = SQLAlchemy()
@@ -27,6 +31,7 @@ def create_app(config_name='default'):
     login_manager.init_app(app)
     mail.init_app(app)
     socketio.init_app(app)
+    register_i18n(app)
     
     # Configure login manager
     login_manager.login_view = 'auth.login'
@@ -82,6 +87,10 @@ def create_app(config_name='default'):
     def load_user(user_id):
         return User.query.get(int(user_id))
     
+    # Internationalisierung initialisieren
+    from app.utils.i18n import init_i18n
+    init_i18n(app)
+
     # Create upload directories if they don't exist
     upload_dirs = [
         app.config['UPLOAD_FOLDER'],
@@ -189,6 +198,30 @@ def create_app(config_name='default'):
                 'inventory.set_form': 'inventory.sets',
                 # Inventory: Ordner -> Bestandsübersicht
                 'inventory.folders': 'inventory.stock',
+                # Settings: Basis-Seiten -> Settings-Übersicht
+                'settings.profile': 'settings.index',
+                'settings.appearance': 'settings.index',
+                'settings.notifications': 'settings.index',
+                'settings.about': 'settings.index',
+                'settings.admin': 'settings.index',
+                # Settings Admin: Module & Aktionen -> Admin-Übersicht
+                'settings.admin_users': 'settings.admin',
+                'settings.admin_email_permissions': 'settings.admin',
+                'settings.admin_email_footer': 'settings.admin',
+                'settings.admin_system': 'settings.admin',
+                'settings.admin_modules': 'settings.admin',
+                'settings.admin_backup': 'settings.admin',
+                'settings.admin_whitelist': 'settings.admin',
+                'settings.add_whitelist_entry': 'settings.admin',
+                'settings.toggle_whitelist_entry': 'settings.admin',
+                'settings.delete_whitelist_entry': 'settings.admin',
+                'settings.admin_inventory_categories': 'settings.admin',
+                'settings.admin_delete_inventory_category': 'settings.admin',
+                'settings.admin_inventory_permissions': 'settings.admin',
+                'settings.admin_toggle_borrow_permission': 'settings.admin',
+                # Auth: Admin-spezifische Seiten -> Admin-Übersicht
+                'auth.show_confirmation_codes': 'settings.admin',
+                'auth.test_email': 'settings.admin',
                 # Calendar: Detailseiten -> Kalender-Übersicht
                 'calendar.view': 'calendar.index',
                 'calendar.edit_event': 'calendar.index',
@@ -225,6 +258,10 @@ def create_app(config_name='default'):
             # Prüfe zuerst spezifische Mappings
             if endpoint in specific_mappings:
                 return url_for(specific_mappings[endpoint])
+            
+            # Settings Admin: Fallback für alle weiteren Unterseiten
+            if endpoint.startswith('settings.admin_'):
+                return url_for('settings.admin')
             
             # Allgemeine Modul-Mappings
             module_mapping = {
@@ -494,8 +531,6 @@ def create_app(config_name='default'):
                     if 'is_dropbox' not in columns or 'dropbox_token' not in columns or 'dropbox_password_hash' not in columns:
                         print("[INFO] Führe Migration zu Version 1.5.2 aus...")
                         # Führe Migration direkt aus (ohne Import, da Python-Module mit Punkten nicht importierbar sind)
-                        import subprocess
-                        import os
                         migrations_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'migrations', 'Migrate_to_1.5.2.py')
                         if os.path.exists(migrations_path):
                             try:
@@ -513,6 +548,40 @@ def create_app(config_name='default'):
                                 print("[INFO] Bitte führen Sie manuell aus: python migrations/Migrate_to_1.5.2.py")
                         else:
                             print("[WARNUNG] Migrationsdatei nicht gefunden. Bitte manuell ausführen: python migrations/Migrate_to_1.5.2.py")
+
+                if ('users' in inspector.get_table_names() and
+                        'language' not in {col['name'] for col in inspector.get_columns('users')} and
+                        not os.getenv('RUNNING_LANGUAGE_MIGRATION')):
+                    print("[INFO] Führe Sprachmigration aus...")
+                    migrations_path = os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)),
+                        'migrations',
+                        'migrate_languages.py'
+                    )
+                    if os.path.exists(migrations_path):
+                        env = os.environ.copy()
+                        env.setdefault('RUNNING_LANGUAGE_MIGRATION', '1')
+                        env.setdefault('PRISMATEAMS_SKIP_BACKGROUND_JOBS', '1')
+                        try:
+                            result = subprocess.run(
+                                [sys.executable, migrations_path],
+                                capture_output=True,
+                                text=True,
+                                timeout=60,
+                                env=env
+                            )
+                            if result.returncode == 0:
+                                print("[OK] Sprachmigration erfolgreich ausgeführt")
+                            else:
+                                print(f"[WARNUNG] Sprachmigration gab Fehler zurück: {result.stderr}")
+                                print("[INFO] Bitte führen Sie manuell aus: python migrations/migrate_languages.py")
+                        except subprocess.TimeoutExpired:
+                            print("[WARNUNG] Sprachmigration dauerte zu lange. Bitte manuell ausführen.")
+                        except Exception as exc:
+                            print(f"[WARNUNG] Sprachmigration konnte nicht ausgeführt werden: {exc}")
+                            print("[INFO] Bitte führen Sie manuell aus: python migrations/migrate_languages.py")
+                    else:
+                        print("[WARNUNG] Sprach-Migrationsdatei nicht gefunden. Bitte manuell ausführen: python migrations/migrate_languages.py")
             except Exception as migration_error:
                 print(f"[WARNUNG] Migration konnte nicht automatisch ausgeführt werden: {migration_error}")
                 print("[INFO] Bitte führen Sie manuell aus: python migrations/Migrate_to_1.5.2.py")
@@ -548,6 +617,7 @@ def create_app(config_name='default'):
         from app.models.settings import SystemSettings
         from app.models.chat import Chat
         from app.models.user import User
+        from sqlalchemy import inspect, text
         
         # Create default system settings if they don't exist
         if not SystemSettings.query.filter_by(key='email_footer_text').first():
@@ -565,7 +635,71 @@ def create_app(config_name='default'):
                 description='Footer-Bild URL für E-Mails'
             )
             db.session.add(footer_img)
+
+        if not SystemSettings.query.filter_by(key='default_language').first():
+            db.session.add(SystemSettings(
+                key='default_language',
+                value='de',
+                description='Standardsprache für die Benutzeroberfläche'
+            ))
+
+        if not SystemSettings.query.filter_by(key='email_language').first():
+            db.session.add(SystemSettings(
+                key='email_language',
+                value='de',
+                description='Standardsprache für System-E-Mails'
+            ))
+
+        if not SystemSettings.query.filter_by(key='available_languages').first():
+            db.session.add(SystemSettings(
+                key='available_languages',
+                value='["de","en","pt","es","ru"]',
+                description='Liste der aktivierten Sprachen'
+            ))
         
+        language_settings = {
+            'default_language': (
+                'de',
+                'Standardsprache der Benutzeroberfläche für neue Benutzer.'
+            ),
+            'email_language': (
+                'de',
+                'Sprache für automatisch versendete System-E-Mails.'
+            ),
+            'available_languages': (
+                json.dumps(['de', 'en', 'pt', 'es', 'ru']),
+                'Aktivierte Sprachen im Portal (JSON-Liste).'
+            )
+        }
+        
+        for key, (value, description) in language_settings.items():
+            setting = SystemSettings.query.filter_by(key=key).first()
+            if not setting:
+                db.session.add(SystemSettings(key=key, value=value, description=description))
+            else:
+                if not setting.value:
+                    setting.value = value
+                if description and not setting.description:
+                    setting.description = description
+        
+        # Stelle sicher, dass bestehende Benutzer eine Sprache gesetzt haben
+        try:
+            inspector = inspect(db.engine)
+            if 'users' in inspector.get_table_names():
+                columns = {col['name'] for col in inspector.get_columns('users')}
+                if 'language' in columns:
+                    with db.engine.begin() as connection:
+                        connection.execute(
+                            text("""
+                                UPDATE users
+                                SET language = :default_lang
+                                WHERE language IS NULL OR TRIM(language) = ''
+                            """),
+                            {'default_lang': 'de'}
+                        )
+        except Exception as e:
+            app.logger.warning("Konnte Benutzersprachen nicht aktualisieren: %s", e)
+
         # Create main chat if it doesn't exist
         main_chat = Chat.query.filter_by(is_main_chat=True).first()
         if not main_chat:
@@ -611,12 +745,13 @@ def create_app(config_name='default'):
         
         db.session.commit()
     
-    # Start email auto-sync
-    start_email_sync(app)
-    
-    # Start notification scheduler
-    from app.tasks.notification_scheduler import start_notification_scheduler
-    start_notification_scheduler(app)
+    if not os.getenv('PRISMATEAMS_SKIP_BACKGROUND_JOBS'):
+        # Start email auto-sync
+        start_email_sync(app)
+        
+        # Start notification scheduler
+        from app.tasks.notification_scheduler import start_notification_scheduler
+        start_notification_scheduler(app)
     
     # Import SocketIO handlers
     from app.blueprints import canvas

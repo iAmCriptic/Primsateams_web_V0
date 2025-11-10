@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Registrieren - Prismateams{% endblock %}
+{% block title %}{{ _('auth.register.title') }} - {{ app_name or 'Prismateams' }}{% endblock %}
 
 {% block content %}
 <div class="auth-container" {% if color_gradient %}style="background: {{ color_gradient }}; background-attachment: fixed; background-size: cover;"{% endif %}>
@@ -17,38 +17,39 @@
                     {% endif %}
                     {{ app_name or 'Prismateams' }}
                 </h1>
-                <h5 class="text-center mb-4">Registrieren</h5>
+                <h5 class="text-center mb-2">{{ _('auth.register.title') }}</h5>
+                <p class="text-center text-muted mb-4">{{ _('auth.register.subtitle') }}</p>
                 
                 <form method="POST">
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="first_name" class="form-label">Vorname</label>
+                            <label for="first_name" class="form-label">{{ _('auth.register.first_name') }}</label>
                             <input type="text" class="form-control" id="first_name" name="first_name" required>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="last_name" class="form-label">Nachname</label>
+                            <label for="last_name" class="form-label">{{ _('auth.register.last_name') }}</label>
                             <input type="text" class="form-control" id="last_name" name="last_name" required>
                         </div>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="email" class="form-label">E-Mail-Adresse</label>
+                        <label for="email" class="form-label">{{ _('auth.register.email') }}</label>
                         <input type="email" class="form-control" id="email" name="email" required>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="phone" class="form-label">Telefonnummer (optional)</label>
+                        <label for="phone" class="form-label">{{ _('auth.register.phone_optional') }}</label>
                         <input type="tel" class="form-control" id="phone" name="phone">
                     </div>
                     
                     <div class="mb-3">
-                        <label for="password" class="form-label">Passwort</label>
+                        <label for="password" class="form-label">{{ _('auth.register.password') }}</label>
                         <input type="password" class="form-control" id="password" name="password" required minlength="8">
-                        <div class="form-text">Mindestens 8 Zeichen</div>
+                        <div class="form-text">{{ _('auth.register.password_help') }}</div>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="password_confirm" class="form-label">Passwort bestätigen</label>
+                        <label for="password_confirm" class="form-label">{{ _('auth.register.confirm_password') }}</label>
                         <input type="password" class="form-control" id="password_confirm" name="password_confirm" required>
                     </div>
                     
@@ -57,19 +58,20 @@
                             <input class="form-check-input" type="checkbox" id="dark_mode" name="dark_mode">
                             <label class="form-check-label" for="dark_mode">
                                 <i class="bi bi-moon me-2"></i>
-                                Dark Mode aktivieren
+                                {{ _('auth.register.dark_mode_label') }}
                             </label>
                         </div>
-                        <div class="form-text">Sie können dies später in den Einstellungen ändern.</div>
+                        <div class="form-text">{{ _('auth.register.dark_mode_help') }}</div>
                     </div>
                     
-                    <button type="submit" class="btn btn-accent w-100">Registrieren</button>
+                    <button type="submit" class="btn btn-accent w-100">{{ _('auth.register.submit') }}</button>
                 </form>
                 
                 <hr class="my-4">
                 
                 <p class="text-center mb-0">
-                    Bereits registriert? <a href="{{ url_for('auth.login') }}">Anmelden</a>
+                    {{ _('auth.register.login_link_prefix') }}
+                    <a href="{{ url_for('auth.login') }}">{{ _('auth.register.login_link_cta') }}</a>
                 </p>
             </div>
         </div>
