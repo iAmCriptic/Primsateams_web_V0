@@ -1,11 +1,14 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app, send_file, Response
 from flask_login import login_required, current_user
-from app import db, mail
+from flask_socketio import join_room
+from uuid import uuid4
+from app import db, mail, socketio
 from app.models.email import EmailMessage, EmailPermission, EmailAttachment, EmailFolder
 from app.models.settings import SystemSettings
 from app.utils.notifications import send_email_notification
 from flask_mail import Message
 from datetime import datetime, timedelta
+from html import unescape
 import imaplib
 import email as email_module
 from email.mime.text import MIMEText
@@ -18,8 +21,84 @@ import io
 import sqlalchemy
 from markupsafe import Markup
 from sqlalchemy.exc import IntegrityError
+import re
+
+from app.utils.email_sender import get_logo_base64
 
 email_bp = Blueprint('email', __name__)
+
+
+def get_portal_display_name():
+    portal_name_setting = SystemSettings.query.filter_by(key='portal_name').first()
+    if portal_name_setting and portal_name_setting.value and portal_name_setting.value.strip():
+        return portal_name_setting.value
+    return current_app.config.get('APP_NAME', 'Prismateams')
+
+
+def html_to_plain_text(html_content: str) -> str:
+    if not html_content:
+        return ''
+
+    text = re.sub(r'<\s*br\s*/?>', '\n', html_content, flags=re.IGNORECASE)
+    text = re.sub(r'</\s*p\s*>', '\n\n', text, flags=re.IGNORECASE)
+    text = re.sub(r'<[^>]+>', '', text)
+    return unescape(text).strip()
+
+
+def build_footer_html():
+    footer_template = SystemSettings.query.filter_by(key='email_footer_template').first()
+    portal_name = get_portal_display_name()
+
+    if footer_template and footer_template.value:
+        footer_html = footer_template.value
+        replacements = {
+            '<user>': current_user.full_name or '',
+            '<email>': current_user.email or '',
+            '<app_name>': portal_name,
+            '<date>': datetime.utcnow().strftime('%d.%m.%Y'),
+            '<time>': datetime.utcnow().strftime('%H:%M')
+        }
+        for placeholder, value in replacements.items():
+            footer_html = footer_html.replace(placeholder, value)
+        return footer_html
+
+    footer_text_setting = SystemSettings.query.filter_by(key='email_footer_text').first()
+
+    lines = []
+    if footer_text_setting and footer_text_setting.value:
+        lines.append(footer_text_setting.value)
+    lines.append(f"Gesendet von {current_user.full_name}")
+
+    return ''.join(f'<p>{line}</p>' for line in lines if line and line.strip())
+
+
+def render_custom_email(subject: str, body_html: str):
+    body_html = body_html or ''
+    footer_html = build_footer_html()
+    combined_html = body_html + (footer_html or '')
+
+    app_name = get_portal_display_name()
+    logo_base64 = get_logo_base64()
+    current_year = datetime.utcnow().year
+
+    rendered_html = render_template(
+        'emails/custom_mail.html',
+        app_name=app_name,
+        logo_base64=logo_base64,
+        subject=subject,
+        body_html=Markup(combined_html),
+        current_year=current_year
+    )
+
+    plain_body = html_to_plain_text(combined_html)
+    disclaimer_plain = ("Diese E-Mail enthält sensible Inhalte und ist nur für den genannten Empfänger bestimmt. "
+                        "Sollten Sie nicht der adressierte Nutzer sein, wenden Sie sich bitte an den Versender und löschen Sie diese E-Mail.")
+    copyright_plain = f"© {current_year} {app_name}. Alle Rechte vorbehalten."
+
+    plain_sections = [section for section in [plain_body, disclaimer_plain, copyright_plain] if section]
+    rendered_plain = '\n\n'.join(plain_sections)
+
+    return rendered_html, rendered_plain
 
 
 def decode_header_field(field):
@@ -905,6 +984,8 @@ def index():
     
     current_folder = request.args.get('folder', 'INBOX')
     emails = EmailMessage.query.filter_by(folder=current_folder).order_by(EmailMessage.received_at.desc()).all()
+    folder_obj = EmailFolder.query.filter_by(name=current_folder).first()
+    folder_display_name = folder_obj.display_name if folder_obj else current_folder
     
     # Custom folder ordering: Standard folders first, then custom folders
     all_folders = EmailFolder.query.all()
@@ -939,7 +1020,13 @@ def index():
             email_obj.has_attachments = False
     db.session.commit()
     
-    return render_template('email/index.html', emails=emails, folders=folders, current_folder=current_folder)
+    return render_template(
+        'email/index.html',
+        emails=emails,
+        folders=folders,
+        current_folder=current_folder,
+        folder_display_name=folder_display_name
+    )
 
 
 @email_bp.route('/folder/<folder_name>')
@@ -1406,34 +1493,7 @@ def compose():
             flash('Bitte füllen Sie alle Pflichtfelder aus.', 'danger')
             return render_template('email/compose.html')
         
-        # Get configurable email footer
-        footer_template = SystemSettings.query.filter_by(key='email_footer_template').first()
-        
-        # Convert HTML body to plain text for email body
-        import re
-        from html import unescape
-        body_plain = re.sub(r'<[^>]+>', '', body_html)
-        body_plain = unescape(body_plain).strip()
-        
-        if footer_template and footer_template.value:
-            # Use configurable template with variables
-            footer = footer_template.value
-            # Replace variables
-            footer = footer.replace('<user>', current_user.full_name)
-            footer = footer.replace('<email>', current_user.email)
-            footer = footer.replace('<app_name>', current_app.config.get('APP_NAME', 'Prismateams'))
-            footer = footer.replace('<date>', datetime.utcnow().strftime('%d.%m.%Y'))
-            footer = footer.replace('<time>', datetime.utcnow().strftime('%H:%M'))
-        else:
-            # Fallback to old system
-            footer_text_setting = SystemSettings.query.filter_by(key='email_footer_text').first()
-            footer_img = SystemSettings.query.filter_by(key='email_footer_image').first()
-            
-            footer = f"\n\n---\n{footer_text_setting.value if footer_text_setting else ''}\n"
-            footer += f"Gesendet von {current_user.full_name}"
-        
-        full_body_plain = body_plain + footer
-        full_body_html = body_html + footer
+        full_body_html, full_body_plain = render_custom_email(subject, body_html)
         
         try:
             # Get formatted sender from config (with optional display name)
@@ -1529,47 +1589,125 @@ def compose():
     return render_template('email/compose.html')
 
 
+@email_bp.route('/preview/custom', methods=['POST'])
+@login_required
+def preview_custom_email():
+    if not check_email_permission('send'):
+        return jsonify({'error': 'Nicht autorisiert'}), 403
+    
+    data = request.get_json(silent=True) or request.form
+    if not data:
+        return jsonify({'error': 'Ungültige Daten'}), 400
+    
+    subject = (data.get('subject') or '').strip()
+    body_html = (data.get('body') or '').strip()
+    
+    if not body_html:
+        return jsonify({'error': 'Nachricht fehlt'}), 400
+    
+    try:
+        rendered_html, _ = render_custom_email(subject, body_html)
+        return jsonify({'html': rendered_html})
+    except Exception as exc:
+        current_app.logger.error(f"E-Mail Vorschau Fehler: {exc}")
+        return jsonify({'error': 'Vorschau konnte nicht erstellt werden'}), 500
+
+
 @email_bp.route('/sync', methods=['POST'])
 @login_required
 def sync_emails():
     """Sync emails from IMAP server (runs in background)."""
     if not check_email_permission('read'):
-        return jsonify({'error': 'Nicht autorisiert'}), 403
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.headers.get('Accept', '').startswith('application/json'):
+            return jsonify({'success': False, 'error': 'Nicht autorisiert'}), 403
+        flash('Sie haben keine Berechtigung, E-Mails zu lesen.', 'danger')
+        return redirect(url_for('email.index'))
     
-    # Hole die App-Instanz aus dem aktuellen Request-Kontext
+    is_async_request = (
+        request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        or request.headers.get('Accept', '').startswith('application/json')
+    )
+    current_folder = request.form.get('folder') or None
+    folder_label = None
+    if current_folder:
+        folder_obj = EmailFolder.query.filter_by(name=current_folder).first()
+        folder_label = folder_obj.display_name if folder_obj else current_folder
+    
+    # Synchronous fallback (z. B. klassische Form-Submits)
+    if not is_async_request:
+        try:
+            if current_folder:
+                success, message = sync_emails_from_folder(current_folder)
+            else:
+                success, message = sync_emails_from_server()
+            
+            if success:
+                flash(f'✅ {message}', 'success')
+            else:
+                flash(f'❌ FEHLER: {message}', 'danger')
+        except Exception as exc:
+            current_app.logger.error(f"E-Mail-Synchronisation Fehler (synchron): {exc}", exc_info=True)
+            flash(f'❌ FEHLER bei der Synchronisation: {str(exc)}', 'danger')
+        
+        target_endpoint = 'email.folder_view' if current_folder else 'email.index'
+        target_kwargs = {'folder_name': current_folder} if current_folder else {}
+        return redirect(url_for(target_endpoint, **target_kwargs))
+    
+    # Asynchrone Verarbeitung: Job in Hintergrund-Thread ausführen
+    user_id = current_user.id
+    job_id = f"{user_id}-{uuid4().hex}"
+    room = f'email_user_{user_id}'
     app_instance = current_app._get_current_object()
-    current_folder = request.form.get('folder', None)
     
-    # Starte Synchronisation im Hintergrund-Thread
+    def emit_status(status: str, message: str, level: str = 'info', **extras):
+        payload = {
+            'jobId': job_id,
+            'status': status,
+            'message': message,
+            'level': level,
+            'folder': current_folder,
+            'folderLabel': folder_label,
+        }
+        if extras:
+            payload.update(extras)
+        socketio.emit('email:sync_status', payload, room=room)
+    
     def sync_in_background():
         with app_instance.app_context():
+            start_msg = 'Synchronisation gestartet.'
+            if folder_label:
+                start_msg = f"Synchronisation für '{folder_label}' gestartet."
+            emit_status('started', start_msg, 'info', shouldRefresh=False)
+            
             try:
                 if current_folder:
                     success, message = sync_emails_from_folder(current_folder)
                 else:
                     success, message = sync_emails_from_server()
                 
-                # Flash-Messages werden in Session gespeichert
                 if success:
-                    flash(f'✅ {message} - E-Mails wurden mit bidirektionaler Synchronisation aktualisiert!', 'success')
+                    emit_status('success', message, 'success', shouldRefresh=True)
                 else:
-                    flash(f'❌ FEHLER: {message} - Bitte IMAP-Konfiguration prüfen!', 'danger')
-            except Exception as e:
-                app_instance.logger.error(f"E-Mail-Synchronisation Fehler: {str(e)}")
-                flash(f'❌ FEHLER bei der Synchronisation: {str(e)}', 'danger')
+                    emit_status('error', message, 'danger', shouldRefresh=False)
+            except Exception as exc:
+                app_instance.logger.error(f"E-Mail-Synchronisation Fehler: {exc}", exc_info=True)
+                emit_status('error', str(exc), 'danger', shouldRefresh=False)
     
-    # Starte Thread für Hintergrund-Synchronisation
-    thread = threading.Thread(target=sync_in_background)
+    thread = threading.Thread(target=sync_in_background, name=f"email-sync-{job_id}")
     thread.daemon = True
     thread.start()
     
-    # Gebe sofort Antwort zurück (für AJAX)
-    if request.headers.get('Content-Type', '').startswith('application'):
-        return jsonify({'success': True, 'message': 'Synchronisation gestartet'}), 202
+    response_message = 'Synchronisation gestartet.'
+    if folder_label:
+        response_message = f"Synchronisation für '{folder_label}' gestartet."
     
-    # Fallback für normale Form-Submits
-    flash('Synchronisation wurde gestartet. Die Seite wird automatisch aktualisiert.', 'info')
-    return redirect(url_for('email.index'))
+    return jsonify({
+        'success': True,
+        'jobId': job_id,
+        'message': response_message,
+        'folder': current_folder,
+        'folderLabel': folder_label
+    }), 202
 
 
 @email_bp.route('/delete/<int:email_id>', methods=['POST'])
@@ -1692,6 +1830,25 @@ def move_email_in_imap(email_id, from_folder, to_folder):
     except Exception as e:
         logging.error(f"IMAP move failed: {str(e)}")
         return False, f"Verschieb-Fehler: {str(e)}"
+
+
+@socketio.on('email:join')
+def handle_email_sync_join(data):
+    """Register client connections for email sync status updates."""
+    user_id = None
+    if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
+        user_id = getattr(current_user, 'id', None)
+    
+    if not user_id:
+        return
+    
+    room = f'email_user_{user_id}'
+    join_room(room)
+    if current_app:
+        try:
+            current_app.logger.debug(f"E-Mail-Sync: Benutzer {user_id} hat Raum {room} betreten.")
+        except Exception:
+            pass
 
 
 def email_sync_scheduler(app):

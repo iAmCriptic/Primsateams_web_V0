@@ -1,0 +1,1078 @@
+{
+  "layout": {
+    "meta": {
+      "description": "Prismateams – collaboration, communication and organisation in one place."
+    },
+    "nav": {
+      "dashboard": "Dashboard",
+      "chats": "Chats",
+      "files": "Files",
+      "calendar": "Calendar",
+      "email": "Emails",
+      "credentials": "Credentials",
+      "manuals": "Manuals",
+      "canvas": "Canvas",
+      "inventory": "Inventory",
+      "wiki": "Wiki",
+      "settings": "Settings",
+      "profile": "Profile",
+      "logout": "Log out",
+      "more": "More",
+      "back": "Back"
+    }
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "filter": "Filter",
+    "yes": "Yes",
+    "no": "No",
+    "close": "Close",
+    "confirm": "Confirm",
+    "loading": "Loading...",
+    "actions": "Actions",
+    "status": "Status",
+    "active": "Active",
+    "inactive": "Inactive",
+    "optional": "Optional",
+    "required": "Required",
+    "language": "Language",
+    "select_language": "Select language"
+  },
+  "auth": {
+    "login": {
+      "title": "Log in",
+      "subtitle": "Sign in with your credentials to continue.",
+      "email": "Email address",
+      "password": "Password",
+      "remember_me": "Keep me signed in",
+      "submit": "Log in",
+      "register_link_prefix": "New to Prismateams?",
+      "register_link_cta": "Create an account"
+    },
+    "register": {
+      "title": "Register",
+      "subtitle": "Create your Prismateams account.",
+      "first_name": "First name",
+      "last_name": "Last name",
+      "email": "Email address",
+      "phone_optional": "Phone number (optional)",
+      "password": "Password",
+      "password_help": "At least 12 characters including uppercase, lowercase, numbers and symbols.",
+      "confirm_password": "Confirm password",
+      "dark_mode_label": "Enable dark mode",
+      "dark_mode_help": "You can change this setting anytime in your profile.",
+      "submit": "Create account",
+      "login_link_prefix": "Already registered?",
+      "login_link_cta": "Log in here"
+    },
+    "confirm_email": {
+      "title": "Confirm email",
+      "subtitle": "Enter the verification code we have sent to you.",
+      "info_title": "Info",
+      "info_message": "The code is valid for 15 minutes. Please also check your spam folder.",
+      "code": "Verification code",
+      "code_help": "You can find the code in the email with the subject \"Confirm email\".",
+      "submit": "Confirm code",
+      "no_email": "Didn't receive an email?",
+      "resend_button": "Resend code",
+      "warning_title": "Important",
+      "warning_message": "Without a confirmed email address only limited features are available."
+    }
+  },
+  "dashboard": {
+    "page_title": "Dashboard",
+    "setup": {
+      "success_title": "🎉 Setup complete!",
+      "success_body": "Welcome to your team portal! You can now add more users via the settings."
+    },
+    "update": {
+      "title": "Update available!",
+      "description": "A new update is available on the main branch on GitHub.",
+      "latest_commit": "Latest commit:",
+      "actions": {
+        "open_github": "Open GitHub",
+        "dismiss": "Dismiss",
+        "disable": "Don't show again"
+      }
+    },
+    "welcome": "Welcome, {name}!",
+    "overview_subtitle": "Here is your overview",
+    "widgets": {
+      "common": {
+        "time_suffix": ""
+      },
+      "calendar": {
+        "title": "Upcoming events",
+        "empty": "No upcoming events"
+      },
+      "chat": {
+        "title": "Messages",
+        "fallback_file": "[File]",
+        "empty": "No new messages"
+      },
+      "email": {
+        "title": "Emails",
+        "unread_badge": "New",
+        "empty": "No emails"
+      },
+      "files": {
+        "title": "Recent files",
+        "empty": "No files"
+      },
+      "canvas": {
+        "title": "Canvas",
+        "empty": "No canvases"
+      },
+      "wiki_new": {
+        "title": "New wiki entries",
+        "empty": "No wiki entries"
+      },
+      "wiki_favorites": {
+        "title": "My wikis",
+        "empty": "No favourites"
+      },
+      "borrows": {
+        "title": "My loans",
+        "borrowed_on": "Loan from {date}",
+        "item_count": "{count} items",
+        "overdue": "Overdue",
+        "return_by": "Return by {date}",
+        "return_button": "Return",
+        "empty": "No active loans"
+      }
+    },
+    "quick_access": {
+      "title": "Quick access",
+      "edit_dashboard": "Edit dashboard"
+    }
+  },
+  "languages": {
+    "de": "German",
+    "en": "English",
+    "pt": "Portuguese",
+    "es": "Spanish",
+    "ru": "Russian"
+  },
+  "settings": {
+    "appearance": {
+      "page_title": "Appearance - Settings",
+      "breadcrumb_settings": "Settings",
+      "breadcrumb_appearance": "Appearance",
+      "heading": "Customize appearance",
+      "language_label": "Language",
+      "language_help": "Choose the language for the interface and system messages.",
+      "accent_section_title": "Accent colour & gradient",
+      "color_type_label": "Colour or gradient",
+      "color_type_solid": "Solid colour",
+      "color_type_gradient": "Gradient",
+      "accent_color_label": "Accent colour",
+      "preview": "Preview",
+      "gradient_label": "Gradient",
+      "gradient_start": "Start colour",
+      "gradient_end": "End colour",
+      "gradient_direction": "Direction",
+      "gradient_direction_diag_rt": "Diagonal (↗)",
+      "gradient_direction_horizontal": "Horizontal (→)",
+      "gradient_direction_vertical": "Vertical (↓)",
+      "gradient_direction_diag_lt": "Diagonal (↖)",
+      "presets_label": "Preset gradients",
+      "presets": {
+        "purple_blue": "Purple - Blue",
+        "pink_red": "Pink - Red",
+        "blue_cyan": "Blue - Cyan",
+        "green_teal": "Green - Teal",
+        "pink_yellow": "Pink - Yellow",
+        "pastel": "Pastel"
+      },
+      "design_section_label": "Design mode",
+      "dark_mode": "Dark mode",
+      "oled_mode": "OLED mode (true black)",
+      "oled_help": "Uses true black (#000000) for OLED displays. Requires dark mode.",
+      "save_button": "Save changes",
+      "flash_success": "Appearance settings updated.",
+      "flash_invalid_language": "The selected language is not available."
+    },
+    "index": {
+      "page_title": "Settings - Team Portal",
+      "heading": "Settings",
+      "cards": {
+        "profile": {
+          "title": "Profile",
+          "description": "Edit personal data and password",
+          "button": "Edit"
+        },
+        "appearance": {
+          "title": "Appearance",
+          "description": "Adjust accent colour, language and dark mode",
+          "button": "Edit"
+        },
+        "notifications": {
+          "title": "Notifications",
+          "description": "Push notifications for chat, files, email and calendar",
+          "button": "Edit"
+        },
+        "about": {
+          "title": "About",
+          "description": "Information about Prismateams, version and creator",
+          "button": "Open"
+        },
+        "admin": {
+          "title": "Administration",
+          "description": "Manage users and system settings",
+          "button": "Open"
+        }
+      }
+    },
+    "profile": {
+      "page_title": "Profile - Settings",
+      "breadcrumb_settings": "Settings",
+      "breadcrumb_profile": "Profile",
+      "heading": "Edit profile",
+      "picture": {
+        "alt": "Profile picture",
+        "alt_preview": "Profile picture preview",
+        "change_button": "Change profile picture",
+        "remove_button": "Remove",
+        "remove_confirm": "Do you really want to remove the profile picture?",
+        "remove_error": "Failed to remove the profile picture.",
+        "error_type": "Only JPG, PNG and GIF files are allowed.",
+        "error_size": "The file is too large. Maximum size: 5MB."
+      },
+      "fields": {
+        "first_name": "First name",
+        "last_name": "Last name",
+        "email": "Email",
+        "phone": "Phone"
+      },
+      "notifications": {
+        "heading": "Notifications",
+        "master_toggle": "Enable push notifications",
+        "master_help": "Receive notifications even when the app is closed",
+        "chat_toggle": "Chat notifications",
+        "chat_help": "Notifications for new chat messages",
+        "email_toggle": "Email notifications",
+        "email_help": "Email alerts for important events"
+      },
+      "password": {
+        "heading": "Change password",
+        "label": "New password (optional)",
+        "help": "Leave empty to keep the current password"
+      },
+      "save_button": "Save changes",
+      "flash_password_length": "The password must be at least 8 characters long.",
+      "flash_picture_too_large": "Profile picture is too large. Maximum size: 5MB. Your file: {size:.1f}MB",
+      "flash_picture_invalid_type": "Invalid file type. Only PNG, JPG, JPEG and GIF files are allowed.",
+      "flash_picture_uploaded": "Profile picture uploaded successfully.",
+      "flash_profile_updated": "Profile updated."
+    },
+    "notifications": {
+      "page_title": "Notifications - Settings",
+      "breadcrumb_settings": "Settings",
+      "breadcrumb_notifications": "Notifications",
+      "permissions": {
+        "title": "Browser permissions",
+        "description": "These permissions are required so the app can use all features.",
+        "push": {
+          "title": "Push notifications",
+          "description": "Server-side notifications for chat, files and email",
+          "activate": "Enable push",
+          "test": "Send test",
+          "cooldown_label": "Cooldown active",
+          "cooldown_timer": "2:00"
+        },
+        "microphone": {
+          "title": "Microphone access",
+          "description": "Required for voice messages in chat",
+          "request": "Request permission"
+        },
+        "app": {
+          "title": "App installation",
+          "description": "Install the app on your device for better notifications",
+          "install": "Install app"
+        }
+      },
+      "status": {
+        "title": "Push notification status",
+        "browser_title": "Browser support",
+        "browser_description": "Web Push API is supported",
+        "worker_title": "Service worker",
+        "worker_description": "Service worker is active",
+        "info_strong": "Server-side notifications:",
+        "info_message": "You receive push notifications even when the browser is closed. The system runs on the server and does not rely on local polling.",
+        "https_warning": "Important: Push notifications only work over HTTPS. They are not available via HTTP.",
+        "push_alert_title": "Push notifications not enabled:",
+        "push_alert_step1": "Click \"Enable push notifications\"",
+        "push_alert_step2": "Grant the browser permission when prompted",
+        "push_alert_step3": "Then try the \"Send test\" button"
+      },
+      "chat": {
+        "title": "Chat notifications",
+        "toggle": "Enable chat notifications",
+        "help": "Receive notifications for new chat messages",
+        "table_title": "Chat specific settings",
+        "table": {
+          "chat": "Chat",
+          "notifications": "Notifications"
+        }
+      },
+      "files": {
+        "title": "File notifications",
+        "toggle": "Enable file notifications",
+        "help": "Receive notifications for file changes",
+        "new": "New files",
+        "new_help": "Notifications for newly uploaded files",
+        "modified": "Modified files",
+        "modified_help": "Notifications for edited files"
+      },
+      "email": {
+        "title": "Email notifications",
+        "toggle": "Enable email notifications",
+        "help": "Receive notifications for new emails"
+      },
+      "calendar": {
+        "title": "Calendar notifications",
+        "toggle": "Enable calendar notifications",
+        "help": "Receive reminders for events",
+        "filter_question": "Which events should trigger notifications?",
+        "filter_all": "All events",
+        "filter_selective": "Only selected events",
+        "filter_participating": "I'm attending",
+        "filter_not_participating": "I'm not attending",
+        "filter_no_response": "No response",
+        "reminders_title": "Reminder times",
+        "reminders_help": "Choose when you'd like to be reminded:",
+        "reminder_30min": "30 minutes before",
+        "reminder_1h": "1 hour before",
+        "reminder_2h": "2 hours before",
+        "reminder_6h": "6 hours before",
+        "reminder_8h": "8 hours before",
+        "reminder_1d": "1 day before",
+        "reminder_2d": "2 days before"
+      },
+      "save_button": "Save settings",
+      "js": {
+        "checking": "Checking...",
+        "permission_granted": "Granted",
+        "permission_denied": "Denied",
+        "permission_prompt": "Not granted",
+        "permission_unsupported": "Not supported",
+        "permission_unknown": "Unknown",
+        "toast_push_enabled_title": "Notifications enabled",
+        "toast_push_enabled_message": "You now receive push notifications.",
+        "toast_push_denied_title": "Notifications denied",
+        "toast_push_denied_message": "You can enable notifications in the browser settings.",
+        "toast_mic_enabled_title": "Microphone enabled",
+        "toast_mic_enabled_message": "You can now record voice messages.",
+        "toast_mic_denied_title": "Microphone denied",
+        "toast_mic_denied_message": "Microphone access is required for voice messages.",
+        "toast_app_installed_title": "App installed",
+        "toast_app_installed_message": "The app was installed successfully!"
+      }
+    },
+    "about": {
+      "page_title": "About Prismateams - Settings",
+      "breadcrumb_settings": "Settings",
+      "breadcrumb_about": "About Prismateams",
+      "heading": "About Prismateams",
+      "logo_alt": "Prismateams logo",
+      "section_product_title": "Prismateams",
+      "section_product_description": "Prismateams is a comprehensive team collaboration platform that helps you communicate, organise and cooperate efficiently with your team. It offers chat, file management, calendar, email management and much more.",
+      "author_label": "Author:",
+      "copyright": "Copyright © Enrico R. Matzke 2025. All rights reserved.",
+      "section_repository_title": "GitHub repository",
+      "section_repository_description": "You can find the source code repository on GitHub:",
+      "section_repository_button": "Open GitHub repository",
+      "section_system_title": "About this system",
+      "version_label": "Version:",
+      "version_value": "V2.1.5 - Stable release",
+      "creator_label": "Creator:",
+      "onlyoffice_label": "OnlyOffice integration:",
+      "onlyoffice_active": "Active",
+      "onlyoffice_inactive": "Inactive",
+      "back_button": "Back to settings"
+    },
+    "admin": {
+      "page_title": "Administration - Settings",
+      "breadcrumb_settings": "Settings",
+      "breadcrumb_admin": "Administration",
+      "heading": "Administration",
+      "sections": {
+        "users": {
+          "title": "User management"
+        },
+        "email": {
+          "title": "Email management"
+        },
+        "system": {
+          "title": "System settings"
+        },
+        "inventory": {
+          "title": "Inventory management"
+        }
+      },
+      "cards": {
+        "open_button": "Open",
+        "test_button": "Test",
+        "configure_button": "Configure",
+        "user_management": {
+          "title": "User management",
+          "description": "Activate, edit and manage users"
+        },
+        "confirmation_codes": {
+          "title": "Confirmation codes",
+          "description": "View pending email confirmation codes"
+        },
+        "whitelist": {
+          "title": "Whitelist management",
+          "description": "Manage email addresses and domains for automatic activation"
+        },
+        "email_permissions": {
+          "title": "Email permissions",
+          "description": "Manage read and send permissions"
+        },
+        "email_test": {
+          "title": "Email test",
+          "description": "Test and verify email configuration"
+        },
+        "email_footer": {
+          "title": "Email footer",
+          "description": "Configure the email footer template with variables"
+        },
+        "system_settings": {
+          "title": "System settings",
+          "description": "Manage global system configuration"
+        },
+        "modules": {
+          "title": "Modules",
+          "description": "Enable or disable modules"
+        },
+        "backup": {
+          "title": "Import/Export",
+          "description": "Create and restore backups"
+        },
+        "inventory_categories": {
+          "title": "Inventory categories",
+          "description": "Manage product categories"
+        },
+        "inventory_permissions": {
+          "title": "Borrow permissions",
+          "description": "Manage item borrowing permissions"
+        }
+      }
+    }
+  },
+  "chat": {
+    "index": {
+      "page_title": "Chats - Team Portal",
+      "heading": "Chats",
+      "subtitle": "Manage your team chats and direct messages",
+      "new_chat": "New Chat",
+      "main_badge": "Main Chat",
+      "main_description": "Team-wide chat for all members",
+      "open": "Open",
+      "group_title": "Group chats",
+      "member_count": "{count} members",
+      "direct_title": "Direct messages",
+      "direct_label": "Direct message",
+      "empty": "You don't have any group chats or direct messages yet.",
+      "empty_cta": "Create a new chat!"
+    },
+    "view": {
+      "page_title_suffix": "Chats",
+      "breadcrumb_chats": "Chats",
+      "members_title": "Members",
+      "member_role_admin": "Admin",
+      "member_role_member": "Member",
+      "member_count": "{count} members",
+      "member_more": "Show all members",
+      "dropdown": {
+        "mute": "Mute notifications",
+        "info": "Chat info",
+        "settings": "Settings"
+      },
+      "mobile_members": "Members",
+      "no_messages": {
+        "title": "No messages in this chat yet.",
+        "hint": "Send the first message!"
+      },
+      "message": {
+        "you": "You",
+        "unknown_user": "Unknown user"
+      },
+      "input": {
+        "attach": "Attach file",
+        "voice": "Voice message",
+        "placeholder": "Write a message...",
+        "send": "Send"
+      },
+      "modals": {
+        "member_profile": {
+          "title": "Member profile",
+          "close": "Close"
+        },
+        "all_members": {
+          "title": "All members",
+          "close": "Close"
+        }
+      },
+      "js": {
+        "file_label": "File: {filename}",
+        "send_error_prefix": "Error sending: {error}",
+        "send_error_generic": "Error sending the message",
+        "voice_error": "Error sending the voice message",
+        "mute": "Mute notifications",
+        "unmute": "Enable notifications",
+        "permission_title": "Microphone",
+        "permission_message": "Microphone access is required for voice messages.",
+        "microphone_denied": "Microphone access was denied. Please allow it in your browser settings."
+      }
+    }
+  },
+  "files": {
+    "index": {
+      "page_title": "Files - Team Portal",
+      "heading": "Files",
+      "breadcrumb_root": "Root",
+      "view_toggle": {
+        "list": "List view",
+        "grid": "Grid view"
+      },
+      "new_button": "NEW",
+      "dropdown": {
+        "upload_files": "Upload files",
+        "upload_folder": "Upload folder",
+        "create_folder": "Create folder",
+        "create_word": "Create Word document (.docx)",
+        "create_excel": "Create Excel spreadsheet (.xlsx)",
+        "create_powerpoint": "Create PowerPoint presentation (.pptx)",
+        "create_markdown": "Create Markdown file (.md)"
+      },
+      "sections": {
+        "folders": "Folders",
+        "files": "Files"
+      },
+      "inline": {
+        "folder_name_placeholder": "Folder name",
+        "file_name_placeholder": "File name",
+        "word_name_placeholder": "Word document name",
+        "excel_name_placeholder": "Excel spreadsheet name",
+        "powerpoint_name_placeholder": "PowerPoint presentation name",
+        "markdown_name_placeholder": "Markdown file name"
+      },
+      "buttons": {
+        "upload": "Upload"
+      },
+      "folder_actions": {
+        "dropbox_edit": "Edit dropbox",
+        "dropbox_make": "Make dropbox",
+        "share_edit": "Edit sharing",
+        "share_disable": "Disable sharing",
+        "share": "Share",
+        "rename": "Rename",
+        "delete": "Delete"
+      },
+      "file_actions": {
+        "download": "Download",
+        "edit_onlyoffice": "Edit with ONLYOFFICE",
+        "view": "View",
+        "edit": "Edit",
+        "share_edit": "Edit sharing",
+        "share_disable": "Disable sharing",
+        "share": "Share",
+        "details": "Details & versions",
+        "rename": "Rename",
+        "delete": "Delete"
+      },
+      "labels": {
+        "text_file": "Text file",
+        "uploaded_by": "By {name}",
+        "empty_folder": "This folder is empty. Upload files or create a new folder."
+      },
+      "modals": {
+        "create_entry": {
+          "title": "Create file/folder",
+          "markdown_button": "Markdown file (.md)",
+          "folder_button": "New folder"
+        },
+        "markdown": {
+          "title": "Create markdown file",
+          "filename_label": "File name (without .md)",
+          "content_label": "Content",
+          "placeholder": "# Title\\n\\nWrite your Markdown content here..."
+        },
+        "upload": {
+          "title": "Upload file",
+          "file_label": "Select file (max. 100MB per file)",
+          "file_help": "Maximum file size: 100MB per file",
+          "folder_label": "Or select a folder",
+          "folder_help": "Files larger than 100MB will be skipped"
+        },
+        "new_folder": {
+          "title": "New folder",
+          "name_label": "Folder name"
+        },
+        "side_menu": {
+          "title": "File details",
+          "loading": "Loading file details...",
+          "info_title": "File information",
+          "versions_title": "Versions",
+          "no_versions": "No versions available",
+          "actions_title": "Actions",
+          "download": "Download",
+          "view": "View",
+          "edit": "Edit",
+          "info_labels": {
+            "name": "Name",
+            "size": "Size",
+            "type": "Type",
+            "uploader": "Uploaded by",
+            "created": "Created",
+            "version": "Version"
+          },
+          "version_label": "Version {number}",
+          "current_suffix": " (current)",
+          "download_button": "Download"
+        },
+        "dropbox": {
+          "title": "Edit dropbox",
+          "link_label": "Dropbox link",
+          "copy_button": "Copy",
+          "copy_success": "Copied!",
+          "info_text": "Share this link so external users can upload files.",
+          "password_section": "Password protection",
+          "password_enabled": "A password is enabled.",
+          "password_placeholder": "Set password (optional)",
+          "password_change": "Change password",
+          "password_set": "Set password",
+          "password_remove": "Remove password",
+          "expires_label": "Expiration date (optional)",
+          "expires_hint": "After this date the share will no longer be available.",
+          "regenerate": "Generate new link",
+          "regenerate_hint": "The old link becomes invalid.",
+          "disable": "Disable dropbox",
+          "password_label_change": "Change password",
+          "password_label_set": "Set password (optional)",
+          "password_keep_hint": "Leave blank to keep unchanged",
+          "regenerate_title": "Regenerate link",
+          "disable_title": "Disable dropbox"
+        },
+        "share": {
+          "title_file": "Share file",
+          "title_folder": "Share folder",
+          "password_label": "Password (optional)",
+          "expires_label": "Expiration date (optional)",
+          "info_text": "Recipients are asked for their name on first access.",
+          "create_button": "Create share",
+          "link_label": "Share link",
+          "guest_info": "Current guest: {name}",
+          "save_button": "Save",
+          "disable_button": "Disable share",
+          "close_button": "Close",
+          "password_keep_label": "Password (leave blank to keep unchanged)",
+          "expires_label_compact": "Expiration date",
+          "edit_title": "Edit share",
+          "password_help": "Protects the share with a password.",
+          "expires_help": "After this date the share is no longer available."
+        }
+      },
+      "alerts": {
+        "rename_folder": "Rename folder?",
+        "delete_folder": "Delete folder and all contents?",
+        "rename_file": "Rename file?",
+        "delete_file": "Delete file?",
+        "dropbox_disable": "Disable dropbox?"
+      },
+      "messages": {
+        "upload_error": "Error uploading files.",
+        "upload_folder_error": "Error uploading folder.",
+        "select_prompt": "Please select a file or folder.",
+        "progress": "Loading...",
+        "file_details_error": "Error loading file details",
+        "settings_error": "Error loading settings",
+        "file_too_large": "The file is too large. Maximum size: 100MB per file."
+      }
+    }
+  },
+  "calendar": {
+    "index": {
+      "page_title": "Calendar - Team Portal",
+      "heading": "Calendar",
+      "view_buttons": {
+        "month": "Month view",
+        "week": "Week view",
+        "day": "Day view",
+        "list": "Agenda"
+      },
+      "new_event": "New event",
+      "dropdown": {
+        "toggle": "Open menu",
+        "export": "Export calendar",
+        "import": "Import calendar",
+        "feeds": "Manage public calendars"
+      },
+      "month_names": [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+      ],
+      "weekday_short": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+      "weekday_long": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+      "list": {
+        "details": "Details",
+        "time_suffix": "",
+        "statuses": {
+          "accepted": "Accepted",
+          "declined": "Declined",
+          "removed": "Removed",
+          "pending": "Pending"
+        },
+        "empty": {
+          "message": "No events yet.",
+          "hint": "Create the first event!"
+        }
+      },
+      "week": {
+        "title_prefix": "Week",
+        "time_column": "Time",
+        "today": "Today",
+        "range_separator": " - "
+      },
+      "day": {
+        "title": "Day",
+        "today": "Today"
+      },
+      "events": {
+        "location_prefix": " - ",
+        "tooltip": "{title} - {time}{location}"
+      },
+      "js": {
+        "no_events": "No events found.",
+        "error_loading": "Error loading events."
+      }
+    },
+    "create": {
+      "page_title": "New Event - Team Portal",
+      "breadcrumb": {
+        "index": "Calendar",
+        "current": "New event"
+      },
+      "card_title": "Create new event",
+      "form": {
+        "title": "Title",
+        "description": "Description (optional)",
+        "start_time": "Start time",
+        "end_time": "End time",
+        "location": "Location (optional)",
+        "recurrence": {
+          "label": "Recurring event",
+          "type_label": "Repeat",
+          "options": {
+            "none": "No repeat",
+            "daily": "Daily",
+            "weekly": "Weekly",
+            "monthly": "Monthly",
+            "yearly": "Yearly"
+          },
+          "interval_label": "Interval",
+          "interval_help": {
+            "default": "e.g. every 2 weeks",
+            "daily": "e.g. every 2 days",
+            "weekly": "e.g. every 2 weeks",
+            "monthly": "e.g. every 2 months",
+            "yearly": "e.g. every 2 years"
+          },
+          "days_label": "Weekdays",
+          "weekday_names": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+          "end_label": "Repeat ends on (optional)",
+          "end_help": "Leave empty for unlimited recurrence"
+        }
+      },
+      "buttons": {
+        "submit": "Create event",
+        "cancel": "Cancel"
+      }
+    },
+    "view": {
+      "page_title_suffix": "Calendar",
+      "breadcrumb": {
+        "index": "Calendar"
+      },
+      "date_label": "Date",
+      "time_label": "Time",
+      "time_suffix": "",
+      "location_label": "Location",
+      "recurrence_label": "Recurring event:",
+      "recurrence_types": {
+        "daily": "Daily",
+        "weekly": "Weekly",
+        "monthly": "Monthly",
+        "yearly": "Yearly"
+      },
+      "recurrence_interval": {
+        "daily": "every {count} days",
+        "weekly": "every {count} weeks",
+        "monthly": "every {count} months",
+        "yearly": "every {count} years"
+      },
+      "recurrence_end": "Ends on: {date}",
+      "recurrence_button": "View all instances",
+      "created_by": "Created by:",
+      "buttons": {
+        "accept": "Accept",
+        "decline": "Decline",
+        "edit": "Edit",
+        "delete": "Delete",
+        "delete_all": "Delete all instances"
+      },
+      "confirm": {
+        "delete_single": "Delete this event?",
+        "delete_recurring": "Delete the series and all instances?",
+        "remove_participant": "Remove participant?"
+      },
+      "statuses": {
+        "accepted": "Accepted",
+        "declined": "Declined",
+        "removed": "Removed",
+        "pending": "Pending"
+      },
+      "alerts": {
+        "removed": "You have been removed from this event and can no longer participate."
+      },
+      "participants_title": "Participants"
+    },
+    "edit": {
+      "page_title_suffix": "Edit event",
+      "breadcrumb": {
+        "index": "Calendar",
+        "current": "Edit"
+      },
+      "card_title": "Edit event",
+      "buttons": {
+        "submit": "Save changes",
+        "cancel": "Cancel"
+      }
+    }
+  },
+  "email": {
+    "index": {
+      "page_title": "Email - Team Portal",
+      "heading": "Email",
+      "mobile": {
+        "folders_title": "Email folders",
+        "close": "Close"
+      },
+      "buttons": {
+        "compose": "New email",
+        "sync": "Sync"
+      },
+      "folder_default": "Inbox",
+      "labels": {
+        "new_badge": "New",
+        "move_to_folder": "Move to folder",
+        "empty": "No emails available",
+        "options_title": "Options"
+      },
+      "actions": {
+        "view": "View",
+        "reply": "Reply",
+        "reply_all": "Reply all",
+        "forward": "Forward",
+        "delete": "Delete"
+      },
+      "confirm": {
+        "delete_email": "Really delete this email?"
+      },
+      "folders": {
+        "INBOX": "Inbox",
+        "Sent": "Sent",
+        "Sent Messages": "Sent",
+        "Drafts": "Drafts",
+        "Trash": "Trash",
+        "Deleted Messages": "Deleted messages",
+        "Spam": "Spam",
+        "Junk": "Spam",
+        "Archive": "Archive"
+      },
+      "messages": {
+        "sync_failed": "Sync failed",
+        "sync_error": "Sync failed. Please try again."
+      }
+    },
+    "compose": {
+      "page_title": "New email - Team Portal",
+      "breadcrumb": {
+        "index": "Email",
+        "current": "New email"
+      },
+      "card_title": "Compose new email",
+      "form": {
+        "to": "To",
+        "to_placeholder": "recipient@example.com",
+        "to_help": "Separate multiple recipients with commas",
+        "cc": "CC (optional)",
+        "cc_placeholder": "cc@example.com",
+        "subject": "Subject"
+      },
+      "editor": {
+        "placeholder": "Write your email here..."
+      },
+      "preview": {
+        "toggle": "Email preview",
+        "status_hidden": "Hidden",
+        "status_loading": "Updating...",
+        "status_ready": "Updated",
+        "placeholder": "Start typing to preview the formatted email.",
+        "loading_label": "Loading...",
+        "error_loading": "Preview could not be loaded.",
+        "error_title": "Error",
+        "unknown_response": "Received an unknown response for the preview."
+      },
+      "attachments": {
+        "label": "Attachments (optional)",
+        "help": "You can select multiple files",
+        "footer_note": "The email footer is added automatically."
+      },
+      "buttons": {
+        "send": "Send",
+        "cancel": "Cancel"
+      },
+      "messages": {
+        "server_error": "Server error {status}",
+        "validation_error": "Please enter a message."
+      }
+    },
+    "view": {
+      "page_title_suffix": "Email",
+      "breadcrumb": {
+        "index": "Email"
+      },
+      "header": {
+        "from": "From:",
+        "to": "To:",
+        "cc": "CC:",
+        "date": "Date:"
+      },
+      "attachments": {
+        "title": "Attachments ({count})",
+        "collapse_close": "Toggle attachments",
+        "inline_badge": "Inline",
+        "preview": "Preview",
+        "download": "Download"
+      },
+      "content": {
+        "toggle_label": "Switch view",
+        "tabs": {
+          "html": "HTML",
+          "plain": "Text"
+        },
+        "alert_no_content": "No email content available. The content may be stored in an attachment."
+      },
+      "zoom": {
+        "label": "Zoom",
+        "out": "Zoom out",
+        "reset": "Reset",
+        "in": "Zoom in"
+      },
+      "modal": {
+        "title": "Attachment preview",
+        "close": "Close",
+        "download": "Download"
+      }
+    }
+  },
+  "credentials": {
+    "index": {
+      "page_title": "Credentials - Team Portal",
+      "heading": "Credentials",
+      "new_button": "Add new",
+      "password_placeholder": "********",
+      "labels": {
+        "username": "Username",
+        "password": "Password",
+        "notes": "Notes",
+        "empty_message": "No credentials stored.",
+        "empty_hint": "Add the first credentials!"
+      },
+      "actions": {
+        "edit": "Edit",
+        "delete_confirm": "Delete these credentials?"
+      },
+      "messages": {
+        "copy_success": "Copied to clipboard!",
+        "password_error": "Could not load password."
+      }
+    },
+    "form": {
+      "fields": {
+        "website_name": "Website name",
+        "website_url": "Website URL",
+        "username": "Username",
+        "password": "Password",
+        "notes": "Notes (optional)"
+      },
+      "placeholders": {
+        "website_name": "e.g. GitHub",
+        "website_url": "https://example.com"
+      },
+      "buttons": {
+        "save": "Save",
+        "update": "Save changes",
+        "cancel": "Cancel"
+      },
+      "create": {
+        "page_title": "Add credentials - Team Portal",
+        "breadcrumb": {
+          "index": "Credentials",
+          "current": "Add new"
+        },
+        "card_title": "Add new credentials"
+      },
+      "edit": {
+        "page_title_suffix": "Credentials",
+        "breadcrumb": {
+          "index": "Credentials",
+          "current": "Edit"
+        },
+        "card_title": "Edit credentials",
+        "password_help": "Leave empty to keep the current password"
+      }
+    }
+  },
+  "manuals": {
+    "index": {
+      "page_title": "Manuals - Team Portal",
+      "heading": "Manuals",
+      "upload_button": "Upload manual",
+      "actions": {
+        "view": "View",
+        "delete_confirm": "Delete this manual?"
+      },
+      "empty": {
+        "message": "No manuals available.",
+        "hint": "Upload the first manual!"
+      }
+    },
+    "upload": {
+      "page_title": "Upload manual - Team Portal",
+      "breadcrumb": {
+        "index": "Manuals",
+        "current": "Upload"
+      },
+      "card_title": "Upload manual",
+      "form": {
+        "title": "Title",
+        "title_placeholder": "e.g. User guide",
+        "file": "PDF file",
+        "file_help": "Only PDF files are allowed"
+      },
+      "buttons": {
+        "submit": "Upload",
+        "cancel": "Cancel"
+      }
+    }
+  }
+}

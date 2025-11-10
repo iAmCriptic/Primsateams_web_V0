@@ -1,31 +1,30 @@
 {% extends "base.html" %}
 
-{% block title %}Administration - Einstellungen{% endblock %}
+{% block title %}{{ _('settings.admin.page_title') }}{% endblock %}
 
 {% block content %}
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{{ url_for('settings.index') }}">Einstellungen</a></li>
-        <li class="breadcrumb-item active">Administration</li>
+        <li class="breadcrumb-item"><a href="{{ url_for('settings.index') }}">{{ _('settings.admin.breadcrumb_settings') }}</a></li>
+        <li class="breadcrumb-item active">{{ _('settings.admin.breadcrumb_admin') }}</li>
     </ol>
 </nav>
 
-<h1 class="mb-4"><i class="bi bi-shield-lock"></i> Administration</h1>
+<h1 class="mb-4"><i class="bi bi-shield-lock"></i> {{ _('settings.admin.heading') }}</h1>
 
-<!-- Benutzerverwaltung -->
 <div class="mb-5">
-    <h3 class="mb-3"><i class="bi bi-people-fill text-primary"></i> Benutzerverwaltung</h3>
+    <h3 class="mb-3"><i class="bi bi-people-fill text-primary"></i> {{ _('settings.admin.sections.users.title') }}</h3>
     <div class="row g-3">
         <div class="col-12 col-md-6 col-lg-4">
             <div class="card h-100">
                 <div class="card-body">
                     <h5 class="card-title">
                         <i class="bi bi-people text-primary"></i>
-                        Benutzerverwaltung
+                        {{ _('settings.admin.cards.user_management.title') }}
                     </h5>
-                    <p class="card-text">Benutzer aktivieren, bearbeiten und verwalten</p>
+                    <p class="card-text">{{ _('settings.admin.cards.user_management.description') }}</p>
                     <a href="{{ url_for('settings.admin_users') }}" class="btn btn-outline-primary">
-                        Öffnen <i class="bi bi-arrow-right"></i>
+                        {{ _('settings.admin.cards.open_button') }} <i class="bi bi-arrow-right"></i>
                     </a>
                 </div>
             </div>
@@ -36,11 +35,11 @@
                 <div class="card-body">
                     <h5 class="card-title">
                         <i class="bi bi-key text-info"></i>
-                        Bestätigungscodes
+                        {{ _('settings.admin.cards.confirmation_codes.title') }}
                     </h5>
-                    <p class="card-text">Ausstehende E-Mail-Bestätigungscodes anzeigen</p>
+                    <p class="card-text">{{ _('settings.admin.cards.confirmation_codes.description') }}</p>
                     <a href="{{ url_for('auth.show_confirmation_codes') }}" class="btn btn-outline-primary">
-                        Öffnen <i class="bi bi-arrow-right"></i>
+                        {{ _('settings.admin.cards.open_button') }} <i class="bi bi-arrow-right"></i>
                     </a>
                 </div>
             </div>
@@ -51,11 +50,11 @@
                 <div class="card-body">
                     <h5 class="card-title">
                         <i class="bi bi-shield-check text-warning"></i>
-                        Whitelist-Verwaltung
+                        {{ _('settings.admin.cards.whitelist.title') }}
                     </h5>
-                    <p class="card-text">E-Mail-Adressen und Domains für automatische Aktivierung</p>
+                    <p class="card-text">{{ _('settings.admin.cards.whitelist.description') }}</p>
                     <a href="{{ url_for('settings.admin_whitelist') }}" class="btn btn-outline-primary">
-                        Öffnen <i class="bi bi-arrow-right"></i>
+                        {{ _('settings.admin.cards.open_button') }} <i class="bi bi-arrow-right"></i>
                     </a>
                 </div>
             </div>
@@ -63,20 +62,19 @@
     </div>
 </div>
 
-<!-- E-Mail-Verwaltung -->
 <div class="mb-5">
-    <h3 class="mb-3"><i class="bi bi-envelope-fill text-success"></i> E-Mail-Verwaltung</h3>
+    <h3 class="mb-3"><i class="bi bi-envelope-fill text-success"></i> {{ _('settings.admin.sections.email.title') }}</h3>
     <div class="row g-3">
         <div class="col-12 col-md-6 col-lg-4">
             <div class="card h-100">
                 <div class="card-body">
                     <h5 class="card-title">
                         <i class="bi bi-envelope-check text-success"></i>
-                        E-Mail-Berechtigungen
+                        {{ _('settings.admin.cards.email_permissions.title') }}
                     </h5>
-                    <p class="card-text">Lese- und Sende-Berechtigungen verwalten</p>
+                    <p class="card-text">{{ _('settings.admin.cards.email_permissions.description') }}</p>
                     <a href="{{ url_for('settings.admin_email_permissions') }}" class="btn btn-outline-primary">
-                        Öffnen <i class="bi bi-arrow-right"></i>
+                        {{ _('settings.admin.cards.open_button') }} <i class="bi bi-arrow-right"></i>
                     </a>
                 </div>
             </div>
@@ -87,11 +85,11 @@
                 <div class="card-body">
                     <h5 class="card-title">
                         <i class="bi bi-envelope text-warning"></i>
-                        E-Mail-Test
+                        {{ _('settings.admin.cards.email_test.title') }}
                     </h5>
-                    <p class="card-text">E-Mail-Konfiguration testen und prüfen</p>
+                    <p class="card-text">{{ _('settings.admin.cards.email_test.description') }}</p>
                     <a href="{{ url_for('auth.test_email') }}" class="btn btn-outline-primary">
-                        Testen <i class="bi bi-arrow-right"></i>
+                        {{ _('settings.admin.cards.test_button') }} <i class="bi bi-arrow-right"></i>
                     </a>
                 </div>
             </div>
@@ -102,11 +100,11 @@
                 <div class="card-body">
                     <h5 class="card-title">
                         <i class="bi bi-envelope-paper text-primary"></i>
-                        E-Mail-Footer
+                        {{ _('settings.admin.cards.email_footer.title') }}
                     </h5>
-                    <p class="card-text">E-Mail-Footer-Template mit Variablen konfigurieren</p>
+                    <p class="card-text">{{ _('settings.admin.cards.email_footer.description') }}</p>
                     <a href="{{ url_for('settings.admin_email_footer') }}" class="btn btn-outline-primary">
-                        Konfigurieren <i class="bi bi-arrow-right"></i>
+                        {{ _('settings.admin.cards.configure_button') }} <i class="bi bi-arrow-right"></i>
                     </a>
                 </div>
             </div>
@@ -114,20 +112,19 @@
     </div>
 </div>
 
-<!-- System-Einstellungen -->
 <div class="mb-5">
-    <h3 class="mb-3"><i class="bi bi-gear-fill text-secondary"></i> System-Einstellungen</h3>
+    <h3 class="mb-3"><i class="bi bi-gear-fill text-secondary"></i> {{ _('settings.admin.sections.system.title') }}</h3>
     <div class="row g-3">
         <div class="col-12 col-md-6 col-lg-4">
             <div class="card h-100">
                 <div class="card-body">
                     <h5 class="card-title">
                         <i class="bi bi-gear text-secondary"></i>
-                        System-Einstellungen
+                        {{ _('settings.admin.cards.system_settings.title') }}
                     </h5>
-                    <p class="card-text">Globale System-Einstellungen verwalten</p>
+                    <p class="card-text">{{ _('settings.admin.cards.system_settings.description') }}</p>
                     <a href="{{ url_for('settings.admin_system') }}" class="btn btn-outline-primary">
-                        Öffnen <i class="bi bi-arrow-right"></i>
+                        {{ _('settings.admin.cards.open_button') }} <i class="bi bi-arrow-right"></i>
                     </a>
                 </div>
             </div>
@@ -137,11 +134,11 @@
                 <div class="card-body">
                     <h5 class="card-title">
                         <i class="bi bi-grid-3x3-gap text-secondary"></i>
-                        Module
+                        {{ _('settings.admin.cards.modules.title') }}
                     </h5>
-                    <p class="card-text">Module aktivieren oder deaktivieren</p>
+                    <p class="card-text">{{ _('settings.admin.cards.modules.description') }}</p>
                     <a href="{{ url_for('settings.admin_modules') }}" class="btn btn-outline-primary">
-                        Öffnen <i class="bi bi-arrow-right"></i>
+                        {{ _('settings.admin.cards.open_button') }} <i class="bi bi-arrow-right"></i>
                     </a>
                 </div>
             </div>
@@ -151,11 +148,11 @@
                 <div class="card-body">
                     <h5 class="card-title">
                         <i class="bi bi-archive text-secondary"></i>
-                        Import/Export
+                        {{ _('settings.admin.cards.backup.title') }}
                     </h5>
-                    <p class="card-text">Backups erstellen und wiederherstellen</p>
+                    <p class="card-text">{{ _('settings.admin.cards.backup.description') }}</p>
                     <a href="{{ url_for('settings.admin_backup') }}" class="btn btn-outline-primary">
-                        Öffnen <i class="bi bi-arrow-right"></i>
+                        {{ _('settings.admin.cards.open_button') }} <i class="bi bi-arrow-right"></i>
                     </a>
                 </div>
             </div>
@@ -163,20 +160,19 @@
     </div>
 </div>
 
-<!-- Lagerverwaltung -->
 <div class="mb-5">
-    <h3 class="mb-3"><i class="bi bi-box-seam-fill text-info"></i> Lagerverwaltung</h3>
+    <h3 class="mb-3"><i class="bi bi-box-seam-fill text-info"></i> {{ _('settings.admin.sections.inventory.title') }}</h3>
     <div class="row g-3">
         <div class="col-12 col-md-6 col-lg-4">
             <div class="card h-100">
                 <div class="card-body">
                     <h5 class="card-title">
                         <i class="bi bi-tags text-info"></i>
-                        Lager-Kategorien
+                        {{ _('settings.admin.cards.inventory_categories.title') }}
                     </h5>
-                    <p class="card-text">Kategorien für Produkte verwalten</p>
+                    <p class="card-text">{{ _('settings.admin.cards.inventory_categories.description') }}</p>
                     <a href="{{ url_for('settings.admin_inventory_categories') }}" class="btn btn-outline-primary">
-                        Öffnen <i class="bi bi-arrow-right"></i>
+                        {{ _('settings.admin.cards.open_button') }} <i class="bi bi-arrow-right"></i>
                     </a>
                 </div>
             </div>
@@ -187,11 +183,11 @@
                 <div class="card-body">
                     <h5 class="card-title">
                         <i class="bi bi-shield-check text-warning"></i>
-                        Ausleihe-Berechtigungen
+                        {{ _('settings.admin.cards.inventory_permissions.title') }}
                     </h5>
-                    <p class="card-text">Berechtigungen für Artikelausleihe verwalten</p>
+                    <p class="card-text">{{ _('settings.admin.cards.inventory_permissions.description') }}</p>
                     <a href="{{ url_for('settings.admin_inventory_permissions') }}" class="btn btn-outline-primary">
-                        Öffnen <i class="bi bi-arrow-right"></i>
+                        {{ _('settings.admin.cards.open_button') }} <i class="bi bi-arrow-right"></i>
                     </a>
                 </div>
             </div>

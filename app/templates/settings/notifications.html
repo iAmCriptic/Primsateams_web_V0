@@ -1,54 +1,52 @@
 {% extends "base.html" %}
 
-{% block title %}Benachrichtigungen - Einstellungen{% endblock %}
+{% block title %}{{ _('settings.notifications.page_title') }}{% endblock %}
 
 {% block content %}
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{{ url_for('settings.index') }}">Einstellungen</a></li>
-        <li class="breadcrumb-item active">Benachrichtigungen</li>
+        <li class="breadcrumb-item"><a href="{{ url_for('settings.index') }}">{{ _('settings.notifications.breadcrumb_settings') }}</a></li>
+        <li class="breadcrumb-item active">{{ _('settings.notifications.breadcrumb_notifications') }}</li>
     </ol>
 </nav>
 
 <div class="row">
     <div class="col-lg-10 mx-auto">
-        <!-- Browser-Berechtigungen -->
+        <!-- Browser permissions -->
         <div class="card mb-4">
             <div class="card-header">
                 <h5 class="mb-0">
                     <i class="bi bi-shield-check me-2"></i>
-                    Browser-Berechtigungen
+                    {{ _('settings.notifications.permissions.title') }}
                 </h5>
             </div>
             <div class="card-body">
                 <p class="text-muted mb-3">
-                    Diese Berechtigungen sind erforderlich, damit die Anwendung alle Funktionen nutzen kann.
+                    {{ _('settings.notifications.permissions.description') }}
                 </p>
                 
-                <!-- Push-Benachrichtigungen -->
                 <div class="d-flex justify-content-between align-items-center mb-3 p-3 border rounded">
                     <div>
                         <h6 class="mb-1">
                             <i class="bi bi-bell me-2"></i>
-                            Push-Benachrichtigungen
+                            {{ _('settings.notifications.permissions.push.title') }}
                         </h6>
-                        <small class="text-muted">Serverbasierte Benachrichtigungen für Chat, Dateien und E-Mails</small>
+                        <small class="text-muted">{{ _('settings.notifications.permissions.push.description') }}</small>
                         <div class="mt-1">
-                            <span class="badge" id="push-status">Prüfe...</span>
+                            <span class="badge" id="push-status">{{ _('settings.notifications.js.checking') }}</span>
                         </div>
                     </div>
                     <div>
                         <button type="button" class="btn btn-outline-primary me-2" id="subscribe-push-btn">
-                            Push aktivieren
+                            {{ _('settings.notifications.permissions.push.activate') }}
                         </button>
                         <button type="button" class="btn btn-outline-secondary" id="test-push-btn">
-                            Test senden
+                            {{ _('settings.notifications.permissions.push.test') }}
                         </button>
-                        <!-- Cooldown Progress Bar -->
                         <div id="cooldown-container" style="display: none; margin-top: 10px;">
                             <div class="d-flex justify-content-between align-items-center mb-1">
-                                <small class="text-muted">Cooldown aktiv</small>
-                                <small class="text-muted" id="cooldown-timer">2:00</small>
+                                <small class="text-muted">{{ _('settings.notifications.permissions.push.cooldown_label') }}</small>
+                                <small class="text-muted" id="cooldown-timer">{{ _('settings.notifications.permissions.push.cooldown_timer') }}</small>
                             </div>
                             <div class="progress" style="height: 6px;">
                                 <div class="progress-bar bg-warning" id="cooldown-progress" role="progressbar" style="width: 0%"></div>
@@ -57,97 +55,90 @@
                     </div>
                 </div>
                 
-                <!-- Mikrofon-Berechtigung -->
                 <div class="d-flex justify-content-between align-items-center mb-3 p-3 border rounded">
                     <div>
                         <h6 class="mb-1">
                             <i class="bi bi-mic me-2"></i>
-                            Mikrofon-Zugriff
+                            {{ _('settings.notifications.permissions.microphone.title') }}
                         </h6>
-                        <small class="text-muted">Erforderlich für Sprachnachrichten im Chat</small>
+                        <small class="text-muted">{{ _('settings.notifications.permissions.microphone.description') }}</small>
                         <div class="mt-1">
-                            <span class="badge" id="microphone-status-badge">Prüfe...</span>
+                            <span class="badge" id="microphone-status-badge">{{ _('settings.notifications.js.checking') }}</span>
                         </div>
                     </div>
                     <button type="button" class="btn btn-outline-primary" id="request-microphone-btn">
-                        Berechtigung anfordern
+                        {{ _('settings.notifications.permissions.microphone.request') }}
                     </button>
                 </div>
                 
-                <!-- PWA Installation -->
                 <div class="d-flex justify-content-between align-items-center p-3 border rounded">
                     <div>
                         <h6 class="mb-1">
                             <i class="bi bi-phone me-2"></i>
-                            App-Installation
+                            {{ _('settings.notifications.permissions.app.title') }}
                         </h6>
-                        <small class="text-muted">Installieren Sie die App auf Ihrem Gerät für bessere Benachrichtigungen</small>
+                        <small class="text-muted">{{ _('settings.notifications.permissions.app.description') }}</small>
                     </div>
                     <button type="button" class="btn btn-outline-success" id="install-app-btn" style="display: none;">
-                        App installieren
+                        {{ _('settings.notifications.permissions.app.install') }}
                     </button>
                 </div>
             </div>
         </div>
         
-        <!-- Push-Benachrichtigungs-Status -->
         <div class="card mb-4">
             <div class="card-header">
                 <h5 class="mb-0">
                     <i class="bi bi-gear me-2"></i>
-                    Push-Benachrichtigungs-Status
+                    {{ _('settings.notifications.status.title') }}
                 </h5>
             </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
-                        <h6>Browser-Unterstützung</h6>
+                        <h6>{{ _('settings.notifications.status.browser_title') }}</h6>
                         <p class="text-muted">
                             <i class="bi bi-check-circle text-success me-2"></i>
-                            Web Push API wird unterstützt
+                            {{ _('settings.notifications.status.browser_description') }}
                         </p>
                     </div>
                     <div class="col-md-6">
-                        <h6>Service Worker</h6>
+                        <h6>{{ _('settings.notifications.status.worker_title') }}</h6>
                         <p class="text-muted">
                             <i class="bi bi-check-circle text-success me-2"></i>
-                            Service Worker ist aktiv
+                            {{ _('settings.notifications.status.worker_description') }}
                         </p>
                     </div>
                 </div>
                 <div class="alert alert-info">
                     <i class="bi bi-info-circle me-2"></i>
-                    <strong>Serverbasierte Benachrichtigungen:</strong> 
-                    Sie erhalten Push-Benachrichtigungen auch wenn der Browser geschlossen ist. 
-                    Das System funktioniert über den Server und ist nicht auf lokales Polling angewiesen.
+                    <strong>{{ _('settings.notifications.status.info_strong') }}</strong>
+                    {{ _('settings.notifications.status.info_message') }}
                 </div>
                 
                 <div class="alert alert-warning" id="https-warning" style="display: none;">
                     <i class="bi bi-exclamation-triangle me-2"></i>
-                    <strong>Wichtig:</strong> 
-                    Push-Benachrichtigungen funktionieren nur über HTTPS. 
-                    Über HTTP sind sie nicht verfügbar.
+                    {{ _('settings.notifications.status.https_warning') }}
                 </div>
                 
                 <div class="alert alert-warning" id="push-setup-alert" style="display: none;">
                     <i class="bi bi-exclamation-triangle me-2"></i>
-                    <strong>Push-Benachrichtigungen nicht aktiviert:</strong>
+                    <strong>{{ _('settings.notifications.status.push_alert_title') }}</strong>
                     <ol class="mb-0 mt-2">
-                        <li>Klicken Sie auf <strong>"Push-Benachrichtigungen aktivieren"</strong></li>
-                        <li>Erteilen Sie die Browser-Berechtigung wenn gefragt</li>
-                        <li>Versuchen Sie dann den <strong>"Test senden"</strong> Button</li>
+                        <li>{{ _('settings.notifications.status.push_alert_step1') }}</li>
+                        <li>{{ _('settings.notifications.status.push_alert_step2') }}</li>
+                        <li>{{ _('settings.notifications.status.push_alert_step3') }}</li>
                     </ol>
                 </div>
             </div>
         </div>
         
         <form method="POST" id="notificationForm">
-            <!-- Chat-Benachrichtigungen -->
             <div class="card mb-4">
                 <div class="card-header">
                     <h5 class="mb-0">
                         <i class="bi bi-chat-dots me-2"></i>
-                        Chat-Benachrichtigungen
+                        {{ _('settings.notifications.chat.title') }}
                     </h5>
                 </div>
                 <div class="card-body">
@@ -156,20 +147,20 @@
                             <input class="form-check-input" type="checkbox" id="chat_notifications_enabled" 
                                    name="chat_notifications_enabled" {% if settings.chat_notifications_enabled %}checked{% endif %}>
                             <label class="form-check-label" for="chat_notifications_enabled">
-                                Chat-Benachrichtigungen aktivieren
+                                {{ _('settings.notifications.chat.toggle') }}
                             </label>
-                            <div class="form-text">Erhalten Sie Benachrichtigungen für neue Chat-Nachrichten</div>
+                            <div class="form-text">{{ _('settings.notifications.chat.help') }}</div>
                         </div>
                     </div>
                     
                     <div id="chatSpecificSettings" style="display: {% if settings.chat_notifications_enabled %}block{% else %}none{% endif %};">
-                        <h6 class="mb-3">Chat-spezifische Einstellungen</h6>
+                        <h6 class="mb-3">{{ _('settings.notifications.chat.table_title') }}</h6>
                         <div class="table-responsive">
                             <table class="table table-sm">
                                 <thead>
                                     <tr>
-                                        <th>Chat</th>
-                                        <th class="text-center">Benachrichtigungen</th>
+                                        <th>{{ _('settings.notifications.chat.table.chat') }}</th>
+                                        <th class="text-center">{{ _('settings.notifications.chat.table.notifications') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -196,12 +187,11 @@
                 </div>
             </div>
 
-            <!-- Datei-Benachrichtigungen -->
             <div class="card mb-4">
                 <div class="card-header">
                     <h5 class="mb-0">
                         <i class="bi bi-folder me-2"></i>
-                        Datei-Benachrichtigungen
+                        {{ _('settings.notifications.files.title') }}
                     </h5>
                 </div>
                 <div class="card-body">
@@ -210,9 +200,9 @@
                             <input class="form-check-input" type="checkbox" id="file_notifications_enabled" 
                                    name="file_notifications_enabled" {% if settings.file_notifications_enabled %}checked{% endif %}>
                             <label class="form-check-label" for="file_notifications_enabled">
-                                Datei-Benachrichtigungen aktivieren
+                                {{ _('settings.notifications.files.toggle') }}
                             </label>
-                            <div class="form-text">Erhalten Sie Benachrichtigungen für Datei-Änderungen</div>
+                            <div class="form-text">{{ _('settings.notifications.files.help') }}</div>
                         </div>
                     </div>
                     
@@ -223,9 +213,9 @@
                                     <input class="form-check-input" type="checkbox" id="file_new_notifications" 
                                            name="file_new_notifications" {% if settings.file_new_notifications %}checked{% endif %}>
                                     <label class="form-check-label" for="file_new_notifications">
-                                        Neue Dateien
+                                        {{ _('settings.notifications.files.new') }}
                                     </label>
-                                    <div class="form-text">Benachrichtigungen für neu hochgeladene Dateien</div>
+                                    <div class="form-text">{{ _('settings.notifications.files.new_help') }}</div>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -233,9 +223,9 @@
                                     <input class="form-check-input" type="checkbox" id="file_modified_notifications" 
                                            name="file_modified_notifications" {% if settings.file_modified_notifications %}checked{% endif %}>
                                     <label class="form-check-label" for="file_modified_notifications">
-                                        Geänderte Dateien
+                                        {{ _('settings.notifications.files.modified') }}
                                     </label>
-                                    <div class="form-text">Benachrichtigungen für geänderte Dateien</div>
+                                    <div class="form-text">{{ _('settings.notifications.files.modified_help') }}</div>
                                 </div>
                             </div>
                         </div>
@@ -243,12 +233,11 @@
                 </div>
             </div>
 
-            <!-- E-Mail-Benachrichtigungen -->
             <div class="card mb-4">
                 <div class="card-header">
                     <h5 class="mb-0">
                         <i class="bi bi-envelope me-2"></i>
-                        E-Mail-Benachrichtigungen
+                        {{ _('settings.notifications.email.title') }}
                     </h5>
                 </div>
                 <div class="card-body">
@@ -256,19 +245,18 @@
                         <input class="form-check-input" type="checkbox" id="email_notifications_enabled" 
                                name="email_notifications_enabled" {% if settings.email_notifications_enabled %}checked{% endif %}>
                         <label class="form-check-label" for="email_notifications_enabled">
-                            E-Mail-Benachrichtigungen aktivieren
+                            {{ _('settings.notifications.email.toggle') }}
                         </label>
-                        <div class="form-text">Erhalten Sie Benachrichtigungen für neue E-Mails</div>
+                        <div class="form-text">{{ _('settings.notifications.email.help') }}</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Kalender-Benachrichtigungen -->
             <div class="card mb-4">
                 <div class="card-header">
                     <h5 class="mb-0">
                         <i class="bi bi-calendar-event me-2"></i>
-                        Kalender-Benachrichtigungen
+                        {{ _('settings.notifications.calendar.title') }}
                     </h5>
                 </div>
                 <div class="card-body">
@@ -277,28 +265,27 @@
                             <input class="form-check-input" type="checkbox" id="calendar_notifications_enabled" 
                                    name="calendar_notifications_enabled" {% if settings.calendar_notifications_enabled %}checked{% endif %}>
                             <label class="form-check-label" for="calendar_notifications_enabled">
-                                Kalender-Benachrichtigungen aktivieren
+                                {{ _('settings.notifications.calendar.toggle') }}
                             </label>
-                            <div class="form-text">Erhalten Sie Erinnerungen für Termine</div>
+                            <div class="form-text">{{ _('settings.notifications.calendar.help') }}</div>
                         </div>
                     </div>
                     
                     <div id="calendarSpecificSettings" style="display: {% if settings.calendar_notifications_enabled %}block{% else %}none{% endif %};">
-                        <!-- Event-Filter -->
-                        <h6 class="mb-3">Für welche Events möchten Sie Benachrichtigungen erhalten?</h6>
+                        <h6 class="mb-3">{{ _('settings.notifications.calendar.filter_question') }}</h6>
                         <div class="mb-3">
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" id="calendar_all_events" 
                                        name="calendar_event_filter" value="all" {% if settings.calendar_all_events %}checked{% endif %}>
                                 <label class="form-check-label" for="calendar_all_events">
-                                    Alle Events
+                                    {{ _('settings.notifications.calendar.filter_all') }}
                                 </label>
                             </div>
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" id="calendar_selective_events" 
                                        name="calendar_event_filter" value="selective" {% if not settings.calendar_all_events %}checked{% endif %}>
                                 <label class="form-check-label" for="calendar_selective_events">
-                                    Nur bestimmte Events
+                                    {{ _('settings.notifications.calendar.filter_selective') }}
                                 </label>
                             </div>
                         </div>
@@ -310,7 +297,7 @@
                                         <input class="form-check-input" type="checkbox" id="calendar_participating_only" 
                                                name="calendar_participating_only" {% if settings.calendar_participating_only %}checked{% endif %}>
                                         <label class="form-check-label" for="calendar_participating_only">
-                                            Ich nehme teil
+                                            {{ _('settings.notifications.calendar.filter_participating') }}
                                         </label>
                                     </div>
                                 </div>
@@ -319,7 +306,7 @@
                                         <input class="form-check-input" type="checkbox" id="calendar_not_participating" 
                                                name="calendar_not_participating" {% if settings.calendar_not_participating %}checked{% endif %}>
                                         <label class="form-check-label" for="calendar_not_participating">
-                                            Ich nehme nicht teil
+                                            {{ _('settings.notifications.calendar.filter_not_participating') }}
                                         </label>
                                     </div>
                                 </div>
@@ -328,49 +315,48 @@
                                         <input class="form-check-input" type="checkbox" id="calendar_no_response" 
                                                name="calendar_no_response" {% if settings.calendar_no_response %}checked{% endif %}>
                                         <label class="form-check-label" for="calendar_no_response">
-                                            Keine Antwort
+                                            {{ _('settings.notifications.calendar.filter_no_response') }}
                                         </label>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         
-                        <!-- Erinnerungszeiten -->
                         <hr class="my-4">
-                        <h6 class="mb-3">Erinnerungszeiten</h6>
-                        <p class="text-muted">Wählen Sie aus, wann Sie an Termine erinnert werden möchten:</p>
+                        <h6 class="mb-3">{{ _('settings.notifications.calendar.reminders_title') }}</h6>
+                        <p class="text-muted">{{ _('settings.notifications.calendar.reminders_help') }}</p>
                         
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="reminder_30min" name="reminder_times" value="30">
-                                    <label class="form-check-label" for="reminder_30min">30 Minuten vorher</label>
+                                    <label class="form-check-label" for="reminder_30min">{{ _('settings.notifications.calendar.reminder_30min') }}</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="reminder_1h" name="reminder_times" value="60">
-                                    <label class="form-check-label" for="reminder_1h">1 Stunde vorher</label>
+                                    <label class="form-check-label" for="reminder_1h">{{ _('settings.notifications.calendar.reminder_1h') }}</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="reminder_2h" name="reminder_times" value="120">
-                                    <label class="form-check-label" for="reminder_2h">2 Stunden vorher</label>
+                                    <label class="form-check-label" for="reminder_2h">{{ _('settings.notifications.calendar.reminder_2h') }}</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="reminder_6h" name="reminder_times" value="360">
-                                    <label class="form-check-label" for="reminder_6h">6 Stunden vorher</label>
+                                    <label class="form-check-label" for="reminder_6h">{{ _('settings.notifications.calendar.reminder_6h') }}</label>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="reminder_8h" name="reminder_times" value="480">
-                                    <label class="form-check-label" for="reminder_8h">8 Stunden vorher</label>
+                                    <label class="form-check-label" for="reminder_8h">{{ _('settings.notifications.calendar.reminder_8h') }}</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="reminder_1d" name="reminder_times" value="1440">
-                                    <label class="form-check-label" for="reminder_1d">1 Tag vorher</label>
+                                    <label class="form-check-label" for="reminder_1d">{{ _('settings.notifications.calendar.reminder_1d') }}</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="reminder_2d" name="reminder_times" value="2880">
-                                    <label class="form-check-label" for="reminder_2d">2 Tage vorher</label>
+                                    <label class="form-check-label" for="reminder_2d">{{ _('settings.notifications.calendar.reminder_2d') }}</label>
                                 </div>
                             </div>
                         </div>
@@ -379,8 +365,8 @@
             </div>
 
             <div class="d-grid gap-2">
-                <button type="submit" class="btn btn-primary">Einstellungen speichern</button>
-                <a href="{{ url_for('settings.index') }}" class="btn btn-outline-secondary">Abbrechen</a>
+                <button type="submit" class="btn btn-primary">{{ _('settings.notifications.save_button') }}</button>
+                <a href="{{ url_for('settings.index') }}" class="btn btn-outline-secondary">{{ _('common.cancel') }}</a>
             </div>
         </form>
     </div>
@@ -389,8 +375,27 @@
 
 {% block extra_js %}
 <script>
+const notificationsI18n = {
+    checking: "{{ _('settings.notifications.js.checking') }}",
+    permissionGranted: "{{ _('settings.notifications.js.permission_granted') }}",
+    permissionDenied: "{{ _('settings.notifications.js.permission_denied') }}",
+    permissionPrompt: "{{ _('settings.notifications.js.permission_prompt') }}",
+    permissionUnsupported: "{{ _('settings.notifications.js.permission_unsupported') }}",
+    permissionUnknown: "{{ _('settings.notifications.js.permission_unknown') }}",
+    toastPushEnabledTitle: "{{ _('settings.notifications.js.toast_push_enabled_title') }}",
+    toastPushEnabledMessage: "{{ _('settings.notifications.js.toast_push_enabled_message') }}",
+    toastPushDeniedTitle: "{{ _('settings.notifications.js.toast_push_denied_title') }}",
+    toastPushDeniedMessage: "{{ _('settings.notifications.js.toast_push_denied_message') }}",
+    toastMicEnabledTitle: "{{ _('settings.notifications.js.toast_mic_enabled_title') }}",
+    toastMicEnabledMessage: "{{ _('settings.notifications.js.toast_mic_enabled_message') }}",
+    toastMicDeniedTitle: "{{ _('settings.notifications.js.toast_mic_denied_title') }}",
+    toastMicDeniedMessage: "{{ _('settings.notifications.js.toast_mic_denied_message') }}",
+    toastAppInstalledTitle: "{{ _('settings.notifications.js.toast_app_installed_title') }}",
+    toastAppInstalledMessage: "{{ _('settings.notifications.js.toast_app_installed_message') }}",
+    errorRemovePicture: "{{ _('settings.notifications.js.generic_error') }}"
+};
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Chat-Benachrichtigungen Toggle
     const chatToggle = document.getElementById('chat_notifications_enabled');
     const chatSpecific = document.getElementById('chatSpecificSettings');
     
@@ -398,7 +403,6 @@ document.addEventListener('DOMContentLoaded', function() {
         chatSpecific.style.display = this.checked ? 'block' : 'none';
     });
     
-    // Datei-Benachrichtigungen Toggle
     const fileToggle = document.getElementById('file_notifications_enabled');
     const fileSpecific = document.getElementById('fileSpecificSettings');
     
@@ -406,7 +410,6 @@ document.addEventListener('DOMContentLoaded', function() {
         fileSpecific.style.display = this.checked ? 'block' : 'none';
     });
     
-    // Kalender-Benachrichtigungen Toggle
     const calendarToggle = document.getElementById('calendar_notifications_enabled');
     const calendarSpecific = document.getElementById('calendarSpecificSettings');
     
@@ -414,7 +417,6 @@ document.addEventListener('DOMContentLoaded', function() {
         calendarSpecific.style.display = this.checked ? 'block' : 'none';
     });
     
-    // Event-Filter Toggle
     const allEventsRadio = document.getElementById('calendar_all_events');
     const selectiveEventsRadio = document.getElementById('calendar_selective_events');
     const selectiveSettings = document.getElementById('selectiveEventSettings');
@@ -426,7 +428,6 @@ document.addEventListener('DOMContentLoaded', function() {
     allEventsRadio.addEventListener('change', toggleSelectiveSettings);
     selectiveEventsRadio.addEventListener('change', toggleSelectiveSettings);
     
-    // Erinnerungszeiten aus bestehenden Einstellungen laden
     const reminderTimes = {{ settings.get_reminder_times() | tojson }};
     reminderTimes.forEach(function(time) {
         const checkbox = document.querySelector(`input[name="reminder_times"][value="${time}"]`);
@@ -435,16 +436,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Browser-Berechtigungen verwalten
     const notificationStatusBadge = document.getElementById('push-status');
     const microphoneStatusBadge = document.getElementById('microphone-status-badge');
     const requestNotificationBtn = document.getElementById('subscribe-push-btn');
     const requestMicrophoneBtn = document.getElementById('request-microphone-btn');
     const installAppBtn = document.getElementById('install-app-btn');
     
-    // Prüfe und aktualisiere Berechtigungsstatus
     async function updatePermissionStatus() {
-        // Benachrichtigungsberechtigung
         if ('Notification' in window) {
             const notificationPermission = Notification.permission;
             updateBadge(notificationStatusBadge, notificationPermission);
@@ -457,7 +455,6 @@ document.addEventListener('DOMContentLoaded', function() {
             requestNotificationBtn.style.display = 'none';
         }
         
-        // Mikrofon-Berechtigung
         if ('permissions' in navigator) {
             try {
                 const micPermission = await navigator.permissions.query({ name: 'microphone' });
@@ -473,7 +470,6 @@ document.addEventListener('DOMContentLoaded', function() {
             updateBadge(microphoneStatusBadge, 'unsupported');
         }
         
-        // PWA Installation
         if (window.deferredPrompt) {
             installAppBtn.style.display = 'inline-block';
         }
@@ -484,28 +480,27 @@ document.addEventListener('DOMContentLoaded', function() {
         switch (status) {
             case 'granted':
                 badge.className += ' bg-success';
-                badge.textContent = 'Erteilt';
+                badge.textContent = notificationsI18n.permissionGranted;
                 break;
             case 'denied':
                 badge.className += ' bg-danger';
-                badge.textContent = 'Verweigert';
+                badge.textContent = notificationsI18n.permissionDenied;
                 break;
             case 'prompt':
             case 'default':
                 badge.className += ' bg-warning';
-                badge.textContent = 'Nicht erteilt';
+                badge.textContent = notificationsI18n.permissionPrompt;
                 break;
             case 'unsupported':
                 badge.className += ' bg-secondary';
-                badge.textContent = 'Nicht unterstützt';
+                badge.textContent = notificationsI18n.permissionUnsupported;
                 break;
             default:
                 badge.className += ' bg-secondary';
-                badge.textContent = 'Unbekannt';
+                badge.textContent = notificationsI18n.permissionUnknown;
         }
     }
     
-    // Event-Listener für Berechtigungsanfragen
     if (requestNotificationBtn) {
         requestNotificationBtn.addEventListener('click', async function() {
             if ('Notification' in window) {
@@ -514,9 +509,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (permission === 'granted') {
                     requestNotificationBtn.style.display = 'none';
-                    showToast('Benachrichtigungen aktiviert', 'Sie erhalten jetzt Push-Benachrichtigungen.', 'success');
+                    showToast(notificationsI18n.toastPushEnabledTitle, notificationsI18n.toastPushEnabledMessage, 'success');
                 } else {
-                    showToast('Benachrichtigungen verweigert', 'Sie können Benachrichtigungen in den Browser-Einstellungen aktivieren.', 'warning');
+                    showToast(notificationsI18n.toastPushDeniedTitle, notificationsI18n.toastPushDeniedMessage, 'warning');
                 }
             }
         });
@@ -531,10 +526,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     updateBadge(microphoneStatusBadge, 'granted');
                     requestMicrophoneBtn.style.display = 'none';
-                    showToast('Mikrofon aktiviert', 'Sie können jetzt Sprachnachrichten aufnehmen.', 'success');
+                    showToast(notificationsI18n.toastMicEnabledTitle, notificationsI18n.toastMicEnabledMessage, 'success');
                 } catch (error) {
                     updateBadge(microphoneStatusBadge, 'denied');
-                    showToast('Mikrofon verweigert', 'Mikrofon-Zugriff ist für Sprachnachrichten erforderlich.', 'warning');
+                    showToast(notificationsI18n.toastMicDeniedTitle, notificationsI18n.toastMicDeniedMessage, 'warning');
                 }
             }
         });
@@ -547,7 +542,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const { outcome } = await window.deferredPrompt.userChoice;
                 
                 if (outcome === 'accepted') {
-                    showToast('App installiert', 'Die App wurde erfolgreich installiert!', 'success');
+                    showToast(notificationsI18n.toastAppInstalledTitle, notificationsI18n.toastAppInstalledMessage, 'success');
                     installAppBtn.style.display = 'none';
                 }
                 
@@ -587,10 +582,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Initialisiere Berechtigungsstatus
     updatePermissionStatus();
     
-    // Prüfe ob HTTPS verwendet wird
     if (window.location.protocol !== 'https:') {
         const httpsWarning = document.getElementById('https-warning');
         if (httpsWarning) {

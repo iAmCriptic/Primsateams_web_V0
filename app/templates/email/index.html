@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}E-Mail - Team Portal{% endblock %}
+{% block title %}{{ _('email.index.page_title') }}{% endblock %}
 
 {% block content %}
 <div class="email-content w-100">
@@ -11,9 +11,9 @@
             <button class="btn btn-sm btn-outline-secondary me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileFolderMenu" aria-controls="mobileFolderMenu">
                 <i class="bi bi-list"></i>
             </button>
-            <h1 class="h5 mb-0"><i class="bi bi-envelope me-2"></i>E-Mail</h1>
+            <h1 class="h5 mb-0"><i class="bi bi-envelope me-2"></i>{{ _('email.index.heading') }}</h1>
         </div>
-        <a href="{{ url_for('email.compose') }}" class="btn btn-sm btn-accent">
+        <a href="{{ url_for('email.compose') }}" class="btn btn-sm btn-accent" title="{{ _('email.index.buttons.compose') }}">
             <i class="bi bi-pencil-square"></i>
         </a>
     </div>
@@ -24,13 +24,14 @@
 <div class="offcanvas offcanvas-start" tabindex="-1" id="mobileFolderMenu" aria-labelledby="mobileFolderMenuLabel">
     <div class="offcanvas-header">
         <h5 class="offcanvas-title" id="mobileFolderMenuLabel">
-            <i class="bi bi-envelope me-2"></i>E-Mail-Ordner
+            <i class="bi bi-envelope me-2"></i>{{ _('email.index.mobile.folders_title') }}
         </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Schließen"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="{{ _('email.index.mobile.close') }}"></button>
     </div>
     <div class="offcanvas-body p-0">
         <div class="list-group list-group-flush">
             {% for folder in folders %}
+            {% set folder_label = current_translations.get('email', {}).get('index', {}).get('folders', {}).get(folder.name, folder.display_name) %}
             <a href="{{ url_for('email.folder_view', folder_name=folder.name) }}" 
                class="list-group-item list-group-item-action {% if current_folder == folder.name %}active{% endif %}"
                onclick="setTimeout(function(){ var offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('mobileFolderMenu')); if(offcanvas) offcanvas.hide(); }, 100);">
@@ -53,7 +54,7 @@
                 {% else %}
                     <i class="bi bi-folder me-2"></i>
                 {% endif %}
-                {{ folder.display_name }}
+                {{ folder_label }}
             </a>
             {% endfor %}
         </div>
@@ -61,7 +62,7 @@
             <form method="POST" action="{{ url_for('email.sync_emails') }}" class="sync-form" onsubmit="return handleSyncSubmit(event, this);">
                 <button type="submit" class="btn btn-outline-secondary w-100 sync-btn" data-bs-dismiss="offcanvas">
                     <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" style="display: none;"></span>
-                    <i class="bi bi-arrow-clockwise me-2 sync-icon"></i>Synchronisieren
+                    <i class="bi bi-arrow-clockwise me-2 sync-icon"></i>{{ _('email.index.buttons.sync') }}
                 </button>
             </form>
         </div>
@@ -71,7 +72,7 @@
 <!-- Mobile Email List (außerhalb Desktop-Layout) -->
 <div class="d-md-none">
     <div class="mb-3">
-        <h5 class="mb-0"><i class="bi bi-inbox me-2"></i>{{ folder_display_name or 'Posteingang' }}</h5>
+        <h5 class="mb-0"><i class="bi bi-inbox me-2"></i>{{ folder_display_name or _('email.index.folder_default') }}</h5>
     </div>
     <div class="card">
         <div class="card-body p-0">
@@ -98,7 +99,7 @@
                                         </div>
                                         <div class="text-end ms-2 flex-shrink-0">
                                             {% if not email.is_read %}
-                                            <span class="badge bg-accent mb-1 d-block">Neu</span>
+                                            <span class="badge bg-accent mb-1 d-block">{{ _('email.index.labels.new_badge') }}</span>
                                             {% endif %}
                                             <small class="text-muted">{{ email.received_at.strftime('%d.%m %H:%M') if email.received_at else '' }}</small>
                                         </div>
@@ -118,21 +119,21 @@
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li><a class="dropdown-item" href="{{ url_for('email.view_email', email_id=email.id) }}">
-                                    <i class="bi bi-eye me-2"></i>Anzeigen
+                                    <i class="bi bi-eye me-2"></i>{{ _('email.index.actions.view') }}
                                 </a></li>
                                 <li><a class="dropdown-item" href="{{ url_for('email.reply', email_id=email.id) }}">
-                                    <i class="bi bi-reply me-2"></i>Antworten
+                                    <i class="bi bi-reply me-2"></i>{{ _('email.index.actions.reply') }}
                                 </a></li>
                                 <li><a class="dropdown-item" href="{{ url_for('email.reply_all', email_id=email.id) }}">
-                                    <i class="bi bi-reply-all me-2"></i>Allen antworten
+                                    <i class="bi bi-reply-all me-2"></i>{{ _('email.index.actions.reply_all') }}
                                 </a></li>
                                 <li><a class="dropdown-item" href="{{ url_for('email.forward', email_id=email.id) }}">
-                                    <i class="bi bi-forward me-2"></i>Weiterleiten
+                                    <i class="bi bi-forward me-2"></i>{{ _('email.index.actions.forward') }}
                                 </a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li class="dropdown-submenu">
                                     <a class="dropdown-item dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                        <i class="bi bi-folder me-2"></i>In Ordner verschieben
+                                        <i class="bi bi-folder me-2"></i>{{ _('email.index.labels.move_to_folder') }}
                                     </a>
                                     <ul class="dropdown-menu dropdown-menu-end">
                                         {% for folder in folders %}
@@ -171,9 +172,9 @@
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <form method="POST" action="{{ url_for('email.delete_email', email_id=email.id) }}" 
-                                          onsubmit="return confirm('E-Mail wirklich löschen?')" class="d-inline">
+                                          onsubmit="return confirm('{{ _('email.index.confirm.delete_email') }}')" class="d-inline">
                                         <button type="submit" class="dropdown-item text-danger">
-                                            <i class="bi bi-trash me-2"></i>Löschen
+                                            <i class="bi bi-trash me-2"></i>{{ _('email.index.actions.delete') }}
                                         </button>
                                     </form>
                                 </li>
@@ -186,7 +187,7 @@
             {% else %}
             <div class="p-4 text-center text-muted">
                 <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                Keine E-Mails vorhanden
+                {{ _('email.index.labels.empty') }}
             </div>
             {% endif %}
         </div>
@@ -198,20 +199,21 @@
     <!-- Folder Sidebar (Desktop only, ab 1024px) -->
     <div class="email-folder-sidebar">
         <div class="d-flex align-items-center justify-content-between mb-3">
-            <h5 class="mb-0"><i class="bi bi-envelope me-2"></i>E-Mail</h5>
-            <a href="{{ url_for('email.compose') }}" class="btn btn-sm btn-accent" title="Neue E-Mail">
+            <h5 class="mb-0"><i class="bi bi-envelope me-2"></i>{{ _('email.index.heading') }}</h5>
+            <a href="{{ url_for('email.compose') }}" class="btn btn-sm btn-accent" title="{{ _('email.index.buttons.compose') }}">
                 <i class="bi bi-pencil-square"></i>
             </a>
         </div>
         <form method="POST" action="{{ url_for('email.sync_emails') }}" class="mb-3 sync-form" onsubmit="return handleSyncSubmit(event, this);">
             <button type="submit" class="btn btn-sm btn-outline-secondary w-100 sync-btn">
                 <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" style="display: none;"></span>
-                <i class="bi bi-arrow-clockwise sync-icon"></i> Synchronisieren
+                <i class="bi bi-arrow-clockwise sync-icon"></i> {{ _('email.index.buttons.sync') }}
             </button>
         </form>
         <hr>
         <ul class="nav nav-pills flex-column email-folder-list">
             {% for folder in folders %}
+            {% set folder_label = current_translations.get('email', {}).get('index', {}).get('folders', {}).get(folder.name, folder.display_name) %}
             <li class="nav-item">
                 <a href="{{ url_for('email.folder_view', folder_name=folder.name) }}" 
                    class="nav-link email-folder-link {% if current_folder == folder.name %}active{% endif %}">
@@ -234,7 +236,7 @@
                     {% else %}
                         <i class="bi bi-folder me-2"></i>
                     {% endif %}
-                    {{ folder.display_name }}
+                    {{ folder_label }}
                 </a>
             </li>
             {% endfor %}
@@ -244,7 +246,7 @@
     <!-- Main Content Area -->
     <div class="email-main-content">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4 class="mb-0">{{ folder_display_name or 'Posteingang' }}</h4>
+            <h4 class="mb-0"><i class="bi bi-inbox me-2"></i>{{ folder_display_name or _('email.index.folder_default') }}</h4>
         </div>
 
         <!-- Desktop: Email List Card (innerhalb email-main-content) -->
@@ -275,9 +277,9 @@
                                 </div>
                                 <div class="text-end ms-2">
                                     {% if not email.is_read %}
-                                    <span class="badge bg-accent mb-1 d-block">Neu</span>
+                                    <span class="badge bg-accent mb-1 d-block">{{ _('email.index.labels.new_badge') }}</span>
                                     {% endif %}
-                                    <small class="text-muted">{{ email.received_at.strftime('%d.%m %H:%M') if email.received_at else '' }}</small>
+                                    <small class="text-muted">{{ email.received_at.strftime('%d.%m.%Y %H:%M') if email.received_at else '' }}</small>
                                 </div>
                             </div>
                             <p class="mb-1 email-subject">{{ email.subject|decode_email_header }}</p>
@@ -313,7 +315,7 @@
                             </div>
                         </div>
                         {% if not email.is_read %}
-                        <span class="badge bg-accent ms-2">Neu</span>
+                        <span class="badge bg-accent ms-2">{{ _('email.index.labels.new_badge') }}</span>
                         {% endif %}
                     </div>
                 </div>
@@ -326,26 +328,26 @@
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="{{ url_for('email.view_email', email_id=email.id) }}">
-                                <i class="bi bi-eye me-2"></i>Anzeigen
+                                <i class="bi bi-eye me-2"></i>{{ _('email.index.actions.view') }}
                             </a></li>
                             <li><a class="dropdown-item" href="{{ url_for('email.reply', email_id=email.id) }}">
-                                <i class="bi bi-reply me-2"></i>Antworten
+                                <i class="bi bi-reply me-2"></i>{{ _('email.index.actions.reply') }}
                             </a></li>
                             <li><a class="dropdown-item" href="{{ url_for('email.reply_all', email_id=email.id) }}">
-                                <i class="bi bi-reply-all me-2"></i>Allen antworten
+                                <i class="bi bi-reply-all me-2"></i>{{ _('email.index.actions.reply_all') }}
                             </a></li>
                             <li><a class="dropdown-item" href="{{ url_for('email.forward', email_id=email.id) }}">
-                                <i class="bi bi-forward me-2"></i>Weiterleiten
+                                <i class="bi bi-forward me-2"></i>{{ _('email.index.actions.forward') }}
                             </a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li class="dropdown-submenu">
                                 <a class="dropdown-item dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="bi bi-folder me-2"></i>In Ordner verschieben
+                                    <i class="bi bi-folder me-2"></i>{{ _('email.index.labels.move_to_folder') }}
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end">
                                     {% for folder in folders %}
                                     {% if folder.name != email.folder %}
-                            <li>
+                                    <li>
                                 <form method="POST" action="{{ url_for('email.move_email', email_id=email.id) }}" class="d-inline">
                                             <input type="hidden" name="folder" value="{{ folder.name }}">
                                             <button type="submit" class="dropdown-item">
@@ -379,9 +381,9 @@
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <form method="POST" action="{{ url_for('email.delete_email', email_id=email.id) }}" 
-                                      onsubmit="return confirm('E-Mail wirklich löschen?')" class="d-inline">
+                                      onsubmit="return confirm('{{ _('email.index.confirm.delete_email') }}')" class="d-inline">
                                     <button type="submit" class="dropdown-item text-danger">
-                                        <i class="bi bi-trash me-2"></i>Löschen
+                                        <i class="bi bi-trash me-2"></i>{{ _('email.index.actions.delete') }}
                                     </button>
                                 </form>
                             </li>
@@ -394,7 +396,7 @@
         {% else %}
         <div class="p-4 text-center text-muted">
             <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-            Keine E-Mails vorhanden
+            {{ _('email.index.labels.empty') }}
         </div>
         {% endif %}
     </div>
@@ -406,10 +408,10 @@
 <div class="d-none d-md-flex d-xl-none row mb-3">
     <div class="col">
         <div class="d-flex align-items-center">
-            <h1 class="mb-0 me-3"><i class="bi bi-envelope"></i> E-Mail</h1>
+            <h1 class="mb-0 me-3"><i class="bi bi-envelope"></i> {{ _('email.index.heading') }}</h1>
             <div class="dropdown">
                 <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-display="static" data-bs-auto-close="outside">
-                    <i class="bi bi-folder me-2"></i><span id="currentFolder">{{ folder_display_name or 'Posteingang' }}</span>
+                    <i class="bi bi-folder me-2"></i><span id="currentFolder">{{ folder_display_name or _('email.index.folder_default') }}</span>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end">
                     {% for folder in folders %}
@@ -444,11 +446,11 @@
         <form method="POST" action="{{ url_for('email.sync_emails') }}" class="d-inline me-2 sync-form" onsubmit="return handleSyncSubmit(event, this);">
             <button type="submit" class="btn btn-outline-accent sync-btn">
                 <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" style="display: none;"></span>
-                <i class="bi bi-arrow-clockwise sync-icon"></i> Synchronisieren
+                <i class="bi bi-arrow-clockwise sync-icon"></i> {{ _('email.index.buttons.sync') }}
             </button>
         </form>
         <a href="{{ url_for('email.compose') }}" class="btn btn-accent">
-            <i class="bi bi-pencil-square"></i> Neue E-Mail
+            <i class="bi bi-pencil-square"></i> {{ _('email.index.buttons.compose') }}
         </a>
     </div>
 </div>
@@ -457,7 +459,7 @@
 <div class="d-none d-md-block d-xl-none">
     <div class="card">
         <div class="card-header">
-            <h5 class="mb-0">{{ folder_display_name or 'Posteingang' }}</h5>
+            <h5 class="mb-0">{{ folder_display_name or _('email.index.folder_default') }}</h5>
         </div>
         <div class="card-body p-0">
             {% if emails %}
@@ -489,7 +491,7 @@
                                     </div>
                                 </div>
                                 {% if not email.is_read %}
-                                <span class="badge bg-accent ms-2">Neu</span>
+                                <span class="badge bg-accent ms-2">{{ _('email.index.labels.new_badge') }}</span>
                                 {% endif %}
                             </div>
                         </a>
@@ -501,21 +503,21 @@
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li><a class="dropdown-item" href="{{ url_for('email.view_email', email_id=email.id) }}">
-                                    <i class="bi bi-eye me-2"></i>Anzeigen
+                                    <i class="bi bi-eye me-2"></i>{{ _('email.index.actions.view') }}
                                 </a></li>
                                 <li><a class="dropdown-item" href="{{ url_for('email.reply', email_id=email.id) }}">
-                                    <i class="bi bi-reply me-2"></i>Antworten
+                                    <i class="bi bi-reply me-2"></i>{{ _('email.index.actions.reply') }}
                                 </a></li>
                                 <li><a class="dropdown-item" href="{{ url_for('email.reply_all', email_id=email.id) }}">
-                                    <i class="bi bi-reply-all me-2"></i>Allen antworten
+                                    <i class="bi bi-reply-all me-2"></i>{{ _('email.index.actions.reply_all') }}
                                 </a></li>
                                 <li><a class="dropdown-item" href="{{ url_for('email.forward', email_id=email.id) }}">
-                                    <i class="bi bi-forward me-2"></i>Weiterleiten
+                                    <i class="bi bi-forward me-2"></i>{{ _('email.index.actions.forward') }}
                                 </a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li class="dropdown-submenu">
                                     <a class="dropdown-item dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                        <i class="bi bi-folder me-2"></i>In Ordner verschieben
+                                        <i class="bi bi-folder me-2"></i>{{ _('email.index.labels.move_to_folder') }}
                                     </a>
                                     <ul class="dropdown-menu dropdown-menu-end">
                                         {% for folder in folders %}
@@ -554,9 +556,9 @@
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <form method="POST" action="{{ url_for('email.delete_email', email_id=email.id) }}" 
-                                          onsubmit="return confirm('E-Mail wirklich löschen?')" class="d-inline">
+                                          onsubmit="return confirm('{{ _('email.index.confirm.delete_email') }}')" class="d-inline">
                                         <button type="submit" class="dropdown-item text-danger">
-                                            <i class="bi bi-trash me-2"></i>Löschen
+                                            <i class="bi bi-trash me-2"></i>{{ _('email.index.actions.delete') }}
                                         </button>
                                     </form>
                                 </li>
@@ -569,7 +571,7 @@
             {% else %}
             <div class="p-4 text-center text-muted">
                 <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                Keine E-Mails vorhanden
+                {{ _('email.index.labels.empty') }}
             </div>
             {% endif %}
         </div>
@@ -581,8 +583,8 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Optionen</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+                <h5 class="modal-title">{{ _('email.index.labels.options_title') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ _('email.index.mobile.close') }}"></button>
             </div>
             <div class="modal-body" id="emailActionsContent">
             </div>
@@ -592,6 +594,48 @@
 
 {% block extra_js %}
 <script>
+const EMAIL_I18N = {{ current_translations.get('email', {}).get('index', {})|tojson }};
+const EMAIL_MESSAGES = EMAIL_I18N.messages || {};
+
+function showEmailAlert(message, category = 'info') {
+    if (!message) {
+        return;
+    }
+    const container = document.querySelector('.container-fluid');
+    if (!container) {
+        return;
+    }
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${category} alert-dismissible fade show mt-2`;
+    alert.setAttribute('role', 'alert');
+    const textSpan = document.createElement('span');
+    textSpan.textContent = message;
+    alert.appendChild(textSpan);
+
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'btn-close';
+    closeBtn.setAttribute('data-bs-dismiss', 'alert');
+    closeBtn.setAttribute('aria-label', 'Schließen');
+    alert.appendChild(closeBtn);
+
+    container.prepend(alert);
+}
+
+function setSyncButtonsState(disabled) {
+    document.querySelectorAll('.sync-btn').forEach(btn => {
+        btn.disabled = disabled;
+        const btnSpinner = btn.querySelector('.spinner-border');
+        const btnIcon = btn.querySelector('.sync-icon');
+        if (btnSpinner) {
+            btnSpinner.style.display = disabled ? 'inline-block' : 'none';
+        }
+        if (btnIcon) {
+            btnIcon.style.display = disabled ? 'none' : 'inline';
+        }
+    });
+}
+
 // Mobile: zeige Dropdown-Inhalte als zentriertes Modal
 document.addEventListener('click', function(e) {
     const toggleBtn = e.target.closest('[data-mobile-modal="dropdown"]');
@@ -625,72 +669,45 @@ document.addEventListener('click', function(e) {
     bsModal.show();
 });
 
-// E-Mail-Synchronisation mit Ladeindikator
+// E-Mail-Synchronisation mit einfachem Reload
 function handleSyncSubmit(event, form) {
     event.preventDefault();
-    
-    const button = form.querySelector('.sync-btn');
-    const spinner = button.querySelector('.spinner-border');
-    const icon = button.querySelector('.sync-icon');
-    
-    // Zeige Spinner und deaktiviere Button
-    if (spinner) spinner.style.display = 'inline-block';
-    if (icon) icon.style.display = 'none';
-    button.disabled = true;
-    
-    // Deaktiviere alle anderen Sync-Buttons auf der Seite
-    document.querySelectorAll('.sync-btn').forEach(btn => {
-        btn.disabled = true;
-        const btnSpinner = btn.querySelector('.spinner-border');
-        const btnIcon = btn.querySelector('.sync-icon');
-        if (btnSpinner) btnSpinner.style.display = 'inline-block';
-        if (btnIcon) btnIcon.style.display = 'none';
-    });
-    
-    // AJAX-Request für Hintergrund-Synchronisation
+
+    setSyncButtonsState(true);
+
     fetch(form.action, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
         },
         body: new URLSearchParams(new FormData(form))
     })
     .then(response => {
-        if (response.ok) {
-            return response.json();
+        if (!response.ok) {
+            throw new Error(EMAIL_MESSAGES.sync_failed || 'Synchronisation konnte nicht gestartet werden.');
         }
-        throw new Error('Synchronisation fehlgeschlagen');
+        return response.json();
     })
     .then(data => {
-        // Warte 30 Sekunden bevor Button wieder aktiviert wird
+        if (!data || !data.success) {
+            throw new Error((data && (data.error || data.message)) || EMAIL_MESSAGES.sync_failed || 'Synchronisation konnte nicht gestartet werden.');
+        }
+
+        const infoMessage = data.message || EMAIL_MESSAGES.sync_started || 'Synchronisation gestartet.';
+        showEmailAlert(infoMessage, 'info');
+
         setTimeout(() => {
-            // Aktiviere alle Sync-Buttons wieder
-            document.querySelectorAll('.sync-btn').forEach(btn => {
-                btn.disabled = false;
-                const btnSpinner = btn.querySelector('.spinner-border');
-                const btnIcon = btn.querySelector('.sync-icon');
-                if (btnSpinner) btnSpinner.style.display = 'none';
-                if (btnIcon) btnIcon.style.display = 'inline';
-            });
-            
-            // Lade Seite neu nach 30 Sekunden
             window.location.reload();
-        }, 30000); // 30 Sekunden
+        }, 10000);
     })
     .catch(error => {
         console.error('Synchronisationsfehler:', error);
-        alert('Fehler bei der Synchronisation. Bitte versuchen Sie es erneut.');
-        
-        // Spinner ausblenden und Button wieder aktivieren
-        document.querySelectorAll('.sync-btn').forEach(btn => {
-            btn.disabled = false;
-            const btnSpinner = btn.querySelector('.spinner-border');
-            const btnIcon = btn.querySelector('.sync-icon');
-            if (btnSpinner) btnSpinner.style.display = 'none';
-            if (btnIcon) btnIcon.style.display = 'inline';
-        });
+        showEmailAlert(error.message || EMAIL_MESSAGES.sync_error || 'Synchronisation fehlgeschlagen.', 'danger');
+        setSyncButtonsState(false);
     });
-    
+
     return false;
 }
 </script>

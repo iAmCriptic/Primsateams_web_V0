@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="de" data-bs-theme="{{ 'dark' if current_user.is_authenticated and current_user.dark_mode else 'light' }}" {% if current_user.is_authenticated and current_user.dark_mode and current_user.oled_mode %}data-oled-mode="true"{% endif %}>
+<html lang="{{ current_language or 'de' }}" data-bs-theme="{{ 'dark' if current_user.is_authenticated and current_user.dark_mode else 'light' }}" {% if current_user.is_authenticated and current_user.dark_mode and current_user.oled_mode %}data-oled-mode="true"{% endif %}>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{{ app_name or 'Prismateams' }}{% endblock %}</title>
     
     <!-- PWA Meta Tags -->
-    <meta name="description" content="Team-Software für effektive Zusammenarbeit - Chat, Dateien, Termine und mehr">
+    <meta name="description" content="{{ _('layout.meta.description') }}">
     <meta name="theme-color" content="#0d6efd">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -222,14 +222,14 @@
                 <div class="col">
                     <a href="{{ url_for('dashboard.index') }}" class="nav-link {% if request.endpoint and request.endpoint == 'dashboard.index' %}active{% endif %}">
                         <i class="bi bi-house-door fs-4"></i>
-                        <div class="small">Dashboard</div>
+                        <div class="small">{{ _('layout.nav.dashboard') }}</div>
                     </a>
                 </div>
                 {% if is_module_enabled('module_chat') %}
                 <div class="col">
                     <a href="{{ url_for('chat.index') }}" class="nav-link {% if request.endpoint and 'chat' in request.endpoint %}active{% endif %}">
                         <i class="bi bi-chat-dots fs-4"></i>
-                        <div class="small">Chats</div>
+                        <div class="small">{{ _('layout.nav.chats') }}</div>
                     </a>
                 </div>
                 {% endif %}
@@ -237,7 +237,7 @@
                 <div class="col">
                     <a href="{{ url_for('files.index') }}" class="nav-link {% if request.endpoint and 'files' in request.endpoint %}active{% endif %}">
                         <i class="bi bi-folder fs-4"></i>
-                        <div class="small">Dateien</div>
+                        <div class="small">{{ _('layout.nav.files') }}</div>
                     </a>
                 </div>
                 {% endif %}
@@ -245,14 +245,14 @@
                 <div class="col">
                     <a href="{{ url_for('calendar.index') }}" class="nav-link {% if request.endpoint and 'calendar' in request.endpoint %}active{% endif %}">
                         <i class="bi bi-calendar-event fs-4"></i>
-                        <div class="small">Termine</div>
+                        <div class="small">{{ _('layout.nav.calendar') }}</div>
                     </a>
                 </div>
                 {% endif %}
                 <div class="col">
                     <a href="javascript:void(0)" role="button" class="nav-link" data-bs-toggle="offcanvas" data-bs-target="#moreMenu">
                         <i class="bi bi-three-dots fs-4"></i>
-                        <div class="small">Mehr</div>
+                        <div class="small">{{ _('layout.nav.more') }}</div>
                     </a>
                 </div>
             </div>
@@ -274,14 +274,14 @@
             <li class="nav-item">
                 <a href="{{ url_for('dashboard.index') }}" class="nav-link {% if request.endpoint and request.endpoint == 'dashboard.index' %}active{% endif %}">
                     <i class="bi bi-house-door me-2"></i>
-                    Dashboard
+                    {{ _('layout.nav.dashboard') }}
                 </a>
             </li>
             {% if is_module_enabled('module_chat') %}
             <li>
                 <a href="{{ url_for('chat.index') }}" class="nav-link {% if request.endpoint and 'chat' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-chat-dots me-2"></i>
-                    Chats
+                    {{ _('layout.nav.chats') }}
                 </a>
             </li>
             {% endif %}
@@ -289,7 +289,7 @@
             <li>
                 <a href="{{ url_for('files.index') }}" class="nav-link {% if request.endpoint and 'files' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-folder me-2"></i>
-                    Dateien
+                    {{ _('layout.nav.files') }}
                 </a>
             </li>
             {% endif %}
@@ -297,7 +297,7 @@
             <li>
                 <a href="{{ url_for('calendar.index') }}" class="nav-link {% if request.endpoint and 'calendar' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-calendar-event me-2"></i>
-                    Termine
+                    {{ _('layout.nav.calendar') }}
                 </a>
             </li>
             {% endif %}
@@ -305,7 +305,7 @@
             <li>
                 <a href="{{ url_for('email.index') }}" class="nav-link {% if request.endpoint and 'email' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-envelope me-2"></i>
-                    E-Mail
+                    {{ _('layout.nav.email') }}
                 </a>
             </li>
             {% endif %}
@@ -313,7 +313,7 @@
             <li>
                 <a href="{{ url_for('credentials.index') }}" class="nav-link {% if request.endpoint and 'credentials' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-key me-2"></i>
-                    Zugangsdaten
+                    {{ _('layout.nav.credentials') }}
                 </a>
             </li>
             {% endif %}
@@ -321,7 +321,7 @@
             <li>
                 <a href="{{ url_for('manuals.index') }}" class="nav-link {% if request.endpoint and 'manuals' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-book me-2"></i>
-                    Anleitungen
+                    {{ _('layout.nav.manuals') }}
                 </a>
             </li>
             {% endif %}
@@ -329,7 +329,7 @@
             <li>
                 <a href="{{ url_for('canvas.index') }}" class="nav-link {% if request.endpoint and 'canvas' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-palette me-2"></i>
-                    Canvas
+                    {{ _('layout.nav.canvas') }}
                 </a>
             </li>
             {% endif %}
@@ -337,7 +337,7 @@
             <li>
                 <a href="{{ url_for('inventory.dashboard') }}" class="nav-link {% if request.endpoint and 'inventory' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-box-seam me-2"></i>
-                    Lagerverwaltung
+                    {{ _('layout.nav.inventory') }}
                 </a>
             </li>
             {% endif %}
@@ -345,14 +345,14 @@
             <li>
                 <a href="{{ url_for('wiki.index') }}" class="nav-link {% if request.endpoint and 'wiki' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-journal-text me-2"></i>
-                    Wiki
+                    {{ _('layout.nav.wiki') }}
                 </a>
             </li>
             {% endif %}
             <li>
                 <a href="{{ url_for('settings.index') }}" class="nav-link {% if request.endpoint and 'settings' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-gear me-2"></i>
-                    Einstellungen
+                    {{ _('layout.nav.settings') }}
                 </a>
             </li>
         </ul>
@@ -367,9 +367,9 @@
                 <strong>{{ current_user.full_name }}</strong>
             </a>
             <ul class="dropdown-menu text-small shadow">
-                <li><a class="dropdown-item" href="{{ url_for('settings.profile') }}">Profil</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('settings.profile') }}">{{ _('layout.nav.profile') }}</a></li>
                 <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Abmelden</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">{{ _('layout.nav.logout') }}</a></li>
             </ul>
         </div>
     </div>
@@ -377,7 +377,7 @@
     <!-- More Menu Offcanvas (Mobile) -->
     <div class="offcanvas offcanvas-end offcanvas-accent" tabindex="-1" id="moreMenu">
         <div class="offcanvas-header">
-            <h5 class="offcanvas-title">Mehr</h5>
+            <h5 class="offcanvas-title">{{ _('layout.nav.more') }}</h5>
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
         </div>
         <div class="offcanvas-body">
@@ -386,7 +386,7 @@
                 <li class="nav-item">
                     <a href="{{ url_for('email.index') }}" class="nav-link {% if request.endpoint and 'email' in request.endpoint %}active{% endif %}">
                         <i class="bi bi-envelope me-2"></i>
-                        E-Mail
+                        {{ _('layout.nav.email') }}
                     </a>
                 </li>
                 {% endif %}
@@ -394,7 +394,7 @@
                 <li>
                     <a href="{{ url_for('credentials.index') }}" class="nav-link {% if request.endpoint and 'credentials' in request.endpoint %}active{% endif %}">
                         <i class="bi bi-key me-2"></i>
-                        Zugangsdaten
+                        {{ _('layout.nav.credentials') }}
                     </a>
                 </li>
                 {% endif %}
@@ -402,7 +402,7 @@
                 <li>
                     <a href="{{ url_for('manuals.index') }}" class="nav-link {% if request.endpoint and 'manuals' in request.endpoint %}active{% endif %}">
                         <i class="bi bi-book me-2"></i>
-                        Anleitungen
+                        {{ _('layout.nav.manuals') }}
                     </a>
                 </li>
                 {% endif %}
@@ -410,7 +410,7 @@
                 <li>
                     <a href="{{ url_for('canvas.index') }}" class="nav-link {% if request.endpoint and 'canvas' in request.endpoint %}active{% endif %}">
                         <i class="bi bi-palette me-2"></i>
-                        Canvas
+                        {{ _('layout.nav.canvas') }}
                     </a>
                 </li>
                 {% endif %}
@@ -418,7 +418,7 @@
                 <li>
                     <a href="{{ url_for('inventory.dashboard') }}" class="nav-link {% if request.endpoint and 'inventory' in request.endpoint %}active{% endif %}">
                         <i class="bi bi-box-seam me-2"></i>
-                        Lagerverwaltung
+                        {{ _('layout.nav.inventory') }}
                     </a>
                 </li>
                 {% endif %}
@@ -426,27 +426,27 @@
                 <li>
                     <a href="{{ url_for('wiki.index') }}" class="nav-link {% if request.endpoint and 'wiki' in request.endpoint %}active{% endif %}">
                         <i class="bi bi-journal-text me-2"></i>
-                        Wiki
+                        {{ _('layout.nav.wiki') }}
                     </a>
                 </li>
                 {% endif %}
                 <li>
                     <a href="{{ url_for('settings.index') }}" class="nav-link {% if request.endpoint and 'settings' in request.endpoint %}active{% endif %}">
                         <i class="bi bi-gear me-2"></i>
-                        Einstellungen
+                        {{ _('layout.nav.settings') }}
                     </a>
                 </li>
                 <li><hr></li>
                 <li>
                     <a href="{{ url_for('settings.profile') }}" class="nav-link">
                         <i class="bi bi-person me-2"></i>
-                        Profil
+                        {{ _('layout.nav.profile') }}
                     </a>
                 </li>
                 <li>
                     <a href="{{ url_for('auth.logout') }}" class="nav-link text-danger">
                         <i class="bi bi-box-arrow-right me-2"></i>
-                        Abmelden
+                        {{ _('layout.nav.logout') }}
                     </a>
                 </li>
             </ul>
@@ -462,8 +462,8 @@
                 {% set index_endpoints = ['dashboard.index', 'chat.index', 'chat.view_chat', 'files.index', 'calendar.index', 'email.index', 'credentials.index', 'manuals.index', 'canvas.index', 'inventory.dashboard', 'wiki.index', 'settings.index'] %}
                 {% if request.endpoint not in index_endpoints %}
                 <div class="back-button-container mb-3">
-                    <a href="{{ get_back_url() }}" class="btn btn-outline-secondary back-button" aria-label="Zurück">
-                        <i class="bi bi-arrow-left"></i> Zurück
+                    <a href="{{ get_back_url() }}" class="btn btn-outline-secondary back-button" aria-label="{{ _('layout.nav.back') }}">
+                        <i class="bi bi-arrow-left"></i> {{ _('layout.nav.back') }}
                     </a>
                 </div>
                 {% endif %}

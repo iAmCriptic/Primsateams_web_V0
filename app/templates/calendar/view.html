@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}{{ event.title }} - Termine{% endblock %}
+{% block title %}{{ event.title }} - {{ _('calendar.view.page_title_suffix') }}{% endblock %}
 
 {% block content %}
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{{ url_for('calendar.index') }}">Termine</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('calendar.index') }}">{{ _('calendar.view.breadcrumb.index') }}</a></li>
         <li class="breadcrumb-item active">{{ event.title }}</li>
     </ol>
 </nav>
@@ -23,48 +23,41 @@
                 
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <strong><i class="bi bi-calendar"></i> Datum:</strong><br>
+                        <strong><i class="bi bi-calendar"></i> {{ _('calendar.view.date_label') }}</strong><br>
                         {{ event.start_time.strftime('%d.%m.%Y') }}
                     </div>
                     <div class="col-md-6">
-                        <strong><i class="bi bi-clock"></i> Uhrzeit:</strong><br>
-                        {{ event.start_time.strftime('%H:%M') }} - {{ event.end_time.strftime('%H:%M') }} Uhr
+                        <strong><i class="bi bi-clock"></i> {{ _('calendar.view.time_label') }}</strong><br>
+                        {{ event.start_time.strftime('%H:%M') }} - {{ event.end_time.strftime('%H:%M') }}{% set time_suffix = _('calendar.view.time_suffix') %}{% if time_suffix %} {{ time_suffix }}{% endif %}
                     </div>
                 </div>
                 
                 {% if event.location %}
                 <div class="mb-3">
-                    <strong><i class="bi bi-geo-alt"></i> Ort:</strong><br>
+                    <strong><i class="bi bi-geo-alt"></i> {{ _('calendar.view.location_label') }}</strong><br>
                     {{ event.location }}
                 </div>
                 {% endif %}
                 
                 {% if event.is_master_event %}
                 <div class="mb-3">
-                    <strong><i class="bi bi-arrow-repeat"></i> Wiederkehrender Termin:</strong><br>
-                    {% if event.recurrence_type == 'daily' %}
-                        Täglich
-                    {% elif event.recurrence_type == 'weekly' %}
-                        Wöchentlich
-                    {% elif event.recurrence_type == 'monthly' %}
-                        Monatlich
-                    {% elif event.recurrence_type == 'yearly' %}
-                        Jährlich
-                    {% endif %}
+                    <strong><i class="bi bi-arrow-repeat"></i> {{ _('calendar.view.recurrence_label') }}</strong><br>
+                    {% set recurrence_type_key = 'calendar.view.recurrence_types.' ~ event.recurrence_type %}
+                    {{ _(recurrence_type_key) }}
                     {% if event.recurrence_interval > 1 %}
-                        (alle {{ event.recurrence_interval }} {% if event.recurrence_type == 'daily' %}Tage{% elif event.recurrence_type == 'weekly' %}Wochen{% elif event.recurrence_type == 'monthly' %}Monate{% elif event.recurrence_type == 'yearly' %}Jahre{% endif %})
+                        ({{ _('calendar.view.recurrence_interval.' ~ event.recurrence_type, count=event.recurrence_interval) }})
                     {% endif %}
                     {% if event.recurrence_end_date %}
-                        <br><small class="text-muted">Endet am: {{ event.recurrence_end_date.strftime('%d.%m.%Y') }}</small>
+                        <br><small class="text-muted">{{ _('calendar.view.recurrence_end', date=event.recurrence_end_date.strftime('%d.%m.%Y')) }}</small>
                     {% endif %}
                     <br><a href="{{ url_for('calendar.view_recurring_instances', event_id=event.id) }}" class="btn btn-sm btn-outline-primary mt-2">
-                        Alle Instanzen anzeigen
+                        {{ _('calendar.view.recurrence_button') }}
                     </a>
                 </div>
                 {% endif %}
                 
                 <div class="mb-3">
-                    <strong><i class="bi bi-person"></i> Erstellt von:</strong><br>
+                    <strong><i class="bi bi-person"></i> {{ _('calendar.view.created_by') }}</strong><br>
                     {{ event.creator.full_name }}
                 </div>
                 
@@ -74,28 +67,28 @@
                 <div class="d-flex gap-2">
                     <form method="POST" action="{{ url_for('calendar.set_participation', event_id=event.id, status='accepted') }}" class="d-inline">
                         <button type="submit" class="btn btn-accent">
-                            <i class="bi bi-check-circle"></i> Zusagen
+                            <i class="bi bi-check-circle"></i> {{ _('calendar.view.buttons.accept') }}
                         </button>
                     </form>
                     <form method="POST" action="{{ url_for('calendar.set_participation', event_id=event.id, status='declined') }}" class="d-inline">
                         <button type="submit" class="btn btn-danger">
-                            <i class="bi bi-x-circle"></i> Absagen
+                            <i class="bi bi-x-circle"></i> {{ _('calendar.view.buttons.decline') }}
                         </button>
                     </form>
                     <a href="{{ url_for('calendar.edit_event', event_id=event.id) }}" class="btn btn-outline-primary">
-                        <i class="bi bi-pencil"></i> Bearbeiten
+                        <i class="bi bi-pencil"></i> {{ _('calendar.view.buttons.edit') }}
                     </a>
                     {% if current_user.is_admin %}
                     {% if event.is_master_event %}
                     <form method="POST" action="{{ url_for('calendar.delete_recurring_event_all', event_id=event.id) }}" class="d-inline">
-                        <button type="submit" class="btn btn-outline-danger" data-confirm-delete="Wiederkehrenden Termin und alle Instanzen wirklich löschen?">
-                            <i class="bi bi-trash"></i> Alle Instanzen löschen
+                        <button type="submit" class="btn btn-outline-danger" data-confirm-delete="{{ _('calendar.view.confirm.delete_recurring') }}">
+                            <i class="bi bi-trash"></i> {{ _('calendar.view.buttons.delete_all') }}
                         </button>
                     </form>
                     {% else %}
                     <form method="POST" action="{{ url_for('calendar.delete_event', event_id=event.id) }}" class="d-inline">
-                        <button type="submit" class="btn btn-outline-danger" data-confirm-delete="Termin wirklich löschen?">
-                            <i class="bi bi-trash"></i> Löschen
+                        <button type="submit" class="btn btn-outline-danger" data-confirm-delete="{{ _('calendar.view.confirm.delete_single') }}">
+                            <i class="bi bi-trash"></i> {{ _('calendar.view.buttons.delete') }}
                         </button>
                     </form>
                     {% endif %}
@@ -103,7 +96,7 @@
                 </div>
                 {% elif user_participation and user_participation.status == 'removed' %}
                 <div class="alert alert-warning">
-                    Sie wurden von diesem Termin entfernt und können nicht mehr teilnehmen.
+                    {{ _('calendar.view.alerts.removed') }}
                 </div>
                 {% endif %}
             </div>
@@ -113,7 +106,7 @@
     <div class="col-lg-4">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">Teilnehmer</h5>
+                <h5 class="mb-0">{{ _('calendar.view.participants_title') }}</h5>
             </div>
             <div class="card-body">
                 <div class="list-group list-group-flush">
@@ -122,18 +115,18 @@
                         <div>
                             {{ participant.user.full_name }}
                             {% if participant.status == 'accepted' %}
-                            <span class="badge bg-success">Zugesagt</span>
+                            <span class="badge bg-success">{{ _('calendar.view.statuses.accepted') }}</span>
                             {% elif participant.status == 'declined' %}
-                            <span class="badge bg-danger">Abgesagt</span>
+                            <span class="badge bg-danger">{{ _('calendar.view.statuses.declined') }}</span>
                             {% elif participant.status == 'removed' %}
-                            <span class="badge bg-secondary">Entfernt</span>
+                            <span class="badge bg-secondary">{{ _('calendar.view.statuses.removed') }}</span>
                             {% else %}
-                            <span class="badge bg-warning">Ausstehend</span>
+                            <span class="badge bg-warning">{{ _('calendar.view.statuses.pending') }}</span>
                             {% endif %}
                         </div>
                         {% if current_user.is_admin and participant.status != 'removed' %}
                         <form method="POST" action="{{ url_for('calendar.remove_participant', event_id=event.id, user_id=participant.user_id) }}" class="d-inline">
-                            <button type="submit" class="btn btn-sm btn-outline-danger" data-confirm-delete="Teilnehmer entfernen?">
+                            <button type="submit" class="btn btn-sm btn-outline-danger" data-confirm-delete="{{ _('calendar.view.confirm.remove_participant') }}">
                                 <i class="bi bi-x"></i>
                             </button>
                         </form>
