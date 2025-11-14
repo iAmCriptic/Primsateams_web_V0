@@ -73,7 +73,11 @@
                         <td>{{ user.email }}</td>
                         <td>
                             {% if user.is_admin %}
-                            <span class="badge bg-warning">Administrator</span>
+                                {% if user.is_super_admin %}
+                                <span class="badge bg-danger">Hauptadministrator</span>
+                                {% else %}
+                                <span class="badge bg-warning">Administrator</span>
+                                {% endif %}
                             {% else %}
                             <span class="badge bg-secondary">Benutzer</span>
                             {% endif %}
@@ -89,18 +93,18 @@
                                 </form>
                                 {% else %}
                                 <form method="POST" action="{{ url_for('settings.remove_admin', user_id=user.id) }}" class="d-inline">
-                                    <button type="submit" class="btn btn-outline-secondary" title="Admin-Rechte entziehen" {% if user.id == current_user.id %}disabled{% endif %}>
+                                    <button type="submit" class="btn btn-outline-secondary" title="Admin-Rechte entziehen" {% if user.id == current_user.id or user.is_super_admin %}disabled{% endif %}>
                                         <i class="bi bi-shield-minus"></i>
                                     </button>
                                 </form>
                                 {% endif %}
                                 <form method="POST" action="{{ url_for('settings.deactivate_user', user_id=user.id) }}" class="d-inline">
-                                    <button type="submit" class="btn btn-outline-warning" title="Deaktivieren" {% if user.id == current_user.id %}disabled{% endif %}>
+                                    <button type="submit" class="btn btn-outline-warning" title="Deaktivieren" {% if user.id == current_user.id or user.is_super_admin %}disabled{% endif %}>
                                         <i class="bi bi-pause-circle"></i>
                                     </button>
                                 </form>
                                 <form method="POST" action="{{ url_for('settings.delete_user', user_id=user.id) }}" class="d-inline">
-                                    <button type="submit" class="btn btn-outline-danger" data-confirm-delete="Benutzer wirklich löschen?" title="Löschen" {% if user.id == current_user.id %}disabled{% endif %}>
+                                    <button type="submit" class="btn btn-outline-danger" data-confirm-delete="Benutzer wirklich löschen?" title="Löschen" {% if user.id == current_user.id or user.is_super_admin %}disabled{% endif %}>
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </form>

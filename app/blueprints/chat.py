@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, current_app
 from flask_login import login_required, current_user
 from app import db
 from app.models.chat import Chat, ChatMessage, ChatMember
@@ -42,6 +42,13 @@ def index():
 @login_required
 def view_chat(chat_id):
     """View a specific chat."""
+    # Special handling: If chat_id is 1, redirect to the actual main chat
+    # This ensures /chat/1 always goes to the main chat, even if it has a different ID
+    if chat_id == 1:
+        main_chat = Chat.query.filter_by(is_main_chat=True).first()
+        if main_chat and main_chat.id != 1:
+            return redirect(url_for('chat.view_chat', chat_id=main_chat.id))
+    
     chat = Chat.query.get_or_404(chat_id)
     
     # Check if user is a member
@@ -62,6 +69,8 @@ def view_chat(chat_id):
     
     # Update last read timestamp
     membership.last_read_at = datetime.utcnow()
+    # Update user's last_seen for online status
+    current_user.last_seen = datetime.utcnow()
     db.session.commit()
     
     # Get chat members - use ChatMember as base to ensure all members are included
@@ -103,9 +112,16 @@ def send_message(chat_id):
         filename = secure_filename(file.filename)
         timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
         filename = f"{timestamp}_{filename}"
-        filepath = os.path.join('uploads', 'chat', filename)
+        
+        # Use absolute path with UPLOAD_FOLDER config
+        project_root = os.path.dirname(current_app.root_path)
+        upload_dir = os.path.join(project_root, current_app.config['UPLOAD_FOLDER'], 'chat')
+        os.makedirs(upload_dir, exist_ok=True)
+        filepath = os.path.join(upload_dir, filename)
         file.save(filepath)
-        media_url = filepath
+        
+        # Store only the filename for URL generation
+        media_url = filename
         
         # Determine message type based on file extension
         ext = filename.rsplit('.', 1)[1].lower()
@@ -295,6 +311,195 @@ def direct_message(user_id):
     db.session.commit()
     
     return redirect(url_for('chat.view_chat', chat_id=dm_chat.id))
+
+
+@chat_bp.route('/media/<path:filename>')
+@login_required
+def serve_media(filename):
+    """Serve uploaded chat media files (images, videos, audio)."""
+    try:
+        project_root = os.path.dirname(current_app.root_path)
+        # Handle avatars in subdirectory
+        if filename.startswith('avatars/'):
+            directory = os.path.join(project_root, current_app.config['UPLOAD_FOLDER'], 'chat', 'avatars')
+            filename = filename.replace('avatars/', '', 1)
+        else:
+            directory = os.path.join(project_root, current_app.config['UPLOAD_FOLDER'], 'chat')
+        full_path = os.path.join(directory, filename)
+        
+        if not os.path.isfile(full_path):
+            return jsonify({'error': 'File not found'}), 404
+        
+        return send_from_directory(directory, filename)
+    except FileNotFoundError:
+        return jsonify({'error': 'File not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@chat_bp.route('/<int:chat_id>/update', methods=['POST'])
+@login_required
+def update_chat(chat_id):
+    """Update chat settings (name, description, avatar)."""
+    chat = Chat.query.get_or_404(chat_id)
+    
+    # Check if user is a member
+    membership = ChatMember.query.filter_by(
+        chat_id=chat_id,
+        user_id=current_user.id
+    ).first()
+    
+    if not membership:
+        return jsonify({'error': 'Nicht autorisiert'}), 403
+    
+    # Check if user is creator or admin (only they can update)
+    if chat.created_by != current_user.id and not current_user.is_admin:
+        return jsonify({'error': 'Nur der Ersteller oder ein Administrator kann den Chat bearbeiten'}), 403
+    
+    # Update name
+    if 'name' in request.form:
+        new_name = request.form.get('name', '').strip()
+        if new_name:
+            chat.name = new_name
+    
+    # Update description
+    if 'description' in request.form:
+        chat.description = request.form.get('description', '').strip()
+    
+    # Handle avatar upload
+    if 'avatar' in request.files:
+        avatar_file = request.files['avatar']
+        if avatar_file and avatar_file.filename and allowed_file(avatar_file.filename):
+            # Delete old avatar if exists
+            if chat.group_avatar:
+                project_root = os.path.dirname(current_app.root_path)
+                old_avatar_path = os.path.join(
+                    project_root, 
+                    current_app.config['UPLOAD_FOLDER'], 
+                    'chat', 
+                    'avatars', 
+                    chat.group_avatar
+                )
+                if os.path.exists(old_avatar_path):
+                    try:
+                        os.remove(old_avatar_path)
+                    except:
+                        pass
+            
+            # Save new avatar
+            filename = secure_filename(avatar_file.filename)
+            timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+            filename = f"{timestamp}_{filename}"
+            
+            project_root = os.path.dirname(current_app.root_path)
+            avatar_dir = os.path.join(project_root, current_app.config['UPLOAD_FOLDER'], 'chat', 'avatars')
+            os.makedirs(avatar_dir, exist_ok=True)
+            filepath = os.path.join(avatar_dir, filename)
+            avatar_file.save(filepath)
+            chat.group_avatar = filename
+    
+    # Handle avatar removal
+    if 'remove_avatar' in request.form and request.form.get('remove_avatar') == '1':
+        if chat.group_avatar:
+            project_root = os.path.dirname(current_app.root_path)
+            avatar_path = os.path.join(
+                project_root, 
+                current_app.config['UPLOAD_FOLDER'], 
+                'chat', 
+                'avatars', 
+                chat.group_avatar
+            )
+            if os.path.exists(avatar_path):
+                try:
+                    os.remove(avatar_path)
+                except:
+                    pass
+            chat.group_avatar = None
+    
+    chat.updated_at = datetime.utcnow()
+    db.session.commit()
+    
+    if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({
+            'success': True,
+            'message': 'Chat erfolgreich aktualisiert',
+            'chat': {
+                'id': chat.id,
+                'name': chat.name,
+                'description': chat.description,
+                'group_avatar': chat.group_avatar
+            }
+        })
+    
+    flash('Chat erfolgreich aktualisiert', 'success')
+    return redirect(url_for('chat.view_chat', chat_id=chat_id))
+
+
+@chat_bp.route('/<int:chat_id>/delete', methods=['POST'])
+@login_required
+def delete_chat(chat_id):
+    """Delete a chat (main chat cannot be deleted)."""
+    chat = Chat.query.get_or_404(chat_id)
+    
+    # Prevent deletion of main chat
+    if chat.is_main_chat:
+        if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'error': 'Der Haupt-Chat kann nicht gelöscht werden'}), 400
+        flash('Der Haupt-Chat kann nicht gelöscht werden', 'danger')
+        return redirect(url_for('chat.view_chat', chat_id=chat_id))
+    
+    # Check if user is creator or admin
+    if chat.created_by != current_user.id and not current_user.is_admin:
+        if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'error': 'Nur der Ersteller oder ein Administrator kann den Chat löschen'}), 403
+        flash('Nur der Ersteller oder ein Administrator kann den Chat löschen', 'danger')
+        return redirect(url_for('chat.view_chat', chat_id=chat_id))
+    
+    # Delete chat (cascade will handle messages and members)
+    db.session.delete(chat)
+    db.session.commit()
+    
+    if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({'success': True, 'message': 'Chat erfolgreich gelöscht'})
+    
+    flash('Chat erfolgreich gelöscht', 'success')
+    return redirect(url_for('chat.index'))
+
+
+@chat_bp.route('/<int:chat_id>/settings', methods=['GET', 'POST'])
+@login_required
+def chat_settings(chat_id):
+    """Chat settings page."""
+    chat = Chat.query.get_or_404(chat_id)
+    
+    # Check if user is a member
+    membership = ChatMember.query.filter_by(
+        chat_id=chat_id,
+        user_id=current_user.id
+    ).first()
+    
+    if not membership:
+        flash('Sie sind kein Mitglied dieses Chats.', 'danger')
+        return redirect(url_for('chat.index'))
+    
+    # Check if user is creator or admin (only they can access settings)
+    if chat.created_by != current_user.id and not current_user.is_admin:
+        flash('Nur der Ersteller oder ein Administrator kann die Chat-Einstellungen bearbeiten', 'danger')
+        return redirect(url_for('chat.view_chat', chat_id=chat_id))
+    
+    if request.method == 'POST':
+        return update_chat(chat_id)
+    
+    # Get chat members
+    chat_memberships = ChatMember.query.filter_by(chat_id=chat_id).all()
+    member_ids = [cm.user_id for cm in chat_memberships]
+    members = User.query.filter(User.id.in_(member_ids)).all() if member_ids else []
+    
+    return render_template(
+        'chat/settings.html',
+        chat=chat,
+        members=members
+    )
 
 
 

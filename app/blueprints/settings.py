@@ -357,6 +357,12 @@ def deactivate_user(user_id):
         return redirect(url_for('settings.admin_users'))
     
     user = User.query.get_or_404(user_id)
+    
+    # Super-Admins können nicht deaktiviert werden
+    if user.is_super_admin:
+        flash('Der Hauptadministrator kann nicht deaktiviert werden.', 'danger')
+        return redirect(url_for('settings.admin_users'))
+    
     user.is_active = False
     db.session.commit()
     
@@ -391,6 +397,12 @@ def remove_admin(user_id):
         return redirect(url_for('settings.admin_users'))
     
     user = User.query.get_or_404(user_id)
+    
+    # Super-Admins können ihre Rechte nicht entzogen bekommen
+    if user.is_super_admin:
+        flash('Die Admin-Rechte des Hauptadministrators können nicht entzogen werden.', 'danger')
+        return redirect(url_for('settings.admin_users'))
+    
     user.is_admin = False
     db.session.commit()
     
@@ -410,6 +422,11 @@ def delete_user(user_id):
         return redirect(url_for('settings.admin_users'))
     
     user = User.query.get_or_404(user_id)
+    
+    # Super-Admins können nicht gelöscht werden
+    if user.is_super_admin:
+        flash('Der Hauptadministrator kann nicht gelöscht werden.', 'danger')
+        return redirect(url_for('settings.admin_users'))
     
     # Delete profile picture
     if user.profile_picture:
@@ -779,7 +796,7 @@ def admin_backup():
                     return render_template('settings/admin_backup.html', categories=SUPPORTED_CATEGORIES, color_gradient=color_gradient)
                 
                 # Backup importieren
-                result = import_backup(temp_path, import_categories)
+                result = import_backup(temp_path, import_categories, current_user.id)
                 
                 # Temporäre Datei löschen
                 os.unlink(temp_path)

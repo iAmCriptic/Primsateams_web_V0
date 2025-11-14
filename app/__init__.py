@@ -96,6 +96,7 @@ def create_app(config_name='default'):
         app.config['UPLOAD_FOLDER'],
         os.path.join(app.config['UPLOAD_FOLDER'], 'files'),
         os.path.join(app.config['UPLOAD_FOLDER'], 'chat'),
+        os.path.join(app.config['UPLOAD_FOLDER'], 'chat', 'avatars'),  # For chat avatars
         os.path.join(app.config['UPLOAD_FOLDER'], 'manuals'),
         os.path.join(app.config['UPLOAD_FOLDER'], 'profile_pics'),
         os.path.join(app.config['UPLOAD_FOLDER'], 'inventory', 'product_images'),
@@ -385,6 +386,39 @@ def create_app(config_name='default'):
     def localdatetime_filter(dt, format_string='%d.%m.%Y %H:%M'):
         """Filter to format datetime in local timezone."""
         return format_datetime(dt, format_string)
+    
+    @app.template_filter('smart_datetime')
+    def smart_datetime_filter(dt):
+        """Smart datetime formatting: Today shows time only, Yesterday shows 'Gestern HH:MM', older shows date."""
+        if not dt:
+            return ''
+        
+        from datetime import datetime, date
+        from app.utils.common import get_local_time
+        
+        local_dt = get_local_time(dt)
+        if isinstance(local_dt, str):
+            try:
+                local_dt = datetime.fromisoformat(local_dt.replace('Z', '+00:00'))
+            except:
+                return str(dt)
+        
+        now = datetime.now()
+        today = date.today()
+        message_date = local_dt.date()
+        
+        # Calculate difference in days
+        days_diff = (today - message_date).days
+        
+        if days_diff == 0:
+            # Today: show only time
+            return local_dt.strftime('%H:%M')
+        elif days_diff == 1:
+            # Yesterday: show "Gestern HH:MM"
+            return f"Gestern {local_dt.strftime('%H:%M')}"
+        else:
+            # Older: show date and time
+            return local_dt.strftime('%d.%m.%Y %H:%M')
     
     @app.template_filter('markdown')
     def markdown_filter(text):

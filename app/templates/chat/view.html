@@ -78,8 +78,14 @@
                     <i class="bi bi-bell me-2" id="notification-icon"></i>
                     <span id="notification-text">{{ _('chat.view.dropdown.mute') }}</span>
                 </a></li>
-                <li><a class="dropdown-item" href="#"><i class="bi bi-info-circle me-2"></i>{{ _('chat.view.dropdown.info') }}</a></li>
-                <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>{{ _('chat.view.dropdown.settings') }}</a></li>
+                <li><a class="dropdown-item" href="#" onclick="showChatInfoModal(); return false;"><i class="bi bi-info-circle me-2"></i>{{ _('chat.view.dropdown.info') }}</a></li>
+                {% if chat.created_by == current_user.id or current_user.is_admin %}
+                <li><a class="dropdown-item" href="{{ url_for('chat.chat_settings', chat_id=chat.id) }}"><i class="bi bi-gear me-2"></i>{{ _('chat.view.dropdown.settings') }}</a></li>
+                {% endif %}
+                {% if not chat.is_main_chat and (chat.created_by == current_user.id or current_user.is_admin) %}
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item text-danger" href="#" onclick="deleteChat({{ chat.id }}); return false;"><i class="bi bi-trash me-2"></i>Chat löschen</a></li>
+                {% endif %}
             </ul>
         </div>
     </div>
@@ -167,7 +173,7 @@
                     </div>
                 </div>
                 <div class="member-status">
-                    <span class="status-indicator online"></span>
+                    <span class="status-indicator {% if member.is_online() %}online{% else %}offline{% endif %}"></span>
                 </div>
             </div>
             {% endfor %}
@@ -187,20 +193,20 @@
                     </div>
                     <div class="message-time">
                         <small class="text-muted" style="font-size: 0.7rem; opacity: 0.7;">
-                            {{ message.created_at | localtime('%H:%M') }}
+                            {{ message.created_at | smart_datetime }}
                         </small>
                     </div>
                 {% elif message.message_type == 'image' %}
                     <div class="message-header">
                         <strong>{% if message.sender_id == current_user.id %}{{ _('chat.view.message.you') }}{% else %}{{ message.sender.full_name if message.sender else _('chat.view.message.unknown_user') }}{% endif %}</strong>
                     </div>
-                    <img src="{{ url_for('static', filename='../' + message.media_url) }}" class="img-fluid rounded" style="max-width: 300px;">
+                    <img src="{{ url_for('chat.serve_media', filename=message.media_url) }}" class="img-fluid rounded" style="max-width: 300px;">
                     {% if message.content %}
                     <p class="mt-2 mb-0">{{ message.content }}</p>
                     {% endif %}
                     <div class="message-time">
                         <small class="text-muted" style="font-size: 0.7rem; opacity: 0.7;">
-                            {{ message.created_at | localtime('%H:%M') }}
+                            {{ message.created_at | smart_datetime }}
                         </small>
                     </div>
                 {% elif message.message_type == 'video' %}
@@ -208,14 +214,14 @@
                         <strong>{% if message.sender_id == current_user.id %}{{ _('chat.view.message.you') }}{% else %}{{ message.sender.full_name if message.sender else _('chat.view.message.unknown_user') }}{% endif %}</strong>
                     </div>
                     <video controls class="rounded" style="max-width: 300px;">
-                        <source src="{{ url_for('static', filename='../' + message.media_url) }}">
+                        <source src="{{ url_for('chat.serve_media', filename=message.media_url) }}">
                     </video>
                     {% if message.content %}
                     <p class="mt-2 mb-0">{{ message.content }}</p>
                     {% endif %}
                     <div class="message-time">
                         <small class="text-muted" style="font-size: 0.7rem; opacity: 0.7;">
-                            {{ message.created_at | localtime('%H:%M') }}
+                            {{ message.created_at | smart_datetime }}
                         </small>
                     </div>
                 {% elif message.message_type == 'voice' %}
@@ -223,14 +229,14 @@
                         <strong>{% if message.sender_id == current_user.id %}{{ _('chat.view.message.you') }}{% else %}{{ message.sender.full_name if message.sender else _('chat.view.message.unknown_user') }}{% endif %}</strong>
                     </div>
                     <audio controls>
-                        <source src="{{ url_for('static', filename='../' + message.media_url) }}">
+                        <source src="{{ url_for('chat.serve_media', filename=message.media_url) }}">
                     </audio>
                     {% if message.content %}
                     <p class="mt-2 mb-0">{{ message.content }}</p>
                     {% endif %}
                     <div class="message-time">
                         <small class="text-muted" style="font-size: 0.7rem; opacity: 0.7;">
-                            {{ message.created_at | localtime('%H:%M') }}
+                            {{ message.created_at | smart_datetime }}
                         </small>
                     </div>
                 {% endif %}
@@ -376,13 +382,41 @@
     
     // Add new message to chat
     function formatTime(value) {
+        const messageDate = new Date(value);
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const msgDate = new Date(messageDate.getFullYear(), messageDate.getMonth(), messageDate.getDate());
+        
+        const diffTime = today - msgDate;
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        
         const localeMap = { de: 'de-DE', en: 'en-US' };
         const currentLocale = "{{ current_language }}";
         const locale = localeMap[currentLocale] || currentLocale || 'en-US';
-        return new Date(value).toLocaleTimeString(locale, {
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        
+        if (diffDays === 0) {
+            // Today: show only time
+            return messageDate.toLocaleTimeString(locale, {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } else if (diffDays === 1) {
+            // Yesterday: show "Gestern HH:MM"
+            const timeStr = messageDate.toLocaleTimeString(locale, {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            return `Gestern ${timeStr}`;
+        } else {
+            // Older: show date and time
+            return messageDate.toLocaleString(locale, {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
     }
 
     function addMessageToChat(message) {
@@ -411,11 +445,12 @@
                 </div>
             `;
         } else if (message.message_type === 'image') {
+            const mediaUrl = `/chat/media/${encodeURIComponent(message.media_url)}`;
             contentHtml = `
                 <div class="message-header">
                     <strong>${senderName}</strong>
                 </div>
-                <img src="/static/../${message.media_url}" class="img-fluid rounded" style="max-width: 300px;">
+                <img src="${mediaUrl}" class="img-fluid rounded" style="max-width: 300px;">
                 ${message.content ? `<p class="mt-2 mb-0">${escapeHtml(message.content)}</p>` : ''}
                 <div class="message-time">
                     <small class="text-muted" style="font-size: 0.7rem; opacity: 0.7;">
@@ -424,11 +459,12 @@
                 </div>
             `;
         } else if (message.message_type === 'video') {
+            const mediaUrl = `/chat/media/${encodeURIComponent(message.media_url)}`;
             contentHtml = `
                 <div class="message-header">
                     <strong>${senderName}</strong>
                 </div>
-                <video controls class="rounded" style="max-width: 300px;"><source src="/static/../${message.media_url}"></video>
+                <video controls class="rounded" style="max-width: 300px;"><source src="${mediaUrl}"></video>
                 ${message.content ? `<p class="mt-2 mb-0">${escapeHtml(message.content)}</p>` : ''}
                 <div class="message-time">
                     <small class="text-muted" style="font-size: 0.7rem; opacity: 0.7;">
@@ -437,11 +473,12 @@
                 </div>
             `;
         } else if (message.message_type === 'voice') {
+            const mediaUrl = `/chat/media/${encodeURIComponent(message.media_url)}`;
             contentHtml = `
                 <div class="message-header">
                     <strong>${senderName}</strong>
                 </div>
-                <audio controls><source src="/static/../${message.media_url}"></audio>
+                <audio controls><source src="${mediaUrl}"></audio>
                 ${message.content ? `<p class="mt-2 mb-0">${escapeHtml(message.content)}</p>` : ''}
                 <div class="message-time">
                     <small class="text-muted" style="font-size: 0.7rem; opacity: 0.7;">
@@ -512,6 +549,7 @@
             
             const role = member.is_creator ? CHAT_TEXT.memberRoleAdmin : CHAT_TEXT.memberRoleMember;
             
+            const statusClass = member.is_online ? 'online' : 'offline';
             return `
                 <div class="sidebar-member clickable-member" 
                      data-member-id="${member.id}"
@@ -528,7 +566,7 @@
                         </div>
                     </div>
                     <div class="member-status">
-                        <span class="status-indicator online"></span>
+                        <span class="status-indicator ${statusClass}"></span>
                     </div>
                 </div>
             `;
@@ -641,9 +679,29 @@
         setTimeout(pollForMembers, 5000);
     }
     
+    // Update last_seen periodically
+    async function updateLastSeen() {
+        if (!isPolling) return;
+        
+        try {
+            await fetch('/api/users/update-last-seen', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+        } catch (error) {
+            console.error('Error updating last_seen:', error);
+        }
+        
+        // Update every 2 minutes
+        setTimeout(updateLastSeen, 120000);
+    }
+    
     // Start polling when page loads
     pollForNewMessages();
     pollForMembers();
+    updateLastSeen();
     
     // Stop polling when page is hidden
     document.addEventListener('visibilitychange', function() {
@@ -651,6 +709,7 @@
         if (isPolling) {
             pollForNewMessages();
             pollForMembers();
+            updateLastSeen();
         }
     });
     
@@ -774,16 +833,31 @@
             }
             
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorder = new MediaRecorder(stream);
+            
+            // Determine the best MIME type for audio recording
+            let mimeType = 'audio/webm';
+            if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+                mimeType = 'audio/webm;codecs=opus';
+            } else if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) {
+                mimeType = 'audio/ogg;codecs=opus';
+            } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+                mimeType = 'audio/webm';
+            } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
+                mimeType = 'audio/ogg';
+            }
+            
+            mediaRecorder = new MediaRecorder(stream, { mimeType: mimeType });
             audioChunks = [];
             
             mediaRecorder.ondataavailable = function(event) {
-                audioChunks.push(event.data);
+                if (event.data.size > 0) {
+                    audioChunks.push(event.data);
+                }
             };
             
             mediaRecorder.onstop = function() {
-                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                sendVoiceMessage(audioBlob);
+                const audioBlob = new Blob(audioChunks, { type: mimeType });
+                sendVoiceMessage(audioBlob, mimeType);
                 stream.getTracks().forEach(track => track.stop());
             };
             
@@ -803,9 +877,19 @@
         }
     }
     
-    async function sendVoiceMessage(audioBlob) {
+    async function sendVoiceMessage(audioBlob, mimeType) {
+        // Determine file extension based on MIME type
+        let extension = 'webm';
+        if (mimeType.includes('ogg')) {
+            extension = 'ogg';
+        } else if (mimeType.includes('wav')) {
+            extension = 'wav';
+        } else if (mimeType.includes('m4a')) {
+            extension = 'm4a';
+        }
+        
         const formData = new FormData();
-        formData.append('file', audioBlob, 'voice_message.wav');
+        formData.append('file', audioBlob, `voice_message.${extension}`);
         formData.append('content', '');
         
         try {
@@ -822,6 +906,9 @@
                 addMessageToChat(data);
                 lastMessageId = data.id;
                 scrollToBottom();
+            } else {
+                const error = await response.json();
+                alert(CHAT_I18N.send_error_prefix.replace('{error}', error.error || CHAT_I18N.voice_error));
             }
         } catch (error) {
             console.error('Error sending voice message:', error);
@@ -963,7 +1050,123 @@ function showAllMembersModal() {
     const modal = new bootstrap.Modal(document.getElementById('allMembersModal'));
     modal.show();
 }
+
+function showChatInfoModal() {
+    const modal = new bootstrap.Modal(document.getElementById('chatInfoModal'));
+    modal.show();
+}
+
+async function deleteChat(chatId) {
+    if (!confirm('Möchten Sie diesen Chat wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/chat/${chatId}/delete`, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+                window.location.href = '/chat/';
+            }
+        } else {
+            const error = await response.json();
+            alert('Fehler beim Löschen: ' + (error.error || 'Unbekannter Fehler'));
+        }
+    } catch (error) {
+        console.error('Error deleting chat:', error);
+        alert('Fehler beim Löschen des Chats');
+    }
+}
 </script>
+
+<!-- Chat Info Modal -->
+<div class="modal fade" id="chatInfoModal" tabindex="-1" aria-labelledby="chatInfoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="chatInfoModalLabel">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Chat-Informationen
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+            </div>
+            <div class="modal-body">
+                <div class="chat-info">
+                    <div class="chat-info-avatar mb-3 text-center">
+                        {% if chat.is_main_chat %}
+                            {% if portal_logo_filename %}
+                            <img src="{{ url_for('settings.portal_logo', filename=portal_logo_filename) }}" 
+                                 alt="Team Logo" 
+                                 class="rounded-circle" 
+                                 style="width: 80px; height: 80px; object-fit: cover;">
+                            {% else %}
+                            <img src="{{ url_for('static', filename='img/logo.png') }}" 
+                                 alt="Team Logo" 
+                                 class="rounded-circle" 
+                                 style="width: 80px; height: 80px; object-fit: cover;">
+                            {% endif %}
+                        {% elif chat.group_avatar %}
+                            {% set avatar_path = 'avatars/' + chat.group_avatar %}
+                            <img src="{{ url_for('chat.serve_media', filename=avatar_path) }}" 
+                                 alt="Chat Avatar" 
+                                 class="rounded-circle" 
+                                 style="width: 80px; height: 80px; object-fit: cover;">
+                        {% else %}
+                            <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center mx-auto" 
+                                 style="width: 80px; height: 80px;">
+                                <i class="bi bi-people-fill text-white fs-1"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="chat-info-details">
+                        <h4 class="text-center mb-3">{{ get_chat_display_name(chat) }}</h4>
+                        
+                        {% if chat.description %}
+                        <div class="mb-3">
+                            <strong>Beschreibung:</strong>
+                            <p class="mb-0">{{ chat.description }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="mb-3">
+                            <strong>Mitglieder:</strong>
+                            <p class="mb-0">{{ members|length }} Mitglieder</p>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <strong>Erstellt am:</strong>
+                            <p class="mb-0">{{ chat.created_at | localdatetime }}</p>
+                        </div>
+                        
+                        {% if chat.created_by %}
+                        <div class="mb-3">
+                            <strong>Erstellt von:</strong>
+                            <p class="mb-0">
+                                {% set creator = members|selectattr('id', 'equalto', chat.created_by)|first %}
+                                {% if creator %}
+                                    {{ creator.full_name }}
+                                {% else %}
+                                    Unbekannt
+                                {% endif %}
+                            </p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 

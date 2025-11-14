@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file, jsonify, current_app, session
 from flask_login import login_required, current_user
-from flask_babel import get_locale
+from app.utils.i18n import get_current_language
 from app import db
 from app.models.file import File, FileVersion, Folder
 from app.models.user import User
@@ -1609,7 +1609,7 @@ def edit_onlyoffice(file_id):
     accent_color = current_user.accent_color if current_user.is_authenticated else '#0d6efd'
     accent_style = current_user.accent_style if current_user.is_authenticated else 'linear-gradient(45deg, #0d6efd, #0d6efd)'
     
-    current_language = str(get_locale())
+    current_language = get_current_language()
     
     return render_template(
         'files/edit_onlyoffice.html',
@@ -1753,7 +1753,7 @@ def share_edit_onlyoffice(token):
     accent_color = '#0d6efd'
     accent_style = 'linear-gradient(45deg, #0d6efd, #0d6efd)'
     
-    current_language = str(get_locale())
+    current_language = get_current_language()
     
     return render_template(
         'files/edit_onlyoffice.html',

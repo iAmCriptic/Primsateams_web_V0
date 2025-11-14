@@ -11,7 +11,7 @@ from app.utils.qr_code import (
     generate_product_qr_code, generate_borrow_qr_code, generate_set_qr_code,
     parse_qr_code, generate_qr_code_bytes
 )
-from app.utils.pdf_generator import generate_borrow_receipt_pdf, generate_qr_code_sheet_pdf
+from app.utils.pdf_generator import generate_borrow_receipt_pdf, generate_qr_code_sheet_pdf, generate_color_code_table_pdf
 from app.utils.lengths import normalize_length_input, parse_length_to_meters
 from werkzeug.utils import secure_filename
 from datetime import datetime, date, timedelta
@@ -750,11 +750,20 @@ def return_item():
 def borrow_scanner():
     """Ausleihen geben - Scanner-Seite mit Warenkorb."""
     if not check_borrow_permission():
+        if request.method == 'POST':
+            # Bei POST-Requests (API) JSON-Fehler zurückgeben
+            return jsonify({'error': 'Sie haben keine Berechtigung, Artikel auszuleihen.'}), 403
         flash('Sie haben keine Berechtigung, Artikel auszuleihen.', 'danger')
         return redirect(url_for('inventory.dashboard'))
     
     if request.method == 'POST':
         action = request.form.get('action')
+        
+        # Debug-Logging
+        current_app.logger.debug(f'borrow_scanner POST: action={action}, qr_code={request.form.get("qr_code", "")[:50]}')
+        
+        if not action:
+            return jsonify({'error': 'Keine Aktion angegeben.'}), 400
         
         if action == 'add_to_cart':
             # QR-Code oder Produkt-ID hinzufügen
@@ -766,14 +775,31 @@ def borrow_scanner():
             
             if qr_code:
                 parsed = parse_qr_code(qr_code)
+                current_app.logger.debug(f'QR-Code geparst: {parsed}, Original: {qr_code}')
                 if parsed:
                     qr_type, qr_id = parsed
                     if qr_type == 'product':
                         product = Product.query.get(qr_id)
+                        current_app.logger.debug(f'Produkt gefunden: {product.id if product else None}')
                     elif qr_type == 'set':
                         product_set = ProductSet.query.get(qr_id)
+                        current_app.logger.debug(f'Set gefunden: {product_set.id if product_set else None}')
+                else:
+                    # Fallback: Versuche als direkte Produkt-ID zu interpretieren
+                    try:
+                        direct_product_id = int(qr_code)
+                        product = Product.query.get(direct_product_id)
+                        current_app.logger.debug(f'Direkte Produkt-ID: {direct_product_id}, Produkt gefunden: {product.id if product else None}')
+                    except (ValueError, TypeError):
+                        current_app.logger.debug(f'QR-Code konnte nicht als Produkt-ID interpretiert werden: {qr_code}')
+                        pass  # Keine gültige Produkt-ID
             elif product_id:
-                product = Product.query.get(int(product_id))
+                try:
+                    product = Product.query.get(int(product_id))
+                    current_app.logger.debug(f'Produkt-ID aus Form: {product_id}, Produkt gefunden: {product.id if product else None}')
+                except (ValueError, TypeError):
+                    current_app.logger.debug(f'Ungültige Produkt-ID: {product_id}')
+                    pass  # Keine gültige Produkt-ID
             
             # Wenn ein Set gescannt wurde
             if product_set:
@@ -825,6 +851,7 @@ def borrow_scanner():
                     })
                 
                 session['borrow_cart'] = cart
+                session.modified = True  # Stelle sicher, dass Session gespeichert wird
                 
                 return jsonify({
                     'success': True,
@@ -841,16 +868,20 @@ def borrow_scanner():
             
             # Einzelnes Produkt hinzufügen
             if not product:
+                current_app.logger.warning(f'Produkt nicht gefunden für QR-Code: {qr_code}')
                 return jsonify({'error': 'Produkt oder Set nicht gefunden.'}), 404
             
+            current_app.logger.debug(f'Produkt Status: {product.status}, ID: {product.id}, Name: {product.name}')
             if product.status != 'available':
-                return jsonify({'error': 'Produkt ist nicht verfügbar.'}), 400
+                current_app.logger.warning(f'Produkt nicht verfügbar: {product.id}, Status: {product.status}')
+                return jsonify({'error': f'Produkt ist nicht verfügbar. Status: {product.status}'}), 400
             
             # Session-Warenkorb verwenden
             cart = session.get('borrow_cart', [])
             if product.id not in cart:
                 cart.append(product.id)
                 session['borrow_cart'] = cart
+                session.modified = True  # Stelle sicher, dass Session gespeichert wird
             
             return jsonify({
                 'success': True,
@@ -869,11 +900,17 @@ def borrow_scanner():
             if product_id in cart:
                 cart.remove(product_id)
                 session['borrow_cart'] = cart
+                session.modified = True  # Stelle sicher, dass Session gespeichert wird
             return jsonify({'success': True, 'cart_count': len(cart)})
         
         elif action == 'clear_cart':
             session.pop('borrow_cart', None)
+            session.modified = True
             return jsonify({'success': True})
+        else:
+            # Unbekannte Aktion
+            current_app.logger.warning(f'Unbekannte Aktion in borrow_scanner: {action}')
+            return jsonify({'error': f'Unbekannte Aktion: {action}'}), 400
     
     # Warenkorb laden
     cart_product_ids = session.get('borrow_cart', [])
@@ -1407,6 +1444,7 @@ def print_qr():
     """QR-Code-Druck."""
     if request.method == 'POST':
         product_ids = request.form.getlist('product_ids')
+        label_type = request.form.get('label_type', 'cable')  # 'cable' oder 'device'
         
         if not product_ids:
             flash('Bitte wählen Sie mindestens ein Produkt aus.', 'danger')
@@ -1422,10 +1460,11 @@ def print_qr():
             
             # PDF generieren
             pdf_buffer = BytesIO()
-            generate_qr_code_sheet_pdf(products, pdf_buffer)
+            generate_qr_code_sheet_pdf(products, pdf_buffer, label_type=label_type)
             pdf_buffer.seek(0)
             
-            filename = f"QR-Codes_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+            label_type_name = "Kabel" if label_type == 'cable' else "Geräte"
+            filename = f"QR-Codes_{label_type_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
             return send_file(
                 pdf_buffer,
                 mimetype='application/pdf',
@@ -1437,9 +1476,45 @@ def print_qr():
             flash('Fehler beim Generieren des Druckbogens.', 'danger')
             return redirect(url_for('inventory.print_qr'))
     
-    # Alle Produkte für Auswahl
-    products = Product.query.order_by(Product.name).all()
-    return render_template('inventory/print_qr.html', products=products)
+    # Alle Produkte mit Ordner-Informationen für Auswahl
+    # Sortiere nach Ordner (None zuerst), dann nach Name
+    products = Product.query.options(joinedload(Product.folder)).all()
+    
+    # Sortiere in Python: Produkte ohne Ordner zuerst, dann nach Ordnername, dann nach Produktname
+    def sort_key(product):
+        if product.folder:
+            return (1, product.folder.name, product.name)
+        else:
+            return (0, '', product.name)
+    
+    products = sorted(products, key=sort_key)
+    
+    # Hole alle Ordner für Struktur
+    folders = ProductFolder.query.order_by(ProductFolder.name).all()
+    
+    return render_template('inventory/print_qr.html', products=products, folders=folders)
+
+
+@inventory_bp.route('/print-qr/color-codes', methods=['GET'])
+@login_required
+def print_color_codes():
+    """Farbcodes-Tabelle drucken."""
+    try:
+        pdf_buffer = BytesIO()
+        generate_color_code_table_pdf(pdf_buffer)
+        pdf_buffer.seek(0)
+        
+        filename = f"Farbcodes_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        return send_file(
+            pdf_buffer,
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=filename
+        )
+    except Exception as e:
+        current_app.logger.error(f"Fehler beim Generieren der Farbcodes-Tabelle: {e}")
+        flash('Fehler beim Generieren der Farbcodes-Tabelle.', 'danger')
+        return redirect(url_for('inventory.print_qr'))
 
 
 # ========== API Endpoints ==========
@@ -1875,6 +1950,89 @@ def api_products_bulk_update():
     return jsonify({
         'message': f'{updated_count} Produkt(e) erfolgreich aktualisiert.',
         'updated_count': updated_count
+    })
+
+
+@inventory_bp.route('/api/products/bulk-delete', methods=['POST'])
+@login_required
+def api_products_bulk_delete():
+    """API: Mehrere Produkte gleichzeitig löschen."""
+    data = request.get_json()
+    
+    if not data:
+        return jsonify({'error': 'Keine Daten übermittelt.'}), 400
+    
+    product_ids = data.get('product_ids', [])
+    if not product_ids or not isinstance(product_ids, list):
+        return jsonify({'error': 'Ungültige Produkt-IDs. Erwartet Array von IDs.'}), 400
+    
+    if len(product_ids) == 0:
+        return jsonify({'error': 'Keine Produkt-IDs übermittelt.'}), 400
+    
+    # Lade alle Produkte
+    try:
+        product_ids_int = [int(pid) for pid in product_ids]
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Ungültige Produkt-IDs. Alle IDs müssen Zahlen sein.'}), 400
+    
+    products = Product.query.filter(Product.id.in_(product_ids_int)).all()
+    
+    if len(products) != len(product_ids_int):
+        return jsonify({'error': 'Einige Produkt-IDs wurden nicht gefunden.'}), 404
+    
+    # Prüfe ob Produkte ausgeliehen sind
+    active_borrows = BorrowTransaction.query.filter(
+        BorrowTransaction.product_id.in_(product_ids_int),
+        BorrowTransaction.status == 'active'
+    ).all()
+    
+    if active_borrows:
+        borrowed_product_ids = [b.product_id for b in active_borrows]
+        borrowed_products = [p for p in products if p.id in borrowed_product_ids]
+        product_names = [p.name for p in borrowed_products]
+        return jsonify({
+            'error': 'Einige Produkte können nicht gelöscht werden, da sie ausgeliehen sind.',
+            'details': product_names
+        }), 400
+    
+    # Lösche Produkte und deren Bilder
+    deleted_count = 0
+    errors = []
+    
+    for product in products:
+        try:
+            # Bild löschen falls vorhanden
+            if product.image_path and os.path.exists(product.image_path):
+                try:
+                    os.remove(product.image_path)
+                except Exception as e:
+                    current_app.logger.warning(f"Fehler beim Löschen des Bildes von Produkt {product.id}: {e}")
+            
+            # Lösche auch zugehörige Dokumente
+            documents = ProductDocument.query.filter_by(product_id=product.id).all()
+            for doc in documents:
+                if doc.file_path and os.path.exists(doc.file_path):
+                    try:
+                        os.remove(doc.file_path)
+                    except Exception as e:
+                        current_app.logger.warning(f"Fehler beim Löschen des Dokuments {doc.id}: {e}")
+                db.session.delete(doc)
+            
+            db.session.delete(product)
+            deleted_count += 1
+        except Exception as e:
+            current_app.logger.error(f"Fehler beim Löschen von Produkt {product.id}: {e}")
+            errors.append(f"Fehler bei Produkt {product.id}: {str(e)}")
+    
+    if errors:
+        db.session.rollback()
+        return jsonify({'error': 'Fehler beim Löschen', 'details': errors}), 500
+    
+    db.session.commit()
+    
+    return jsonify({
+        'message': f'{deleted_count} Produkt(e) erfolgreich gelöscht.',
+        'deleted_count': deleted_count
     })
 
 

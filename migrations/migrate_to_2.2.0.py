@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Datenbank-Migration: Version 2.1.5
-Konsolidierte Migration für alle Versionen bis 2.1.5
+Datenbank-Migration: Version 2.2
+Konsolidierte Migration für alle Versionen bis 2.2
 
 Diese Migration fasst sämtliche bisherigen Einzelskripte zusammen und führt sie
 in der korrekten Reihenfolge aus. Sie deckt folgende Änderungen ab:
@@ -16,6 +16,9 @@ in der korrekten Reihenfolge aus. Sie deckt folgende Änderungen ab:
 8. Inventur-Tool Tabellen (`inventories`, `inventory_items`)
 9. Wiki-Favoriten Tabelle (`wiki_favorites`)
 10. Mehrsprachigkeit (Benutzersprache & Sprach-Systemeinstellungen)
+11. Chat-Updates: group_avatar, description zu chats, last_seen zu users
+12. Super-Admin: is_super_admin zu users
+13. Produktlängen-Normalisierung
 
 WICHTIG: Die Felder und Tabellen sind in den SQLAlchemy-Modellen bereits
 definiert. Bei Neuinstallationen genügt weiterhin `db.create_all()`.
@@ -25,11 +28,15 @@ Dieses Skript richtet sich ausschließlich an bestehende Installationen.
 import os
 import sys
 import json
+from typing import List, Tuple
 
 # Projektverzeichnis zum Python-Pfad hinzufügen
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app import create_app, db
+from app.models.user import User
+from app.models.inventory import Product
+from app.utils.lengths import normalize_length_input
 from sqlalchemy import text, inspect
 
 
@@ -783,6 +790,109 @@ def ensure_system_language_settings():
     return True
 
 
+def migrate_chat_updates():
+    """Fügt group_avatar, description zu chats und last_seen zu users hinzu."""
+    print("\n4.1. Chat-Updates: Migriere 'chats' Tabelle...")
+    chats_fields = {
+        'group_avatar': ('VARCHAR(255)', None, True),
+        'description': ('TEXT', None, True)
+    }
+
+    if not migrate_table('chats', chats_fields):
+        print("❌ Migration für 'chats' fehlgeschlagen!")
+        return False
+
+    print("\n4.2. Chat-Updates: Migriere 'users' Tabelle...")
+    users_fields = {
+        'last_seen': ('DATETIME', None, True)
+    }
+
+    if not migrate_table('users', users_fields):
+        print("❌ Migration für 'users' (last_seen) fehlgeschlagen!")
+        return False
+
+    return True
+
+
+def migrate_super_admin():
+    """Fügt is_super_admin zu users hinzu und setzt den ältesten Admin als Super-Admin."""
+    print("\n5.1. Super-Admin: Migriere 'users' Tabelle...")
+    users_fields = {
+        'is_super_admin': ('BOOLEAN', '0', False)
+    }
+
+    if not migrate_table('users', users_fields):
+        print("❌ Migration für 'users' (is_super_admin) fehlgeschlagen!")
+        return False
+
+    print("\n5.2. Super-Admin setzen...")
+    # Prüfe ob bereits ein Super-Admin existiert
+    existing_super_admin = User.query.filter_by(is_super_admin=True).first()
+    if existing_super_admin:
+        print(f"  ✓ Super-Admin existiert bereits: {existing_super_admin.email} (ID: {existing_super_admin.id})")
+        return True
+
+    # Finde den ältesten Administrator
+    oldest_admin = User.query.filter_by(is_admin=True).order_by(User.created_at.asc()).first()
+
+    if not oldest_admin:
+        print("  ⚠ Kein Administrator gefunden. Super-Admin wird beim nächsten Setup erstellt.")
+        return True
+
+    # Setze den ältesten Admin als Super-Admin
+    oldest_admin.is_super_admin = True
+    db.session.commit()
+    print(f"  ✓ Ältester Administrator als Super-Admin gesetzt: {oldest_admin.email} (ID: {oldest_admin.id}, erstellt: {oldest_admin.created_at})")
+    return True
+
+
+def migrate_product_lengths():
+    """Normalisiert bestehende Produktlängen auf ein einheitliches Meter-Format."""
+    print("\n6. Normalisiere Produktlängen...")
+    
+    products: List[Product] = Product.query.all()
+    updated = 0
+    skipped: List[Tuple[int, str]] = []
+
+    for product in products:
+        original = product.length
+        if not original or not str(original).strip():
+            continue
+
+        normalized, meters = normalize_length_input(original)
+        if normalized is None or meters is None:
+            skipped.append((product.id, original))
+            continue
+
+        if normalized != original:
+            product.length = normalized
+            updated += 1
+        else:
+            # Stelle sicher, dass der Wert exakt dem formatierten String entspricht
+            product.length = normalized
+
+    db.session.commit()
+
+    skipped_count = len(skipped)
+    unchanged = len(products) - updated - skipped_count
+
+    print(f"  Gesamtprodukte geprüft: {len(products)}")
+    print(f"  Aktualisierte Einträge: {updated}")
+    print(f"  Unveränderte Einträge: {max(unchanged, 0)}")
+    print(f"  Nicht interpretierbar: {skipped_count}")
+
+    if skipped_count:
+        print("\n  Nicht interpretierbare Längenangaben (max. 20 Beispiele):")
+        for product_id, raw_value in skipped[:20]:
+            print(f"    - Produkt #{product_id}: '{raw_value}'")
+        if skipped_count > 20:
+            print(f"    ... weitere {skipped_count - 20} Einträge")
+    else:
+        print("  ✓ Alle vorhandenen Längen konnten erfolgreich normalisiert werden.")
+
+    return True
+
+
 def verify_migration():
     """Prüft, ob die wichtigsten Tabellen und Felder vorhanden sind."""
     print("\n" + "=" * 60)
@@ -802,7 +912,9 @@ def verify_migration():
         ('calendar_events', ['recurrence_type', 'recurrence_end_date', 'recurrence_interval',
                              'recurrence_days', 'parent_event_id', 'is_recurring_instance',
                              'recurrence_sequence', 'public_ical_token', 'is_public']),
-        ('users', ['dashboard_config', 'oled_mode', 'show_update_notifications', 'language']),
+        ('users', ['dashboard_config', 'oled_mode', 'show_update_notifications', 'language',
+                   'last_seen', 'is_super_admin']),
+        ('chats', ['group_avatar', 'description']),
         ('inventories', ['status', 'started_by']),
         ('inventory_items', ['inventory_id', 'product_id', 'checked']),
         ('product_sets', ['name', 'created_by']),
@@ -858,6 +970,9 @@ def verify_migration():
     print("  - Lagersystem-Erweiterungen: Sets, Dokumente, Favoriten, Saved Filters, API Tokens")
     print("  - Inventur-Tool Tabellen: inventories & inventory_items")
     print("  - Wiki-Favoriten Tabelle: wiki_favorites")
+    print("  - Chat-Updates: group_avatar, description (chats), last_seen (users)")
+    print("  - Super-Admin: is_super_admin (users)")
+    print("  - Produktlängen-Normalisierung")
 
     return all_success
 
@@ -865,8 +980,8 @@ def verify_migration():
 def migrate():
     """Führt alle Migrationen aus."""
     print("=" * 60)
-    print("Migration zu Version 2.1.5")
-    print("Konsolidierte Migration für alle Versionen bis 2.1.5")
+    print("Migration zu Version 2.2")
+    print("Konsolidierte Migration für alle Versionen bis 2.2")
     print("=" * 60)
 
     app = create_app(os.getenv('FLASK_ENV', 'development'))
@@ -950,6 +1065,20 @@ def migrate():
             if not ensure_system_language_settings():
                 print("❌ Sprach-Systemeinstellungen konnten nicht angelegt werden!")
                 return False
+
+            # 11. Chat-Updates
+            if not migrate_chat_updates():
+                print("❌ Chat-Updates konnten nicht durchgeführt werden!")
+                return False
+
+            # 12. Super-Admin
+            if not migrate_super_admin():
+                print("❌ Super-Admin-Migration konnte nicht durchgeführt werden!")
+                return False
+
+            # 13. Produktlängen-Normalisierung
+            if not migrate_product_lengths():
+                print("⚠ Produktlängen-Normalisierung konnte nicht vollständig durchgeführt werden.")
 
             return verify_migration()
 

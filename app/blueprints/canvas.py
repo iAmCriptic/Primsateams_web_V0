@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, current_app
 from flask_login import login_required, current_user
-from flask_babel import gettext as _
+from app.utils.i18n import _
 from flask_socketio import emit, join_room, leave_room
 from app import db, socketio
 from app.models.canvas import Canvas, CanvasTextField, CanvasElement

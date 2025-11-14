@@ -194,6 +194,9 @@
                 <button id="bulkBorrowBtn" class="btn btn-sm btn-success" title="Ausgewählte Produkte ausleihen">
                     <i class="bi bi-cart-check"></i> Ausleihen
                 </button>
+                <button id="bulkDeleteBtn" class="btn btn-sm btn-danger" title="Ausgewählte Produkte löschen">
+                    <i class="bi bi-trash"></i> Löschen
+                </button>
             </div>
         </div>
     </div>
@@ -272,6 +275,34 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk-Delete-Bestätigungs-Modal -->
+<div class="modal fade" id="bulkDeleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle"></i> Produkte löschen
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i> 
+                    <strong>Warnung:</strong> Diese Aktion kann nicht rückgängig gemacht werden!
+                </div>
+                <p>Möchten Sie wirklich <strong id="bulkDeleteProductCount">0</strong> Produkt(e) löschen?</p>
+                <p class="text-muted small mb-0">Ausgeliehene Produkte können nicht gelöscht werden und werden automatisch ausgeschlossen.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                <button type="button" class="btn btn-danger" id="bulkDeleteConfirmBtn">
+                    <i class="bi bi-trash"></i> Ja, löschen
+                </button>
             </div>
         </div>
     </div>

@@ -52,6 +52,53 @@ def generate_qr_code_bytes(data, box_size=10, border=4, format='PNG'):
     return img_bytes.getvalue()
 
 
+def generate_qr_code_inverted(data, box_size=10, border=4):
+    """
+    Generiert einen invertierten QR-Code als PIL Image (weißer QR-Code auf schwarzem Untergrund).
+    
+    Args:
+        data: Die zu codierenden Daten (String)
+        box_size: Größe der Boxen im QR-Code (Standard: 10)
+        border: Breite des Rahmens (Standard: 4)
+    
+    Returns:
+        PIL Image Objekt
+    """
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=box_size,
+        border=border,
+    )
+    qr.add_data(data)
+    qr.make(fit=True)
+    
+    img = qr.make_image(fill_color="white", back_color="black")
+    return img
+
+
+def generate_qr_code_inverted_bytes(data, box_size=10, border=4, format='PNG'):
+    """
+    Generiert einen invertierten QR-Code als Bytes (weißer QR-Code auf schwarzem Untergrund).
+    
+    Args:
+        data: Die zu codierenden Daten (String)
+        box_size: Größe der Boxen im QR-Code
+        border: Breite des Rahmens
+        format: Bildformat ('PNG' oder 'JPEG')
+    
+    Returns:
+        Bytes-Objekt mit dem QR-Code-Bild
+    """
+    img = generate_qr_code_inverted(data, box_size, border)
+    
+    img_bytes = BytesIO()
+    img.save(img_bytes, format=format)
+    img_bytes.seek(0)
+    
+    return img_bytes.getvalue()
+
+
 def generate_product_qr_code(product_id):
     """
     Generiert einen QR-Code für ein Produkt.

@@ -396,6 +396,7 @@ class StockManager {
         const bulkDeselectAllBtn = document.getElementById('bulkDeselectAllBtn');
         const bulkEditBtn = document.getElementById('bulkEditBtn');
         const bulkBorrowBtn = document.getElementById('bulkBorrowBtn');
+        const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
         
         if (searchInput) {
             searchInput.addEventListener('input', () => {
@@ -436,6 +437,10 @@ class StockManager {
         
         if (bulkBorrowBtn) {
             bulkBorrowBtn.addEventListener('click', () => this.borrowSelected());
+        }
+        
+        if (bulkDeleteBtn) {
+            bulkDeleteBtn.addEventListener('click', () => this.openBulkDeleteModal());
         }
         
         if (borrowSelectedBtn) {
@@ -1047,6 +1052,42 @@ class StockManager {
         }
     }
     
+    showSuccess(message) {
+        // Erstelle Toast-Benachrichtigung
+        const toast = document.createElement('div');
+        toast.className = 'toast align-items-center text-white bg-success border-0';
+        toast.setAttribute('role', 'alert');
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="bi bi-check-circle me-2"></i>${this.escapeHtml(message)}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+        
+        // Füge Toast-Container hinzu falls nicht vorhanden
+        let toastContainer = document.getElementById('toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.id = 'toast-container';
+            toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+            toastContainer.style.zIndex = '1060';
+            document.body.appendChild(toastContainer);
+        }
+        
+        toastContainer.appendChild(toast);
+        
+        // Zeige Toast
+        const bsToast = new bootstrap.Toast(toast);
+        bsToast.show();
+        
+        // Entferne Toast nach dem Ausblenden
+        toast.addEventListener('hidden.bs.toast', () => {
+            toast.remove();
+        });
+    }
+    
     handleCardClick(productId, isSelectable) {
         // Wenn bereits Auswahl aktiv ist und Produkt auswählbar, toggle Auswahl
         if (this.selectedProducts.size > 0 && isSelectable) {
@@ -1174,6 +1215,137 @@ class StockManager {
         // Weiterleitung zur Mehrfachausleihe-Seite mit Produkt-IDs als Parameter
         const productIdsParam = selectedIds.join(',');
         window.location.href = `/inventory/borrow-multiple?product_ids=${productIdsParam}`;
+    }
+    
+    openBulkDeleteModal() {
+        const selectedIds = this.getSelectedProducts();
+        if (selectedIds.length === 0) {
+            alert('Bitte wählen Sie mindestens ein Produkt aus.');
+            return;
+        }
+        
+        const modalEl = document.getElementById('bulkDeleteModal');
+        if (!modalEl) {
+            console.error('Bulk-Delete-Modal nicht gefunden');
+            return;
+        }
+        
+        const modal = new bootstrap.Modal(modalEl);
+        const productCountEl = document.getElementById('bulkDeleteProductCount');
+        const confirmBtn = document.getElementById('bulkDeleteConfirmBtn');
+        
+        if (productCountEl) {
+            productCountEl.textContent = selectedIds.length;
+        }
+        
+        // Event-Handler für Bestätigungs-Button
+        if (confirmBtn) {
+            // Entferne alte Event-Listener
+            const newConfirmBtn = confirmBtn.cloneNode(true);
+            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+            
+            newConfirmBtn.addEventListener('click', () => {
+                this.deleteSelectedProducts(selectedIds, modal);
+            });
+        }
+        
+        modal.show();
+    }
+    
+    async deleteSelectedProducts(productIds, modal) {
+        if (!productIds || productIds.length === 0) {
+            alert('Keine Produkte zum Löschen ausgewählt.');
+            return;
+        }
+        
+        const confirmBtn = document.getElementById('bulkDeleteConfirmBtn');
+        if (confirmBtn) {
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Löschen...';
+        }
+        
+        try {
+            const response = await fetch('/inventory/api/products/bulk-delete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    product_ids: productIds
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Fehler beim Löschen der Produkte');
+            }
+            
+            // Erfolgreich gelöscht
+            if (modal) {
+                modal.hide();
+            }
+            
+            // Zeige Erfolgsmeldung
+            this.showSuccess(data.message || `${data.deleted_count} Produkt(e) erfolgreich gelöscht.`);
+            
+            // Entferne gelöschte Produkte aus der Auswahl
+            productIds.forEach(id => {
+                this.selectedProducts.delete(id);
+            });
+            
+            // Lade Produkte neu
+            await this.loadProducts();
+            
+        } catch (error) {
+            console.error('Fehler beim Löschen:', error);
+            this.showError(error.message || 'Fehler beim Löschen der Produkte. Bitte versuchen Sie es erneut.');
+            
+            if (confirmBtn) {
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = '<i class="bi bi-trash"></i> Ja, löschen';
+            }
+        }
+    }
+    
+    async deleteProduct(productId) {
+        if (!productId) {
+            alert('Keine Produkt-ID angegeben.');
+            return;
+        }
+        
+        // Bestätigung
+        if (!confirm(`Möchten Sie dieses Produkt wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`)) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/inventory/api/products/${productId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Fehler beim Löschen des Produkts');
+            }
+            
+            // Erfolgreich gelöscht
+            this.showSuccess(data.message || 'Produkt erfolgreich gelöscht.');
+            
+            // Entferne aus der Auswahl falls ausgewählt
+            this.selectedProducts.delete(productId);
+            
+            // Lade Produkte neu
+            await this.loadProducts();
+            
+        } catch (error) {
+            console.error('Fehler beim Löschen:', error);
+            this.showError(error.message || 'Fehler beim Löschen des Produkts. Bitte versuchen Sie es erneut.');
+        }
     }
     
     openBulkEditModal() {
@@ -2568,11 +2740,23 @@ class BorrowScannerManager {
             });
             
             console.log('Response erhalten, Status:', response.status);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+            
+            let result;
+            try {
+                result = await response.json();
+            } catch (jsonError) {
+                console.error('Fehler beim Parsen der JSON-Antwort:', jsonError);
+                const text = await response.text();
+                console.error('Response-Text:', text);
+                throw new Error(`Server-Antwort konnte nicht geparst werden. Status: ${response.status}`);
             }
             
-            const result = await response.json();
+            if (!response.ok) {
+                // Server hat eine Fehlermeldung zurückgegeben
+                const errorMessage = result.error || `HTTP error! status: ${response.status}`;
+                console.error('Server-Fehler:', errorMessage);
+                throw new Error(errorMessage);
+            }
             console.log('JSON Response:', result);
             
             if (result.success) {
@@ -2586,6 +2770,15 @@ class BorrowScannerManager {
                 console.log('Produkt:', result.product);
                 console.log('Set:', result.set);
                 console.log('Cart Count:', result.cart_count);
+                
+                // Prüfe ob result.product vorhanden ist (für einzelne Produkte)
+                if (!result.is_set && !result.product) {
+                    console.error('=== FEHLER: result.product fehlt ===', result);
+                    const errorMessage = 'Produkt-Daten fehlen in der Server-Antwort.';
+                    this.showError(errorMessage);
+                    setTimeout(() => this.hideError(), 5000);
+                    return Promise.reject(new Error(errorMessage));
+                }
                 
                 // SOFORTIGE Aktualisierung - keine Verzögerung
                 this.updateCartFromJSON(result);
@@ -2707,7 +2900,14 @@ class BorrowScannerManager {
         
         // Einzelnes Produkt hinzufügen
         if (!result.product) {
-            console.warn('⚠ Kein Produkt in result');
+            console.error('⚠ Kein Produkt in result - result:', result);
+            console.error('⚠ is_set:', result.is_set);
+            // Wenn es kein Set ist, aber auch kein Produkt, ist das ein Fehler
+            if (!result.is_set) {
+                console.error('⚠ FEHLER: Weder Set noch Produkt in result!');
+                this.showError('Fehler: Produkt-Daten fehlen.');
+                setTimeout(() => this.hideError(), 5000);
+            }
             return;
         }
         

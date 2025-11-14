@@ -2,6 +2,181 @@
 
 {% block title %}QR-Codes drucken - Team Portal{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Toolbar - nicht fixed, sondern bei Label-Typ */
+    #qrToolbar {
+        background: var(--bs-body-bg);
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.375rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        padding: 0.75rem 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    /* Dark Mode Toolbar */
+    [data-bs-theme="dark"] #qrToolbar {
+        background-color: var(--bs-dark);
+        border-color: var(--bs-border-color);
+    }
+    
+    /* OLED Mode Toolbar */
+    [data-oled-mode="true"] #qrToolbar {
+        background-color: #000000 !important;
+        border-color: #1a1a1a !important;
+    }
+    
+    /* Ordner-Filter oben */
+    .folder-filter {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        background: var(--bs-body-bg);
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.375rem;
+    }
+    
+    .folder-filter-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.375rem;
+        background: var(--bs-body-bg);
+        color: var(--bs-body-color);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .folder-filter-btn:hover {
+        background: var(--bs-secondary-bg);
+        border-color: var(--accent-color);
+    }
+    
+    .folder-filter-btn.active {
+        background: var(--accent-color);
+        color: white;
+        border-color: var(--accent-color);
+    }
+    
+    .folder-filter-btn .folder-color {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border-radius: 3px;
+        flex-shrink: 0;
+    }
+    
+    /* Dark Mode Folder Filter */
+    [data-bs-theme="dark"] .folder-filter {
+        background-color: var(--bs-dark);
+        border-color: var(--bs-border-color);
+    }
+    
+    [data-bs-theme="dark"] .folder-filter-btn {
+        background-color: var(--bs-dark);
+        border-color: var(--bs-border-color);
+        color: var(--bs-body-color);
+    }
+    
+    [data-bs-theme="dark"] .folder-filter-btn:hover {
+        background-color: var(--bs-secondary-bg);
+    }
+    
+    /* OLED Mode Folder Filter */
+    [data-oled-mode="true"] .folder-filter {
+        background-color: #000000 !important;
+        border-color: #1a1a1a !important;
+    }
+    
+    [data-oled-mode="true"] .folder-filter-btn {
+        background-color: #000000 !important;
+        border-color: #1a1a1a !important;
+        color: #ffffff !important;
+    }
+    
+    [data-oled-mode="true"] .folder-filter-btn:hover {
+        background-color: #0a0a0a !important;
+        border-color: #2a2a2a !important;
+    }
+    
+    [data-oled-mode="true"] .folder-filter-btn.active {
+        background-color: var(--accent-color) !important;
+        border-color: var(--accent-color) !important;
+    }
+    
+    /* Produkt-Minikarten */
+    .product-mini-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+        height: 100%;
+    }
+    
+    .product-mini-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .product-mini-card .form-check-input {
+        cursor: pointer;
+    }
+    
+    /* Produkt-Grid - 2-4 Spalten nebeneinander */
+    .products-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 1rem;
+    }
+    
+    @media (min-width: 576px) {
+        .products-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+    
+    @media (min-width: 768px) {
+        .products-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+    
+    @media (min-width: 1200px) {
+        .products-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+    }
+    
+    /* Dark Mode Cards */
+    [data-bs-theme="dark"] .product-mini-card {
+        background-color: var(--bs-dark);
+        border-color: var(--bs-border-color);
+    }
+    
+    [data-bs-theme="dark"] .product-mini-card:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    }
+    
+    /* OLED Mode Cards */
+    [data-oled-mode="true"] .product-mini-card {
+        background-color: #000000 !important;
+        border-color: #1a1a1a !important;
+    }
+    
+    [data-oled-mode="true"] .product-mini-card:hover {
+        border-color: #2a2a2a !important;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+    }
+    
+    /* Versteckte Produkte */
+    .product-item.hidden {
+        display: none;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row mb-4">
     <div class="col">
@@ -10,54 +185,89 @@
     </div>
 </div>
 
+<!-- Toolbar -->
+<div id="qrToolbar" class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div class="d-flex gap-2 align-items-center flex-wrap">
+        <span class="text-muted me-2">
+            <strong id="selectedCount">0</strong> Produkt(e) ausgewählt
+        </span>
+        <div class="vr"></div>
+        <button id="selectAllBtn" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-check-square"></i> Alle auswählen
+        </button>
+        <button id="deselectAllBtn" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-square"></i> Alle abwählen
+        </button>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="{{ url_for('inventory.print_color_codes') }}" class="btn btn-sm btn-info" target="_blank">
+            <i class="bi bi-palette"></i> Farbcodes drucken
+        </a>
+        <button type="button" id="generatePdfBtn" class="btn btn-sm btn-accent" disabled>
+            <i class="bi bi-file-pdf"></i> PDF generieren
+        </button>
+    </div>
+</div>
+
 <div class="row">
     <div class="col-12">
         <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Produkte auswählen</h5>
-                <div>
-                    <button id="selectAllBtn" class="btn btn-sm btn-outline-primary">Alle auswählen</button>
-                    <button id="deselectAllBtn" class="btn btn-sm btn-outline-secondary">Alle abwählen</button>
-                </div>
-            </div>
             <div class="card-body">
                 {% if products %}
                 <form method="POST" id="printForm">
-                    <div class="row g-3">
+                    <input type="hidden" name="label_type" id="labelTypeInput" value="">
+                    
+                    <!-- Ordner-Filter oben -->
+                    <div class="folder-filter">
+                        <button type="button" class="folder-filter-btn active" data-folder-id="all">
+                            <i class="bi bi-list-ul"></i> Alle
+                            <span class="badge bg-secondary ms-1" id="folderCountAll">{{ products|length }}</span>
+                        </button>
+                        <button type="button" class="folder-filter-btn" data-folder-id="none">
+                            <i class="bi bi-folder-x"></i> Kein Ordner
+                            <span class="badge bg-secondary ms-1" id="folderCountNone">0</span>
+                        </button>
+                        {% for folder in folders %}
+                        <button type="button" class="folder-filter-btn" data-folder-id="{{ folder.id }}">
+                            {% if folder.color %}
+                                <span class="folder-color" style="background-color: {{ folder.color }};"></span>
+                            {% endif %}
+                            <i class="bi bi-folder"></i> {{ folder.name }}
+                            <span class="badge bg-secondary ms-1" id="folderCount{{ folder.id }}">0</span>
+                        </button>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Produkt-Grid -->
+                    <div class="products-grid">
                         {% for product in products %}
-                        <div class="col-12 col-md-6 col-lg-4">
-                            <div class="card">
-                                <div class="card-body">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" 
-                                               name="product_ids" value="{{ product.id }}" 
-                                               id="product_{{ product.id }}">
-                                        <label class="form-check-label" for="product_{{ product.id }}">
-                                            <strong>{{ product.name }}</strong>
-                                            {% if product.serial_number %}
-                                            <br><small class="text-muted">SN: {{ product.serial_number }}</small>
-                                            {% endif %}
-                                            {% if product.category %}
-                                            <br><small class="text-muted">Kategorie: {{ product.category }}</small>
-                                            {% endif %}
-                                            <br><small class="text-muted">Status: 
-                                                <span class="badge {% if product.status == 'available' %}bg-success{% else %}bg-warning{% endif %}">
+                            <div class="product-item" data-folder-id="{{ product.folder_id if product.folder_id else 'none' }}">
+                                <div class="card product-mini-card h-100">
+                                    <div class="card-body p-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input product-checkbox" type="checkbox" 
+                                                   name="product_ids" value="{{ product.id }}" 
+                                                   id="product_{{ product.id }}">
+                                            <label class="form-check-label w-100" for="product_{{ product.id }}">
+                                                <strong class="d-block mb-1">{{ product.name }}</strong>
+                                                {% if product.serial_number %}
+                                                <small class="text-muted d-block">SN: {{ product.serial_number }}</small>
+                                                {% endif %}
+                                                {% if product.category %}
+                                                <small class="text-muted d-block">Kategorie: {{ product.category }}</small>
+                                                {% endif %}
+                                                {% if product.length %}
+                                                <small class="text-muted d-block">Länge: {{ product.length }}</small>
+                                                {% endif %}
+                                                <span class="badge {% if product.status == 'available' %}bg-success{% else %}bg-warning{% endif %} mt-1">
                                                     {% if product.status == 'available' %}Verfügbar{% else %}Ausgeliehen{% endif %}
                                                 </span>
-                                            </small>
-                                        </label>
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
                         {% endfor %}
-                    </div>
-
-                    <div class="mt-4">
-                        <button type="submit" class="btn btn-accent" id="generatePdfBtn" disabled>
-                            <i class="bi bi-file-pdf"></i> PDF generieren
-                        </button>
-                        <span id="selectedCount" class="ms-3 text-muted">0 Produkte ausgewählt</span>
                     </div>
                 </form>
                 {% else %}
@@ -72,21 +282,85 @@
         </div>
     </div>
 </div>
+
+<!-- Modal für Label-Typ Auswahl -->
+<div class="modal fade" id="labelTypeModal" tabindex="-1" aria-labelledby="labelTypeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="labelTypeModalLabel">
+                    <i class="bi bi-file-pdf"></i> PDF generieren
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <label class="form-label fw-bold mb-3">Bitte wählen Sie den Label-Typ:</label>
+                <select class="form-select form-select-lg" id="labelTypeSelect">
+                    <option value="cable">Kabel (mit Farbstreifen für Länge, invertierte QR-Codes)</option>
+                    <option value="device">Geräte (mit Produktname, normale QR-Codes)</option>
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                <button type="button" class="btn btn-accent" id="confirmPdfBtn">
+                    <i class="bi bi-file-pdf"></i> PDF generieren
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const checkboxes = document.querySelectorAll('input[name="product_ids"]');
+    const checkboxes = document.querySelectorAll('.product-checkbox');
     const generateBtn = document.getElementById('generatePdfBtn');
     const selectedCount = document.getElementById('selectedCount');
     const selectAllBtn = document.getElementById('selectAllBtn');
     const deselectAllBtn = document.getElementById('deselectAllBtn');
+    const labelTypeInput = document.getElementById('labelTypeInput');
+    const printForm = document.getElementById('printForm');
+    const folderFilterBtns = document.querySelectorAll('.folder-filter-btn');
+    const productItems = document.querySelectorAll('.product-item');
+    const labelTypeModalElement = document.getElementById('labelTypeModal');
+    const labelTypeModal = labelTypeModalElement ? new bootstrap.Modal(labelTypeModalElement) : null;
+    const labelTypeSelect = document.getElementById('labelTypeSelect');
+    const confirmPdfBtn = document.getElementById('confirmPdfBtn');
+    
+    // Ordner-Filter
+    folderFilterBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const folderId = this.dataset.folderId;
+            
+            // Aktiviere Button
+            folderFilterBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Filtere Produkte
+            productItems.forEach(item => {
+                const itemFolderId = item.dataset.folderId;
+                if (folderId === 'all' || itemFolderId === folderId) {
+                    item.classList.remove('hidden');
+                } else {
+                    item.classList.add('hidden');
+                }
+            });
+            
+            // Aktualisiere Auswahl
+            updateSelection();
+        });
+    });
     
     function updateSelection() {
-        const selected = Array.from(checkboxes).filter(cb => cb.checked);
+        // Nur sichtbare Checkboxes zählen
+        const visibleCheckboxes = Array.from(checkboxes).filter(cb => {
+            const productItem = cb.closest('.product-item');
+            return productItem && !productItem.classList.contains('hidden');
+        });
+        const selected = visibleCheckboxes.filter(cb => cb.checked);
         generateBtn.disabled = selected.length === 0;
-        selectedCount.textContent = `${selected.length} Produkt${selected.length !== 1 ? 'e' : ''} ausgewählt`;
+        selectedCount.textContent = selected.length;
     }
     
     checkboxes.forEach(cb => {
@@ -96,7 +370,15 @@ document.addEventListener('DOMContentLoaded', function() {
     if (selectAllBtn) {
         selectAllBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            checkboxes.forEach(cb => cb.checked = true);
+            // Nur sichtbare Checkboxes auswählen
+            productItems.forEach(item => {
+                if (!item.classList.contains('hidden')) {
+                    const checkbox = item.querySelector('.product-checkbox');
+                    if (checkbox) {
+                        checkbox.checked = true;
+                    }
+                }
+            });
             updateSelection();
         });
     }
@@ -109,13 +391,71 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // Form Submit
+    if (printForm) {
+        printForm.addEventListener('submit', function(e) {
+            const selected = Array.from(checkboxes).filter(cb => cb.checked);
+            if (selected.length === 0) {
+                e.preventDefault();
+                alert('Bitte wählen Sie mindestens ein Produkt aus.');
+                return false;
+            }
+        });
+    }
+    
+    // PDF-Generierung Button - öffne Modal
+    if (generateBtn && labelTypeModal) {
+        generateBtn.addEventListener('click', function() {
+            // Setze Standard-Auswahl auf "cable"
+            if (labelTypeSelect) {
+                labelTypeSelect.value = 'cable';
+            }
+            labelTypeModal.show();
+        });
+    }
+    
+    // Bestätige PDF-Generierung
+    if (confirmPdfBtn && labelTypeSelect && labelTypeInput && printForm) {
+        confirmPdfBtn.addEventListener('click', function() {
+            const selectedType = labelTypeSelect.value;
+            if (!selectedType) {
+                alert('Bitte wählen Sie einen Label-Typ aus.');
+                return;
+            }
+            labelTypeInput.value = selectedType;
+            if (labelTypeModal) {
+                labelTypeModal.hide();
+            }
+            printForm.submit();
+        });
+    }
+    
+    // Aktualisiere Produktanzahl in Ordner-Badges
+    function updateFolderCounts() {
+        const folderCounts = {
+            'all': productItems.length,
+            'none': 0
+        };
+        
+        productItems.forEach(item => {
+            const folderId = item.dataset.folderId;
+            if (!folderCounts[folderId]) {
+                folderCounts[folderId] = 0;
+            }
+            folderCounts[folderId]++;
+        });
+        
+        // Aktualisiere Badges
+        Object.keys(folderCounts).forEach(folderId => {
+            const badge = document.getElementById(`folderCount${folderId}`);
+            if (badge) {
+                badge.textContent = folderCounts[folderId];
+            }
+        });
+    }
+    
     updateSelection();
+    updateFolderCounts();
 });
 </script>
 {% endblock %}
-
-
-
-
-
-

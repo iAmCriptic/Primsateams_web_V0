@@ -89,8 +89,8 @@ def setup_import_backup():
                     # Wenn keine Kategorien ausgewählt, importiere alle verfügbaren
                     import_categories = ['all']
                 
-                # Backup importieren
-                result = import_backup(temp_path, import_categories)
+                # Backup importieren (im Setup gibt es noch keinen current_user, daher None)
+                result = import_backup(temp_path, import_categories, None)
                 
                 # Temporäre Datei löschen
                 os.unlink(temp_path)
@@ -211,6 +211,7 @@ def setup_complete():
                 phone=phone,
                 is_active=True,
                 is_admin=True,
+                is_super_admin=True,  # Erster Admin ist Hauptadministrator
                 dark_mode=dark_mode,
                 accent_color=default_accent_color
             )
@@ -610,6 +611,7 @@ def setup_step4():
                 phone=phone,
                 is_active=True,
                 is_admin=True,
+                is_super_admin=True,  # Erster Admin ist Hauptadministrator
                 is_email_confirmed=True,  # Admin ist automatisch bestätigt
                 dark_mode=dark_mode,
                 accent_color=default_accent_color

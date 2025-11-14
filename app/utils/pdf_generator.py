@@ -9,8 +9,9 @@ from io import BytesIO
 from datetime import datetime
 import os
 from PIL import Image as PILImage
-from app.utils.qr_code import generate_qr_code_bytes, generate_product_qr_code, generate_borrow_qr_code
+from app.utils.qr_code import generate_qr_code_bytes, generate_qr_code_inverted_bytes, generate_product_qr_code, generate_borrow_qr_code
 from app.utils.lengths import format_length_from_meters, parse_length_to_meters
+from app.utils.color_mapping import get_color_for_length, initialize_color_mappings
 
 
 def _format_length(value):
@@ -426,20 +427,26 @@ def generate_inventory_tool_pdf(inventory, items, output=None):
     return output
 
 
-def generate_qr_code_sheet_pdf(products, output=None):
+def generate_qr_code_sheet_pdf(products, output=None, label_type='cable'):
     """
     Generiert einen QR-Code-Druckbogen für mehrere Produkte als Labels.
-    Jedes Label ist 4cm hoch × 2cm breit und enthält Produktname, Länge (optional) und QR-Code.
     
     Args:
         products: Liste von Product Objekten
         output: BytesIO Objekt oder Dateipfad (optional)
+        label_type: 'cable' oder 'device' (Standard: 'cable')
     
     Returns:
         BytesIO Objekt mit PDF-Daten (falls output=None)
     """
     if output is None:
         output = BytesIO()
+    
+    # Initialisiere Farbzuordnungen falls nötig
+    try:
+        initialize_color_mappings()
+    except Exception as e:
+        current_app.logger.warning(f"Fehler beim Initialisieren der Farbzuordnungen: {e}")
     
     # A4-Seite: 21cm × 29.7cm
     # Ränder: 1.5cm links/rechts, 2cm oben/unten
@@ -465,6 +472,7 @@ def generate_qr_code_sheet_pdf(products, output=None):
         header_data.append([''])
     
     # "Labels" Text daneben
+    label_type_text = "Kabel-Labels" if label_type == 'cable' else "Geräte-Labels"
     labels_style = ParagraphStyle(
         'LabelsTitle',
         parent=styles['Heading1'],
@@ -474,7 +482,7 @@ def generate_qr_code_sheet_pdf(products, output=None):
         fontName='Helvetica-Bold',
         leftIndent=0.5*cm
     )
-    header_data[0].append(Paragraph("Labels", labels_style))
+    header_data[0].append(Paragraph(label_type_text, labels_style))
     
     header_table = Table(header_data, colWidths=[3*cm, 15*cm])
     header_table.setStyle(TableStyle([
@@ -485,14 +493,12 @@ def generate_qr_code_sheet_pdf(products, output=None):
     story.append(header_table)
     story.append(Spacer(1, 0.5*cm))
     
-    # Label-Dimensionen - Exakt halbiert für Umklappen
+    # Label-Dimensionen
     label_width = 1.9*cm  # Breite des Labels
-    label_height = 3.8*cm  # Gesamthöhe (1.9cm + 1.9cm)
-    text_height = 1.9*cm  # Obere Hälfte für Text (exakt 1.9cm)
-    qr_height = 1.9*cm  # Untere Hälfte für QR-Code (exakt 1.9cm)
-    qr_size = 1.9*cm  # QR-Code Größe (nutzt die volle untere Hälfte)
+    label_height = 3.8*cm  # Gesamthöhe
+    qr_size = 1.9*cm  # QR-Code Größe
     
-    # Berechne Anzahl Spalten pro Zeile (A4-Breite - Ränder = 18cm, bei 1.9cm pro Label)
+    # Berechne Anzahl Spalten pro Zeile
     available_width = 21*cm - 3*cm  # A4-Breite minus linke/rechte Ränder
     cols_per_row = int(available_width / label_width)
     
@@ -505,61 +511,159 @@ def generate_qr_code_sheet_pdf(products, output=None):
         qr_data = generate_product_qr_code(product.id)
         
         try:
-            qr_bytes = generate_qr_code_bytes(qr_data, box_size=6)
-            qr_image = Image(BytesIO(qr_bytes), width=qr_size, height=qr_size)
-            
-            # Produktname (einzeilig, kürzen falls zu lang)
-            product_name = product.name
-            if len(product_name) > 20:
-                product_name = product_name[:17] + "..."
-            
-            # Erstelle Text-Inhalt für obere Hälfte
-            text_elements = []
-            
-            # Produktname
-            name_style = ParagraphStyle(
-                'LabelName',
-                parent=styles['Normal'],
-                fontSize=8,
-                textColor=colors.black,
-                alignment=TA_CENTER,
-                fontName='Helvetica-Bold',
-                leading=10
-            )
-            text_elements.append(Paragraph(product_name, name_style))
-            
-            # Länge (wenn vorhanden)
-            if product.length:
-                length_style = ParagraphStyle(
-                    'LabelLength',
+            if label_type == 'cable':
+                # Kabel-Label: Invertierter QR-Code
+                qr_bytes = generate_qr_code_inverted_bytes(qr_data, box_size=6)
+                qr_image = Image(BytesIO(qr_bytes), width=qr_size, height=qr_size)
+                
+                # Produktname (einzeilig, kürzen falls zu lang)
+                product_name = product.name
+                if len(product_name) > 20:
+                    product_name = product_name[:17] + "..."
+                
+                # Hole Farbe für Länge
+                color_hex = get_color_for_length(product.length) if product.length else None
+                color_obj = colors.HexColor(color_hex) if color_hex else colors.black
+                
+                # Obere Hälfte: Farbstreifen (wenn Länge vorhanden) + Text
+                color_stripe_height = 0.4*cm  # Höhe des Farbstreifens
+                text_area_height = label_height - color_stripe_height - qr_size
+                
+                # Erstelle oberen Bereich mit Farbstreifen und Text
+                top_elements = []
+                if color_hex and product.length:
+                    # Farbstreifen oben
+                    color_stripe = Table([[Paragraph("", ParagraphStyle('Empty', parent=styles['Normal']))]], 
+                                        colWidths=[label_width], rowHeights=[color_stripe_height])
+                    color_stripe.setStyle(TableStyle([
+                        ('BACKGROUND', (0, 0), (-1, -1), color_obj),
+                        ('LEFTPADDING', (0, 0), (-1, -1), 0),
+                        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+                        ('TOPPADDING', (0, 0), (-1, -1), 0),
+                        ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+                    ]))
+                    top_elements.append(color_stripe)
+                
+                # Text-Bereich (weiß auf schwarz)
+                text_elements = []
+                name_style = ParagraphStyle(
+                    'LabelName',
                     parent=styles['Normal'],
-                    fontSize=7,
+                    fontSize=8,
+                    textColor=colors.white,
+                    alignment=TA_CENTER,
+                    fontName='Helvetica-Bold',
+                    leading=10
+                )
+                text_elements.append(Paragraph(product_name, name_style))
+                
+                if product.length:
+                    length_style = ParagraphStyle(
+                        'LabelLength',
+                        parent=styles['Normal'],
+                        fontSize=7,
+                        textColor=colors.white,
+                        alignment=TA_CENTER,
+                        leading=9
+                    )
+                    text_elements.append(Paragraph(_format_length(product.length), length_style))
+                
+                text_table = Table([[text_elements]], colWidths=[label_width], rowHeights=[text_area_height])
+                text_table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, -1), colors.black),
+                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 0),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+                    ('TOPPADDING', (0, 0), (-1, -1), 0),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+                ]))
+                top_elements.append(text_table)
+                
+                # Untere Hälfte: QR-Code auf schwarzem Hintergrund
+                qr_table = Table([[qr_image]], colWidths=[label_width], rowHeights=[qr_size])
+                qr_table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, -1), colors.black),
+                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 0),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+                    ('TOPPADDING', (0, 0), (-1, -1), 0),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+                ]))
+                
+                # Kombiniere alle Teile
+                label_content = []
+                for elem in top_elements:
+                    label_content.append([elem])
+                label_content.append([qr_table])
+                
+                row_heights = []
+                if color_hex and product.length:
+                    row_heights.append(color_stripe_height)
+                row_heights.append(text_area_height)
+                row_heights.append(qr_size)
+                
+            else:
+                # Geräte-Label: Normaler QR-Code
+                qr_bytes = generate_qr_code_bytes(qr_data, box_size=6)
+                qr_image = Image(BytesIO(qr_bytes), width=qr_size, height=qr_size)
+                
+                # Produktname (einzeilig, kürzen falls zu lang)
+                product_name = product.name
+                if len(product_name) > 20:
+                    product_name = product_name[:17] + "..."
+                
+                # Obere Hälfte: QR-Code
+                qr_area_height = 2.0*cm
+                qr_table = Table([[qr_image]], colWidths=[label_width], rowHeights=[qr_area_height])
+                qr_table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, -1), colors.white),
+                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 0),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+                    ('TOPPADDING', (0, 0), (-1, -1), 0),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+                ]))
+                
+                # Untere Hälfte: Produktname
+                name_area_height = label_height - qr_area_height
+                name_style = ParagraphStyle(
+                    'LabelName',
+                    parent=styles['Normal'],
+                    fontSize=8,
                     textColor=colors.black,
                     alignment=TA_CENTER,
-                    leading=9
+                    fontName='Helvetica-Bold',
+                    leading=10
                 )
-                text_elements.append(Paragraph(_format_length(product.length), length_style))
+                name_table = Table([[Paragraph(product_name, name_style)]], colWidths=[label_width], rowHeights=[name_area_height])
+                name_table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, -1), colors.white),
+                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 0),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+                    ('TOPPADDING', (0, 0), (-1, -1), 0),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+                ]))
+                
+                label_content = [
+                    [qr_table],
+                    [name_table]
+                ]
+                row_heights = [qr_area_height, name_area_height]
             
-            # Erstelle Label-Tabelle mit zwei Zeilen - jede exakt 1.9cm hoch
-            # Zeile 1: Text-Bereich (exakt 1.9cm)
-            # Zeile 2: QR-Code-Bereich (exakt 1.9cm)
-            label_content = [
-                [text_elements],  # Obere Hälfte: Text (1.9cm x 1.9cm)
-                [qr_image]  # Untere Hälfte: QR-Code (1.9cm x 1.9cm)
-            ]
-            
-            # Label-Tabelle erstellen mit gestrichelter Linie genau in der Mitte
-            label_table = Table(label_content, colWidths=[label_width], rowHeights=[text_height, qr_height])
+            # Label-Tabelle erstellen
+            label_table = Table(label_content, colWidths=[label_width], rowHeights=row_heights)
             label_table.setStyle(TableStyle([
                 ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
                 ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-                # KEINE Padding-Werte, damit die Höhen exakt bleiben
                 ('LEFTPADDING', (0, 0), (-1, -1), 0),
                 ('RIGHTPADDING', (0, 0), (-1, -1), 0),
                 ('TOPPADDING', (0, 0), (-1, -1), 0),
                 ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
-                # Gestrichelte Linie zwischen Text und QR-Code (genau in der Mitte bei 1.9cm)
-                ('LINEBELOW', (0, 0), (-1, 0), 0.5, colors.black, 1, (2, 2)),  # Gestrichelt: 2pt Strich, 2pt Lücke
             ]))
             
             # Label zur aktuellen Zeile hinzufügen
@@ -608,6 +712,162 @@ def generate_qr_code_sheet_pdf(products, output=None):
             ('HEIGHT', (0, 0), (-1, -1), label_height),
         ]))
         story.append(grid_table)
+    
+    # Footer
+    footer_style = ParagraphStyle(
+        'Footer',
+        parent=styles['Normal'],
+        fontSize=8,
+        textColor=colors.grey,
+        alignment=TA_CENTER,
+    )
+    # Get portal name from SystemSettings
+    try:
+        from app.models.settings import SystemSettings
+        portal_name_setting = SystemSettings.query.filter_by(key='portal_name').first()
+        app_name = portal_name_setting.value if portal_name_setting and portal_name_setting.value else current_app.config.get('APP_NAME', 'Prismateams')
+    except:
+        app_name = current_app.config.get('APP_NAME', 'Prismateams')
+    footer_text = f"Erstellt am {datetime.now().strftime('%d.%m.%Y %H:%M')} - {app_name}"
+    story.append(Spacer(1, 0.5*cm))
+    story.append(Paragraph(footer_text, footer_style))
+    
+    # PDF bauen
+    doc.build(story)
+    
+    if isinstance(output, BytesIO):
+        output.seek(0)
+        return output
+    
+    return output
+
+
+def generate_color_code_table_pdf(output=None):
+    """
+    Generiert eine Tabelle mit allen Längen-Farb-Zuordnungen.
+    
+    Args:
+        output: BytesIO Objekt oder Dateipfad (optional)
+    
+    Returns:
+        BytesIO Objekt mit PDF-Daten (falls output=None)
+    """
+    if output is None:
+        output = BytesIO()
+    
+    from app.utils.color_mapping import get_all_color_mappings
+    from app.utils.lengths import format_length_from_meters
+    
+    # Initialisiere Farbzuordnungen falls nötig
+    try:
+        initialize_color_mappings()
+    except Exception as e:
+        current_app.logger.warning(f"Fehler beim Initialisieren der Farbzuordnungen: {e}")
+    
+    doc = SimpleDocTemplate(output, pagesize=A4, 
+                           leftMargin=2*cm, rightMargin=2*cm,
+                           topMargin=2*cm, bottomMargin=2*cm)
+    story = []
+    
+    styles = getSampleStyleSheet()
+    
+    # Header: Logo links, "Farbcodes" Text rechts daneben
+    logo_path = get_logo_path()
+    header_data = []
+    
+    if logo_path:
+        try:
+            logo = Image(logo_path, width=2.5*cm, height=2.5*cm, kind='proportional')
+            header_data.append([logo])
+        except Exception as e:
+            current_app.logger.warning(f"Konnte Logo nicht laden: {e}")
+            header_data.append([''])
+    else:
+        header_data.append([''])
+    
+    # "Farbcodes" Text daneben
+    title_style = ParagraphStyle(
+        'ColorCodesTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=colors.black,
+        alignment=TA_LEFT,
+        fontName='Helvetica-Bold',
+        leftIndent=0.5*cm
+    )
+    header_data[0].append(Paragraph("Farbcodes für Längen", title_style))
+    
+    header_table = Table(header_data, colWidths=[3*cm, 15*cm])
+    header_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('ALIGN', (0, 0), (0, 0), 'LEFT'),
+        ('ALIGN', (1, 0), (1, 0), 'LEFT'),
+    ]))
+    story.append(header_table)
+    story.append(Spacer(1, 0.5*cm))
+    
+    # Hole alle Farbzuordnungen
+    mappings = get_all_color_mappings()
+    
+    if not mappings:
+        # Keine Zuordnungen vorhanden
+        no_data_style = ParagraphStyle(
+            'NoData',
+            parent=styles['Normal'],
+            fontSize=12,
+            textColor=colors.grey,
+            alignment=TA_CENTER
+        )
+        story.append(Paragraph("Keine Farbzuordnungen vorhanden.", no_data_style))
+    else:
+        # Erstelle Tabelle mit Längen und Farben
+        table_data = [['Länge', 'Farbe']]
+        
+        for length_meters, color_hex in sorted(mappings.items()):
+            length_str = format_length_from_meters(length_meters) or f"{length_meters} m"
+            table_data.append([length_str, ''])
+        
+        # Tabelle erstellen
+        col_widths = [8*cm, 9*cm]
+        color_table = Table(table_data, colWidths=col_widths, repeatRows=1)
+        
+        # Tabellen-Styles
+        table_style = [
+            # Header
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0d6efd')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+            ('TOPPADDING', (0, 0), (-1, 0), 10),
+            
+            # Body
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 11),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+            ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+            
+            # Grid
+            ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            
+            # Padding
+            ('LEFTPADDING', (0, 0), (-1, -1), 8),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+            ('TOPPADDING', (0, 1), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
+        ]
+        
+        # Füge Hintergrundfarben für jede Zeile hinzu
+        row_idx = 1
+        for length_meters, color_hex in sorted(mappings.items()):
+            color_obj = colors.HexColor(color_hex)
+            table_style.append(('BACKGROUND', (1, row_idx), (1, row_idx), color_obj))
+            row_idx += 1
+        
+        color_table.setStyle(TableStyle(table_style))
+        story.append(color_table)
     
     # Footer
     footer_style = ParagraphStyle(
