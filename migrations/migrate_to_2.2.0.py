@@ -37,7 +37,8 @@ from app import create_app, db
 from app.models.user import User
 from app.models.inventory import Product
 from app.utils.lengths import normalize_length_input
-from sqlalchemy import text, inspect
+from sqlalchemy import text, inspect, create_engine
+from config import config
 
 
 def migrate_table(table_name, fields_config, create_indexes=None):
@@ -790,6 +791,100 @@ def ensure_system_language_settings():
     return True
 
 
+def migrate_chat_updates_direct(engine):
+    """Fügt group_avatar, description zu chats und last_seen zu users hinzu (direkt mit Engine)."""
+    print("\n4.1. Chat-Updates: Migriere 'chats' Tabelle (vor App-Initialisierung)...")
+    
+    inspector = inspect(engine)
+    
+    # Prüfe ob chats-Tabelle existiert
+    if 'chats' not in inspector.get_table_names():
+        print("  ⚠ Warnung: Tabelle 'chats' existiert nicht.")
+        print("  Die Tabelle wird beim nächsten Start automatisch erstellt.")
+    else:
+        columns = {col['name']: col for col in inspector.get_columns('chats')}
+        fields_to_add = []
+        
+        if 'group_avatar' not in columns:
+            fields_to_add.append('group_avatar')
+        if 'description' not in columns:
+            fields_to_add.append('description')
+        
+        if fields_to_add:
+            print(f"  Fehlende Felder in 'chats' gefunden: {', '.join(fields_to_add)}")
+            
+            db_url = str(engine.url)
+            is_sqlite = 'sqlite' in db_url
+            is_mysql = 'mysql' in db_url or 'mariadb' in db_url
+            is_postgres = 'postgresql' in db_url
+            
+            with engine.begin() as conn:
+                alter_statements = []
+                
+                for field_name in fields_to_add:
+                    if field_name == 'group_avatar':
+                        field_type = 'VARCHAR(255)' if not is_sqlite else 'VARCHAR(255)'
+                    elif field_name == 'description':
+                        field_type = 'TEXT'
+                    
+                    if is_mysql:
+                        if field_type == 'BOOLEAN':
+                            alter_sql = f"ADD COLUMN {field_name} TINYINT(1)"
+                        else:
+                            alter_sql = f"ADD COLUMN {field_name} {field_type}"
+                    else:
+                        alter_sql = f"ADD COLUMN {field_name} {field_type}"
+                    
+                    alter_sql += " NULL"
+                    alter_statements.append(alter_sql)
+                
+                if alter_statements:
+                    alter_sql = f"ALTER TABLE chats {', '.join(alter_statements)}"
+                    try:
+                        conn.execute(text(alter_sql))
+                        print(f"  ✓ {len(alter_statements)} Felder zu 'chats' hinzugefügt")
+                    except Exception as exc:  # pylint: disable=broad-except
+                        print(f"  ⚠ Fehler beim Hinzufügen der Felder: {exc}")
+                        raise
+        else:
+            print("  ✓ Alle Felder in 'chats' existieren bereits.")
+    
+    # Migriere last_seen zu users
+    print("\n4.2. Chat-Updates: Migriere 'users' Tabelle (last_seen)...")
+    
+    if 'users' not in inspector.get_table_names():
+        print("  ⚠ Warnung: Tabelle 'users' existiert nicht.")
+        print("  Die Tabelle wird beim nächsten Start automatisch erstellt.")
+    else:
+        columns = {col['name']: col for col in inspector.get_columns('users')}
+        
+        if 'last_seen' not in columns:
+            print("  Füge 'last_seen' zu 'users' hinzu...")
+            
+            db_url = str(engine.url)
+            is_mysql = 'mysql' in db_url or 'mariadb' in db_url
+            is_postgres = 'postgresql' in db_url
+            
+            with engine.begin() as conn:
+                if is_mysql:
+                    alter_sql = "ALTER TABLE users ADD COLUMN last_seen DATETIME NULL"
+                elif is_postgres:
+                    alter_sql = "ALTER TABLE users ADD COLUMN last_seen TIMESTAMP NULL"
+                else:
+                    alter_sql = "ALTER TABLE users ADD COLUMN last_seen DATETIME NULL"
+                
+                try:
+                    conn.execute(text(alter_sql))
+                    print("  ✓ 'last_seen' zu 'users' hinzugefügt")
+                except Exception as exc:  # pylint: disable=broad-except
+                    print(f"  ⚠ Fehler beim Hinzufügen von 'last_seen': {exc}")
+                    raise
+        else:
+            print("  ✓ 'last_seen' existiert bereits in 'users'.")
+    
+    return True
+
+
 def migrate_chat_updates():
     """Fügt group_avatar, description zu chats und last_seen zu users hinzu."""
     print("\n4.1. Chat-Updates: Migriere 'chats' Tabelle...")
@@ -984,6 +1079,40 @@ def migrate():
     print("Konsolidierte Migration für alle Versionen bis 2.2")
     print("=" * 60)
 
+    # WICHTIG: Chat-Migration ZUERST durchführen, bevor create_app() aufgerufen wird
+    # create_app() versucht Chat.query auszuführen, was die neuen Spalten erwartet
+    print("\n[VORBEREITUNG] Führe kritische Chat-Migration vor App-Initialisierung durch...")
+    
+    engine = None
+    try:
+        # Lade Konfiguration für Datenbankverbindung
+        config_name = os.getenv('FLASK_ENV', 'production')
+        app_config = config[config_name]
+        database_uri = app_config.SQLALCHEMY_DATABASE_URI
+        
+        # Erstelle Engine direkt (ohne App-Kontext)
+        engine = create_engine(database_uri)
+        
+        # Führe Chat-Migration direkt durch
+        if not migrate_chat_updates_direct(engine):
+            print("❌ Kritische Chat-Migration fehlgeschlagen!")
+            if engine:
+                engine.dispose()
+            return False
+        
+        print("✅ Kritische Chat-Migration erfolgreich abgeschlossen")
+    except Exception as exc:  # pylint: disable=broad-except
+        print(f"❌ Fehler bei Chat-Migration vor App-Initialisierung: {exc}")
+        import traceback
+        traceback.print_exc()
+        if engine:
+            engine.dispose()
+        return False
+    finally:
+        if engine:
+            engine.dispose()
+
+    # Jetzt kann create_app() sicher aufgerufen werden
     app = create_app(os.getenv('FLASK_ENV', 'development'))
 
     with app.app_context():
@@ -1066,10 +1195,22 @@ def migrate():
                 print("❌ Sprach-Systemeinstellungen konnten nicht angelegt werden!")
                 return False
 
-            # 11. Chat-Updates
-            if not migrate_chat_updates():
-                print("❌ Chat-Updates konnten nicht durchgeführt werden!")
-                return False
+            # 11. Chat-Updates (bereits oben durchgeführt, hier nur Verifikation)
+            # Die Chat-Migration wurde bereits vor create_app() durchgeführt
+            # Hier nur noch einmal prüfen, ob alles korrekt ist
+            print("\n11. Verifiziere Chat-Updates...")
+            inspector = inspect(db.engine)
+            if 'chats' in inspector.get_table_names():
+                columns = {col['name']: col for col in inspector.get_columns('chats')}
+                if 'group_avatar' in columns and 'description' in columns:
+                    print("  ✓ Chat-Updates erfolgreich verifiziert")
+                else:
+                    print("  ⚠ Chat-Updates nicht vollständig - versuche erneut...")
+                    if not migrate_chat_updates():
+                        print("  ❌ Chat-Updates konnten nicht verifiziert werden!")
+                        return False
+            else:
+                print("  ⚠ Tabelle 'chats' existiert nicht (wird beim nächsten Start erstellt)")
 
             # 12. Super-Admin
             if not migrate_super_admin():
