@@ -8,7 +8,7 @@ import json
 import os
 import subprocess
 import sys
-from app.utils.i18n import register_i18n
+from app.utils.i18n import register_i18n, translate
 
 # Initialize extensions
 db = SQLAlchemy()
@@ -96,6 +96,7 @@ def create_app(config_name='default'):
         app.config['UPLOAD_FOLDER'],
         os.path.join(app.config['UPLOAD_FOLDER'], 'files'),
         os.path.join(app.config['UPLOAD_FOLDER'], 'chat'),
+        os.path.join(app.config['UPLOAD_FOLDER'], 'chat', 'avatars'),  # For chat avatars
         os.path.join(app.config['UPLOAD_FOLDER'], 'manuals'),
         os.path.join(app.config['UPLOAD_FOLDER'], 'profile_pics'),
         os.path.join(app.config['UPLOAD_FOLDER'], 'inventory', 'product_images'),
@@ -169,6 +170,8 @@ def create_app(config_name='default'):
                         return member.user.full_name
                 # Fallback: return original name if something goes wrong
                 return chat.name
+            if chat.is_main_chat:
+                return translate('chat.common.main_chat_name')
             return chat.name
         
         # Function to get back URL based on current endpoint
@@ -235,8 +238,6 @@ def create_app(config_name='default'):
                 # Chat: Detailseiten -> Chat-Übersicht
                 'chat.view_chat': 'chat.index',
                 'chat.create': 'chat.index',
-                # Files: Detailseiten -> Files-Übersicht
-                'files.browse_folder': 'files.index',
                 # Wiki: Detailseiten -> Wiki-Übersicht
                 'wiki.view': 'wiki.index',
                 'wiki.edit': 'wiki.index',
@@ -258,6 +259,16 @@ def create_app(config_name='default'):
             # Prüfe zuerst spezifische Mappings
             if endpoint in specific_mappings:
                 return url_for(specific_mappings[endpoint])
+            
+            # Dateien: Ordnernavigation -> Elternordner oder Root
+            if endpoint == 'files.browse_folder':
+                folder_id = request.view_args.get('folder_id') if request.view_args else None
+                if folder_id:
+                    from app.models.file import Folder
+                    folder = Folder.query.get(folder_id)
+                    if folder and folder.parent_id:
+                        return url_for('files.browse_folder', folder_id=folder.parent_id)
+                return url_for('files.index')
             
             # Settings Admin: Fallback für alle weiteren Unterseiten
             if endpoint.startswith('settings.admin_'):
@@ -376,6 +387,39 @@ def create_app(config_name='default'):
         """Filter to format datetime in local timezone."""
         return format_datetime(dt, format_string)
     
+    @app.template_filter('smart_datetime')
+    def smart_datetime_filter(dt):
+        """Smart datetime formatting: Today shows time only, Yesterday shows 'Gestern HH:MM', older shows date."""
+        if not dt:
+            return ''
+        
+        from datetime import datetime, date
+        from app.utils.common import get_local_time
+        
+        local_dt = get_local_time(dt)
+        if isinstance(local_dt, str):
+            try:
+                local_dt = datetime.fromisoformat(local_dt.replace('Z', '+00:00'))
+            except:
+                return str(dt)
+        
+        now = datetime.now()
+        today = date.today()
+        message_date = local_dt.date()
+        
+        # Calculate difference in days
+        days_diff = (today - message_date).days
+        
+        if days_diff == 0:
+            # Today: show only time
+            return local_dt.strftime('%H:%M')
+        elif days_diff == 1:
+            # Yesterday: show "Gestern HH:MM"
+            return f"Gestern {local_dt.strftime('%H:%M')}"
+        else:
+            # Older: show date and time
+            return local_dt.strftime('%d.%m.%Y %H:%M')
+    
     @app.template_filter('markdown')
     def markdown_filter(text):
         """Filter to render markdown text."""
@@ -409,6 +453,18 @@ def create_app(config_name='default'):
     def too_many_requests(error):
         return render_template('errors/429.html'), 429
     
+    @app.errorhandler(413)
+    def request_entity_too_large(error):
+        """Handle 413 Request Entity Too Large errors."""
+        # Log the error
+        app.logger.warning(f"413 Request Entity Too Large: {request.url}")
+        # Return JSON for API endpoints
+        if request.path.startswith('/api/') or request.path.startswith('/files/api/'):
+            return jsonify({'error': 'File too large', 'message': 'Die hochgeladene Datei überschreitet das maximale Größenlimit.'}), 413
+        # Return user-friendly error page
+        max_size_mb = app.config.get('MAX_CONTENT_LENGTH', 524288000) / (1024 * 1024)
+        return render_template('errors/413.html', max_size_mb=max_size_mb), 413
+    
     @app.errorhandler(500)
     def internal_error(error):
         # Log the error
@@ -422,6 +478,11 @@ def create_app(config_name='default'):
     
     @app.errorhandler(Exception)
     def handle_exception(e):
+        # Skip RequestEntityTooLarge - it has its own handler
+        from werkzeug.exceptions import RequestEntityTooLarge
+        if isinstance(e, RequestEntityTooLarge):
+            raise  # Re-raise to let the 413 handler catch it
+        
         # Log the error
         app.logger.error(f"Unhandled exception: {e}", exc_info=True)
         

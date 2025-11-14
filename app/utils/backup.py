@@ -10,7 +10,7 @@ from typing import List, Dict, Set, Optional
 from flask import current_app
 from app import db
 from app.models import (
-    User, Chat, ChatMessage, ChatMember,
+    User,
     File, FileVersion, Folder,
     CalendarEvent, EventParticipant,
     EmailMessage, EmailPermission, EmailAttachment,
@@ -21,6 +21,7 @@ from app.models import (
     ProductDocument, SavedFilter, ProductFavorite, Inventory, InventoryItem
 )
 from app.blueprints.credentials import get_encryption_key
+from app.utils.lengths import normalize_length_input, parse_length_to_meters, format_length_from_meters
 
 
 BACKUP_VERSION = "1.0"
@@ -28,7 +29,6 @@ SUPPORTED_CATEGORIES = {
     'settings': 'Einstellungen',
     'users': 'Benutzer',
     'emails': 'E-Mails',
-    'chats': 'Chats',
     'appointments': 'Termine',
     'credentials': 'Zugangsdaten',
     'files': 'Dateien',
@@ -71,12 +71,6 @@ def export_backup(categories: List[str], output_path: str) -> Dict:
         backup_data['data']['emails'] = export_emails()
         backup_data['data']['email_permissions'] = export_email_permissions()
         backup_data['data']['email_attachments'] = export_email_attachments()
-    
-    # Chats exportieren
-    if 'chats' in categories or 'all' in categories:
-        backup_data['data']['chats'] = export_chats()
-        backup_data['data']['chat_messages'] = export_chat_messages()
-        backup_data['data']['chat_members'] = export_chat_members()
     
     # Termine exportieren
     if 'appointments' in categories or 'all' in categories:
@@ -133,12 +127,33 @@ def export_backup(categories: List[str], output_path: str) -> Dict:
 def export_settings() -> List[Dict]:
     """Exportiert System-Einstellungen."""
     settings = SystemSettings.query.all()
-    return [{
-        'key': s.key,
-        'value': s.value,
-        'description': s.description,
-        'updated_at': s.updated_at.isoformat() if s.updated_at else None
-    } for s in settings]
+    result = []
+    
+    for s in settings:
+        setting_data = {
+            'key': s.key,
+            'value': s.value,
+            'description': s.description,
+            'updated_at': s.updated_at.isoformat() if s.updated_at else None
+        }
+        
+        # Wenn es sich um portal_logo handelt, exportiere die Datei als Base64
+        if s.key == 'portal_logo' and s.value:
+            try:
+                project_root = os.path.dirname(current_app.root_path)
+                logo_path = os.path.join(project_root, current_app.config.get('UPLOAD_FOLDER', 'uploads'), 'system', s.value)
+                if os.path.exists(logo_path):
+                    with open(logo_path, 'rb') as f:
+                        import base64
+                        logo_data = f.read()
+                        setting_data['file_content_base64'] = base64.b64encode(logo_data).decode('utf-8')
+                        setting_data['file_original_name'] = s.value
+            except Exception as e:
+                current_app.logger.error(f"Fehler beim Exportieren des Portal-Logos: {str(e)}")
+        
+        result.append(setting_data)
+    
+    return result
 
 
 def export_whitelist() -> List[Dict]:
@@ -156,26 +171,47 @@ def export_whitelist() -> List[Dict]:
 def export_users() -> List[Dict]:
     """Exportiert Benutzer (inkl. Passwort-Hashes)."""
     users = User.query.all()
-    return [{
-        'email': u.email,
-        'password_hash': u.password_hash,  # Passwort-Hash wird exportiert
-        'first_name': u.first_name,
-        'last_name': u.last_name,
-        'phone': u.phone,
-        'is_active': u.is_active,
-        'is_admin': u.is_admin,
-        'is_email_confirmed': u.is_email_confirmed,
-        'profile_picture': u.profile_picture,
-        'accent_color': u.accent_color,
-        'accent_gradient': u.accent_gradient,
-        'dark_mode': u.dark_mode,
-        'notifications_enabled': u.notifications_enabled,
-        'chat_notifications': u.chat_notifications,
-        'email_notifications': u.email_notifications,
-        'can_borrow': u.can_borrow,
-        'created_at': u.created_at.isoformat() if u.created_at else None,
-        'last_login': u.last_login.isoformat() if u.last_login else None
-    } for u in users]
+    result = []
+    
+    for u in users:
+        user_data = {
+            'email': u.email,
+            'password_hash': u.password_hash,  # Passwort-Hash wird exportiert
+            'first_name': u.first_name,
+            'last_name': u.last_name,
+            'phone': u.phone,
+            'is_active': u.is_active,
+            'is_admin': u.is_admin,
+            'is_email_confirmed': u.is_email_confirmed,
+            'profile_picture': u.profile_picture,
+            'accent_color': u.accent_color,
+            'accent_gradient': u.accent_gradient,
+            'dark_mode': u.dark_mode,
+            'notifications_enabled': u.notifications_enabled,
+            'chat_notifications': u.chat_notifications,
+            'email_notifications': u.email_notifications,
+            'can_borrow': u.can_borrow,
+            'created_at': u.created_at.isoformat() if u.created_at else None,
+            'last_login': u.last_login.isoformat() if u.last_login else None
+        }
+        
+        # Exportiere Profilbild als Base64 wenn vorhanden
+        if u.profile_picture:
+            try:
+                project_root = os.path.dirname(current_app.root_path)
+                pic_path = os.path.join(project_root, current_app.config.get('UPLOAD_FOLDER', 'uploads'), 'profile_pics', u.profile_picture)
+                if os.path.exists(pic_path):
+                    with open(pic_path, 'rb') as f:
+                        import base64
+                        pic_data = f.read()
+                        user_data['profile_picture_content_base64'] = base64.b64encode(pic_data).decode('utf-8')
+                        user_data['profile_picture_original_name'] = u.profile_picture
+            except Exception as e:
+                current_app.logger.error(f"Fehler beim Exportieren des Profilbilds für {u.email}: {str(e)}")
+        
+        result.append(user_data)
+    
+    return result
 
 
 def export_notification_settings() -> List[Dict]:
@@ -257,45 +293,6 @@ def export_email_attachments() -> List[Dict]:
             att_data['content_base64'] = base64.b64encode(att.content).decode('utf-8')
         result.append(att_data)
     return result
-
-
-def export_chats() -> List[Dict]:
-    """Exportiert Chats."""
-    chats = Chat.query.all()
-    return [{
-        'name': c.name,
-        'is_main_chat': c.is_main_chat,
-        'is_direct_message': c.is_direct_message,
-        'created_by_email': User.query.get(c.created_by).email if c.created_by and User.query.get(c.created_by) else None,
-        'created_at': c.created_at.isoformat() if c.created_at else None,
-        'updated_at': c.updated_at.isoformat() if c.updated_at else None
-    } for c in chats]
-
-
-def export_chat_messages() -> List[Dict]:
-    """Exportiert Chat-Nachrichten."""
-    messages = ChatMessage.query.all()
-    return [{
-        'chat_name': Chat.query.get(m.chat_id).name if Chat.query.get(m.chat_id) else None,
-        'sender_email': User.query.get(m.sender_id).email if User.query.get(m.sender_id) else None,
-        'content': m.content,
-        'message_type': m.message_type,
-        'media_url': m.media_url,
-        'created_at': m.created_at.isoformat() if m.created_at else None,
-        'edited_at': m.edited_at.isoformat() if m.edited_at else None,
-        'is_deleted': m.is_deleted
-    } for m in messages]
-
-
-def export_chat_members() -> List[Dict]:
-    """Exportiert Chat-Mitglieder."""
-    members = ChatMember.query.all()
-    return [{
-        'chat_name': Chat.query.get(m.chat_id).name if Chat.query.get(m.chat_id) else None,
-        'user_email': User.query.get(m.user_id).email if User.query.get(m.user_id) else None,
-        'joined_at': m.joined_at.isoformat() if m.joined_at else None,
-        'last_read_at': m.last_read_at.isoformat() if m.last_read_at else None
-    } for m in members]
 
 
 def export_calendar_events() -> List[Dict]:
@@ -588,23 +585,45 @@ def export_product_folders() -> List[Dict]:
 def export_products() -> List[Dict]:
     """Exportiert Produkte."""
     products = Product.query.all()
-    return [{
-        'name': p.name,
-        'description': p.description,
-        'category': p.category,
-        'serial_number': p.serial_number,
-        'condition': p.condition,
-        'location': p.location,
-        'length': p.length,
-        'purchase_date': p.purchase_date.isoformat() if p.purchase_date else None,
-        'status': p.status,
-        'image_path': p.image_path,
-        'qr_code_data': p.qr_code_data,
-        'folder_name': ProductFolder.query.get(p.folder_id).name if p.folder_id and ProductFolder.query.get(p.folder_id) else None,
-        'created_by_email': User.query.get(p.created_by).email if User.query.get(p.created_by) else None,
-        'created_at': p.created_at.isoformat() if p.created_at else None,
-        'updated_at': p.updated_at.isoformat() if p.updated_at else None
-    } for p in products]
+    result = []
+    
+    for p in products:
+        product_data = {
+            'name': p.name,
+            'description': p.description,
+            'category': p.category,
+            'serial_number': p.serial_number,
+            'condition': p.condition,
+            'location': p.location,
+            'length': p.length,
+            'length_meters': parse_length_to_meters(p.length),
+            'purchase_date': p.purchase_date.isoformat() if p.purchase_date else None,
+            'status': p.status,
+            'image_path': p.image_path,
+            'qr_code_data': p.qr_code_data,
+            'folder_name': ProductFolder.query.get(p.folder_id).name if p.folder_id and ProductFolder.query.get(p.folder_id) else None,
+            'created_by_email': User.query.get(p.created_by).email if User.query.get(p.created_by) else None,
+            'created_at': p.created_at.isoformat() if p.created_at else None,
+            'updated_at': p.updated_at.isoformat() if p.updated_at else None
+        }
+        
+        # Exportiere Produktbild als Base64 wenn vorhanden
+        if p.image_path:
+            try:
+                project_root = os.path.dirname(current_app.root_path)
+                img_path = os.path.join(project_root, current_app.config.get('UPLOAD_FOLDER', 'uploads'), 'inventory', 'product_images', p.image_path)
+                if os.path.exists(img_path):
+                    with open(img_path, 'rb') as f:
+                        import base64
+                        img_data = f.read()
+                        product_data['image_content_base64'] = base64.b64encode(img_data).decode('utf-8')
+                        product_data['image_original_name'] = p.image_path
+            except Exception as e:
+                current_app.logger.error(f"Fehler beim Exportieren des Produktbilds für {p.name}: {str(e)}")
+        
+        result.append(product_data)
+    
+    return result
 
 
 def export_borrow_transactions() -> List[Dict]:
@@ -729,13 +748,14 @@ def export_inventory_items() -> List[Dict]:
     } for i in items]
 
 
-def import_backup(file_path: str, categories: List[str]) -> Dict:
+def import_backup(file_path: str, categories: List[str], current_user_id: Optional[int] = None) -> Dict:
     """
     Importiert ein Backup der ausgewählten Kategorien.
     
     Args:
         file_path: Pfad zur Backup-Datei
         categories: Liste der zu importierenden Kategorien
+        current_user_id: ID des aktuellen Benutzers (für Fallback wenn Benutzer nicht gefunden werden)
     
     Returns:
         Dict mit Import-Ergebnissen
@@ -763,6 +783,40 @@ def import_backup(file_path: str, categories: List[str]) -> Dict:
             'errors': []
         }
         
+        # user_map IMMER initialisieren (vor allen anderen Imports)
+        # Wenn 'users' importiert wird, wird user_map aus import_users() erstellt
+        # Wenn 'users' NICHT importiert wird, erstelle user_map aus bestehenden Benutzern in der DB
+        user_map = {}  # email -> user_id
+        
+        # Validierung: Prüfe ob benötigte Abhängigkeiten vorhanden sind
+        backup_data_dict = backup_data.get('data', {})
+        
+        # Warnung wenn Module importiert werden, die Benutzer benötigen, aber keine Benutzer vorhanden sind
+        user_dependent_modules = ['emails', 'appointments', 'credentials', 'files', 'wiki', 'comments', 'inventory']
+        needs_users = any(cat in categories or 'all' in categories for cat in user_dependent_modules)
+        
+        if needs_users and 'users' not in categories and 'all' not in categories:
+            # Prüfe ob Benutzer in der DB existieren
+            existing_users = User.query.all()
+            if not existing_users and not backup_data_dict.get('users'):
+                current_app.logger.warning("Module importiert, die Benutzer benötigen, aber keine Benutzer gefunden. Verwende current_user als Fallback.")
+        
+        # Benutzer importieren (muss zuerst sein wegen Foreign Keys)
+        if 'users' in categories or 'all' in categories:
+            if 'users' in backup_data_dict:
+                user_map = import_users(backup_data['data']['users'])
+                results['imported'].append('users')
+            else:
+                # Erstelle user_map aus bestehenden Benutzern in der DB
+                existing_users = User.query.all()
+                for user in existing_users:
+                    user_map[user.email] = user.id
+        else:
+            # Erstelle user_map aus bestehenden Benutzern in der DB
+            existing_users = User.query.all()
+            for user in existing_users:
+                user_map[user.email] = user.id
+        
         # Einstellungen importieren
         if 'settings' in categories or 'all' in categories:
             if 'settings' in backup_data.get('data', {}):
@@ -772,82 +826,60 @@ def import_backup(file_path: str, categories: List[str]) -> Dict:
                 import_whitelist(backup_data['data']['whitelist'])
                 results['imported'].append('whitelist')
         
-        # Benutzer importieren (muss zuerst sein wegen Foreign Keys)
+        # Notification Settings importieren (benötigt user_map)
         if 'users' in categories or 'all' in categories:
-            if 'users' in backup_data.get('data', {}):
-                user_map = import_users(backup_data['data']['users'])
-                results['imported'].append('users')
-            else:
-                user_map = {}
-            
             if 'notification_settings' in backup_data.get('data', {}):
-                import_notification_settings(backup_data['data']['notification_settings'], user_map)
+                import_notification_settings(backup_data['data']['notification_settings'], user_map, current_user_id)
                 results['imported'].append('notification_settings')
         
         # E-Mails importieren
         if 'emails' in categories or 'all' in categories:
             if 'emails' in backup_data.get('data', {}):
-                email_map = import_emails(backup_data['data']['emails'], user_map)
+                email_map = import_emails(backup_data['data']['emails'], user_map, current_user_id)
                 results['imported'].append('emails')
             else:
                 email_map = {}
             
             if 'email_permissions' in backup_data.get('data', {}):
-                import_email_permissions(backup_data['data']['email_permissions'], user_map)
+                import_email_permissions(backup_data['data']['email_permissions'], user_map, current_user_id)
                 results['imported'].append('email_permissions')
             
             if 'email_attachments' in backup_data.get('data', {}):
                 import_email_attachments(backup_data['data']['email_attachments'], email_map)
                 results['imported'].append('email_attachments')
         
-        # Chats importieren
-        if 'chats' in categories or 'all' in categories:
-            if 'chats' in backup_data.get('data', {}):
-                chat_map = import_chats(backup_data['data']['chats'], user_map)
-                results['imported'].append('chats')
-            else:
-                chat_map = {}
-            
-            if 'chat_messages' in backup_data.get('data', {}):
-                import_chat_messages(backup_data['data']['chat_messages'], chat_map, user_map)
-                results['imported'].append('chat_messages')
-            
-            if 'chat_members' in backup_data.get('data', {}):
-                import_chat_members(backup_data['data']['chat_members'], chat_map, user_map)
-                results['imported'].append('chat_members')
-        
         # Termine importieren
         if 'appointments' in categories or 'all' in categories:
             if 'calendar_events' in backup_data.get('data', {}):
-                event_map = import_calendar_events(backup_data['data']['calendar_events'], user_map)
+                event_map = import_calendar_events(backup_data['data']['calendar_events'], user_map, current_user_id)
                 results['imported'].append('calendar_events')
             else:
                 event_map = {}
             
             if 'event_participants' in backup_data.get('data', {}):
-                import_event_participants(backup_data['data']['event_participants'], event_map, user_map)
+                import_event_participants(backup_data['data']['event_participants'], event_map, user_map, current_user_id)
                 results['imported'].append('event_participants')
         
         # Zugangsdaten importieren
         if 'credentials' in categories or 'all' in categories:
             if 'credentials' in backup_data.get('data', {}):
-                import_credentials(backup_data['data']['credentials'], user_map)
+                import_credentials(backup_data['data']['credentials'], user_map, current_user_id)
                 results['imported'].append('credentials')
         
         # Dateien importieren
         if 'files' in categories or 'all' in categories:
             if 'folders' in backup_data.get('data', {}):
-                folder_map = import_folders(backup_data['data']['folders'], user_map)
+                folder_map = import_folders(backup_data['data']['folders'], user_map, current_user_id)
                 results['imported'].append('folders')
             else:
                 folder_map = {}
             
             if 'files' in backup_data.get('data', {}):
-                import_files(backup_data['data']['files'], folder_map, user_map)
+                import_files(backup_data['data']['files'], folder_map, user_map, current_user_id)
                 results['imported'].append('files')
             
             if 'file_versions' in backup_data.get('data', {}):
-                import_file_versions(backup_data['data']['file_versions'], user_map)
+                import_file_versions(backup_data['data']['file_versions'], user_map, current_user_id)
                 results['imported'].append('file_versions')
         
         # Wiki importieren
@@ -865,47 +897,47 @@ def import_backup(file_path: str, categories: List[str]) -> Dict:
                 tag_map = {}
             
             if 'wiki_pages' in backup_data.get('data', {}):
-                page_map = import_wiki_pages(backup_data['data']['wiki_pages'], category_map, tag_map, user_map)
+                page_map = import_wiki_pages(backup_data['data']['wiki_pages'], category_map, tag_map, user_map, current_user_id)
                 results['imported'].append('wiki_pages')
             else:
                 page_map = {}
             
             if 'wiki_page_versions' in backup_data.get('data', {}):
-                import_wiki_page_versions(backup_data['data']['wiki_page_versions'], page_map, user_map)
+                import_wiki_page_versions(backup_data['data']['wiki_page_versions'], page_map, user_map, current_user_id)
                 results['imported'].append('wiki_page_versions')
         
         # Kommentare importieren
         if 'comments' in categories or 'all' in categories:
             if 'comments' in backup_data.get('data', {}):
-                comment_map = import_comments(backup_data['data']['comments'], user_map)
+                comment_map = import_comments(backup_data['data']['comments'], user_map, current_user_id)
                 results['imported'].append('comments')
             else:
                 comment_map = {}
             
             if 'comment_mentions' in backup_data.get('data', {}):
-                import_comment_mentions(backup_data['data']['comment_mentions'], comment_map, user_map)
+                import_comment_mentions(backup_data['data']['comment_mentions'], comment_map, user_map, current_user_id)
                 results['imported'].append('comment_mentions')
         
         # Inventar importieren
         if 'inventory' in categories or 'all' in categories:
             if 'product_folders' in backup_data.get('data', {}):
-                folder_map = import_product_folders(backup_data['data']['product_folders'], user_map)
+                folder_map = import_product_folders(backup_data['data']['product_folders'], user_map, current_user_id)
                 results['imported'].append('product_folders')
             else:
                 folder_map = {}
             
             if 'products' in backup_data.get('data', {}):
-                product_map = import_products(backup_data['data']['products'], folder_map, user_map)
+                product_map = import_products(backup_data['data']['products'], folder_map, user_map, current_user_id)
                 results['imported'].append('products')
             else:
                 product_map = {}
             
             if 'borrow_transactions' in backup_data.get('data', {}):
-                import_borrow_transactions(backup_data['data']['borrow_transactions'], product_map, user_map)
+                import_borrow_transactions(backup_data['data']['borrow_transactions'], product_map, user_map, current_user_id)
                 results['imported'].append('borrow_transactions')
             
             if 'product_sets' in backup_data.get('data', {}):
-                set_map = import_product_sets(backup_data['data']['product_sets'], user_map)
+                set_map = import_product_sets(backup_data['data']['product_sets'], user_map, current_user_id)
                 results['imported'].append('product_sets')
             else:
                 set_map = {}
@@ -915,25 +947,25 @@ def import_backup(file_path: str, categories: List[str]) -> Dict:
                 results['imported'].append('product_set_items')
             
             if 'product_documents' in backup_data.get('data', {}):
-                import_product_documents(backup_data['data']['product_documents'], product_map, user_map)
+                import_product_documents(backup_data['data']['product_documents'], product_map, user_map, current_user_id)
                 results['imported'].append('product_documents')
             
             if 'saved_filters' in backup_data.get('data', {}):
-                import_saved_filters(backup_data['data']['saved_filters'], user_map)
+                import_saved_filters(backup_data['data']['saved_filters'], user_map, current_user_id)
                 results['imported'].append('saved_filters')
             
             if 'product_favorites' in backup_data.get('data', {}):
-                import_product_favorites(backup_data['data']['product_favorites'], product_map, user_map)
+                import_product_favorites(backup_data['data']['product_favorites'], product_map, user_map, current_user_id)
                 results['imported'].append('product_favorites')
             
             if 'inventories' in backup_data.get('data', {}):
-                inventory_map = import_inventories(backup_data['data']['inventories'], user_map)
+                inventory_map = import_inventories(backup_data['data']['inventories'], user_map, current_user_id)
                 results['imported'].append('inventories')
             else:
                 inventory_map = {}
             
             if 'inventory_items' in backup_data.get('data', {}):
-                import_inventory_items(backup_data['data']['inventory_items'], inventory_map, product_map, user_map)
+                import_inventory_items(backup_data['data']['inventory_items'], inventory_map, product_map, user_map, current_user_id)
                 results['imported'].append('inventory_items')
         
         db.session.commit()
@@ -948,18 +980,94 @@ def import_backup(file_path: str, categories: List[str]) -> Dict:
 def import_settings(settings_data: List[Dict]):
     """Importiert System-Einstellungen."""
     for s_data in settings_data:
-        existing = SystemSettings.query.filter_by(key=s_data['key']).first()
-        if existing:
-            existing.value = s_data['value']
-            if 'description' in s_data:
-                existing.description = s_data['description']
+        # Spezielle Behandlung für portal_logo: Datei wiederherstellen
+        if s_data['key'] == 'portal_logo' and s_data.get('file_content_base64'):
+            try:
+                import base64
+                from werkzeug.utils import secure_filename
+                
+                # Dekodiere Base64-Daten
+                file_content = base64.b64decode(s_data['file_content_base64'])
+                
+                # Erstelle Dateiname mit Timestamp
+                original_name = s_data.get('file_original_name', s_data.get('value', 'logo.png'))
+                # Extrahiere Dateierweiterung
+                if '.' in original_name:
+                    ext = os.path.splitext(original_name)[1]
+                    base_name = os.path.splitext(original_name)[0]
+                    # Entferne mögliche Timestamp-Präfixe
+                    if '_' in base_name:
+                        parts = base_name.split('_')
+                        if len(parts) >= 3 and parts[0] == 'portal' and parts[1] == 'logo':
+                            # Verwende nur den letzten Teil als Basis
+                            base_name = '_'.join(parts[2:])
+                else:
+                    ext = '.png'
+                    base_name = 'logo'
+                
+                timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+                filename = f"portal_logo_{timestamp}_{secure_filename(base_name)}{ext}"
+                
+                # Speichere Datei im system-Verzeichnis
+                project_root = os.path.dirname(current_app.root_path)
+                upload_dir = os.path.join(project_root, current_app.config.get('UPLOAD_FOLDER', 'uploads'), 'system')
+                os.makedirs(upload_dir, exist_ok=True)
+                file_path = os.path.join(upload_dir, filename)
+                
+                with open(file_path, 'wb') as f:
+                    f.write(file_content)
+                
+                # Aktualisiere Setting mit neuem Dateinamen
+                existing = SystemSettings.query.filter_by(key='portal_logo').first()
+                if existing:
+                    # Lösche altes Logo falls vorhanden
+                    old_logo = existing.value
+                    if old_logo and old_logo != filename:
+                        try:
+                            old_path = os.path.join(upload_dir, old_logo)
+                            if os.path.exists(old_path):
+                                os.remove(old_path)
+                        except Exception as e:
+                            current_app.logger.warning(f"Konnte altes Logo nicht löschen: {str(e)}")
+                    existing.value = filename
+                    if 'description' in s_data:
+                        existing.description = s_data.get('description')
+                else:
+                    setting = SystemSettings(
+                        key='portal_logo',
+                        value=filename,
+                        description=s_data.get('description', 'Portalslogo')
+                    )
+                    db.session.add(setting)
+                
+                current_app.logger.info(f"Portal-Logo erfolgreich importiert: {filename}")
+            except Exception as e:
+                current_app.logger.error(f"Fehler beim Importieren des Portal-Logos: {str(e)}")
+                # Fallback: Verwende nur den Dateinamen ohne Datei
+                existing = SystemSettings.query.filter_by(key='portal_logo').first()
+                if existing:
+                    existing.value = s_data.get('value')
+                else:
+                    setting = SystemSettings(
+                        key='portal_logo',
+                        value=s_data.get('value'),
+                        description=s_data.get('description', 'Portalslogo')
+                    )
+                    db.session.add(setting)
         else:
-            setting = SystemSettings(
-                key=s_data['key'],
-                value=s_data['value'],
-                description=s_data.get('description')
-            )
-            db.session.add(setting)
+            # Normale Settings ohne Dateien
+            existing = SystemSettings.query.filter_by(key=s_data['key']).first()
+            if existing:
+                existing.value = s_data['value']
+                if 'description' in s_data:
+                    existing.description = s_data['description']
+            else:
+                setting = SystemSettings(
+                    key=s_data['key'],
+                    value=s_data['value'],
+                    description=s_data.get('description')
+                )
+                db.session.add(setting)
 
 
 def import_whitelist(whitelist_data: List[Dict]):
@@ -996,7 +1104,48 @@ def import_users(users_data: List[Dict]) -> Dict[str, int]:
             existing.is_active = u_data.get('is_active', False)
             existing.is_admin = u_data.get('is_admin', False)
             existing.is_email_confirmed = u_data.get('is_email_confirmed', False)
-            existing.profile_picture = u_data.get('profile_picture')
+            
+            # Importiere Profilbild wenn vorhanden
+            if u_data.get('profile_picture_content_base64'):
+                try:
+                    import base64
+                    from werkzeug.utils import secure_filename
+                    
+                    file_content = base64.b64decode(u_data['profile_picture_content_base64'])
+                    original_name = u_data.get('profile_picture_original_name', u_data.get('profile_picture', 'profile.png'))
+                    
+                    # Erstelle Dateiname mit Timestamp
+                    if '.' in original_name:
+                        ext = os.path.splitext(original_name)[1]
+                        base_name = os.path.splitext(original_name)[0]
+                        # Entferne mögliche Timestamp-Präfixe
+                        if '_' in base_name:
+                            parts = base_name.split('_')
+                            if len(parts) >= 2:
+                                base_name = '_'.join(parts[1:])
+                    else:
+                        ext = '.png'
+                        base_name = 'profile'
+                    
+                    timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+                    filename = f"{existing.id}_{timestamp}_{secure_filename(base_name)}{ext}"
+                    
+                    # Speichere Datei
+                    project_root = os.path.dirname(current_app.root_path)
+                    upload_dir = os.path.join(project_root, current_app.config.get('UPLOAD_FOLDER', 'uploads'), 'profile_pics')
+                    os.makedirs(upload_dir, exist_ok=True)
+                    file_path = os.path.join(upload_dir, filename)
+                    
+                    with open(file_path, 'wb') as f:
+                        f.write(file_content)
+                    
+                    existing.profile_picture = filename
+                except Exception as e:
+                    current_app.logger.error(f"Fehler beim Importieren des Profilbilds für {u_data['email']}: {str(e)}")
+                    existing.profile_picture = u_data.get('profile_picture')
+            else:
+                existing.profile_picture = u_data.get('profile_picture')
+            
             existing.accent_color = u_data.get('accent_color', '#0d6efd')
             existing.accent_gradient = u_data.get('accent_gradient')
             existing.dark_mode = u_data.get('dark_mode', False)
@@ -1019,7 +1168,6 @@ def import_users(users_data: List[Dict]) -> Dict[str, int]:
                 is_active=u_data.get('is_active', False),
                 is_admin=u_data.get('is_admin', False),
                 is_email_confirmed=u_data.get('is_email_confirmed', False),
-                profile_picture=u_data.get('profile_picture'),
                 accent_color=u_data.get('accent_color', '#0d6efd'),
                 accent_gradient=u_data.get('accent_gradient'),
                 dark_mode=u_data.get('dark_mode', False),
@@ -1033,19 +1181,68 @@ def import_users(users_data: List[Dict]) -> Dict[str, int]:
                 user.set_password('TEMPORARY_PASSWORD_RESET_REQUIRED')
             db.session.add(user)
             db.session.flush()  # Um die ID zu bekommen
+            
+            # Importiere Profilbild wenn vorhanden
+            if u_data.get('profile_picture_content_base64'):
+                try:
+                    import base64
+                    from werkzeug.utils import secure_filename
+                    
+                    file_content = base64.b64decode(u_data['profile_picture_content_base64'])
+                    original_name = u_data.get('profile_picture_original_name', u_data.get('profile_picture', 'profile.png'))
+                    
+                    # Erstelle Dateiname mit Timestamp
+                    if '.' in original_name:
+                        ext = os.path.splitext(original_name)[1]
+                        base_name = os.path.splitext(original_name)[0]
+                        # Entferne mögliche Timestamp-Präfixe
+                        if '_' in base_name:
+                            parts = base_name.split('_')
+                            if len(parts) >= 2:
+                                base_name = '_'.join(parts[1:])
+                    else:
+                        ext = '.png'
+                        base_name = 'profile'
+                    
+                    timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+                    filename = f"{user.id}_{timestamp}_{secure_filename(base_name)}{ext}"
+                    
+                    # Speichere Datei
+                    project_root = os.path.dirname(current_app.root_path)
+                    upload_dir = os.path.join(project_root, current_app.config.get('UPLOAD_FOLDER', 'uploads'), 'profile_pics')
+                    os.makedirs(upload_dir, exist_ok=True)
+                    file_path = os.path.join(upload_dir, filename)
+                    
+                    with open(file_path, 'wb') as f:
+                        f.write(file_content)
+                    
+                    user.profile_picture = filename
+                except Exception as e:
+                    current_app.logger.error(f"Fehler beim Importieren des Profilbilds für {u_data['email']}: {str(e)}")
+                    user.profile_picture = u_data.get('profile_picture')
+            else:
+                user.profile_picture = u_data.get('profile_picture')
+            
             user_map[u_data['email']] = user.id
     
     return user_map
 
 
-def import_notification_settings(settings_data: List[Dict], user_map: Dict[str, int]):
+def import_notification_settings(settings_data: List[Dict], user_map: Dict[str, int], current_user_id: Optional[int] = None):
     """Importiert Notification-Einstellungen."""
     for s_data in settings_data:
         user_email = s_data.get('user_email')
-        if not user_email or user_email not in user_map:
+        if not user_email:
             continue
         
-        user_id = user_map[user_email]
+        # Fallback: Wenn Benutzer nicht gefunden wird, verwende current_user
+        if user_email not in user_map:
+            if current_user_id:
+                user_id = current_user_id
+            else:
+                continue
+        else:
+            user_id = user_map[user_email]
         existing = NotificationSettings.query.filter_by(user_id=user_id).first()
         if existing:
             existing.chat_notifications_enabled = s_data.get('chat_notifications_enabled', True)
@@ -1077,7 +1274,7 @@ def import_notification_settings(settings_data: List[Dict], user_map: Dict[str, 
             db.session.add(setting)
 
 
-def import_emails(emails_data: List[Dict], user_map: Dict[str, int]) -> Dict[str, int]:
+def import_emails(emails_data: List[Dict], user_map: Dict[str, int], current_user_id: Optional[int] = None) -> Dict[str, int]:
     """Importiert E-Mails und gibt ein Mapping von message_id zu neuer ID zurück."""
     email_map = {}  # message_id -> neue_id
     
@@ -1085,6 +1282,9 @@ def import_emails(emails_data: List[Dict], user_map: Dict[str, int]) -> Dict[str
         sent_by_user_id = None
         if e_data.get('sent_by_user_email'):
             sent_by_user_id = user_map.get(e_data['sent_by_user_email'])
+            # Fallback: Wenn Benutzer nicht gefunden wird, verwende current_user
+            if sent_by_user_id is None and current_user_id:
+                sent_by_user_id = current_user_id
         
         existing = None
         if e_data.get('message_id'):
@@ -1140,14 +1340,21 @@ def import_emails(emails_data: List[Dict], user_map: Dict[str, int]) -> Dict[str
     return email_map
 
 
-def import_email_permissions(permissions_data: List[Dict], user_map: Dict[str, int]):
+def import_email_permissions(permissions_data: List[Dict], user_map: Dict[str, int], current_user_id: Optional[int] = None):
     """Importiert E-Mail-Berechtigungen."""
     for p_data in permissions_data:
         user_email = p_data.get('user_email')
-        if not user_email or user_email not in user_map:
+        if not user_email:
             continue
         
-        user_id = user_map[user_email]
+        # Fallback: Wenn Benutzer nicht gefunden wird, verwende current_user
+        if user_email not in user_map:
+            if current_user_id:
+                user_id = current_user_id
+            else:
+                continue
+        else:
+            user_id = user_map[user_email]
         existing = EmailPermission.query.filter_by(user_id=user_id).first()
         if existing:
             existing.can_read = p_data.get('can_read', True)
@@ -1207,117 +1414,52 @@ def import_email_attachments(attachments_data: List[Dict], email_map: Dict[str, 
         db.session.add(attachment)
 
 
-def import_chats(chats_data: List[Dict], user_map: Dict[str, int]) -> Dict[str, int]:
-    """Importiert Chats und gibt ein Mapping von Chat-Name zu neuer ID zurück."""
-    chat_map = {}  # chat_name -> neue_id
-    
-    for c_data in chats_data:
-        created_by_id = None
-        if c_data.get('created_by_email'):
-            created_by_id = user_map.get(c_data['created_by_email'])
-        
-        # Prüfe ob Chat mit gleichem Namen existiert
-        existing = Chat.query.filter_by(name=c_data['name']).first()
-        if existing:
-            chat_map[c_data['name']] = existing.id
-        else:
-            chat = Chat(
-                name=c_data['name'],
-                is_main_chat=c_data.get('is_main_chat', False),
-                is_direct_message=c_data.get('is_direct_message', False),
-                created_by=created_by_id
-            )
-            db.session.add(chat)
-            db.session.flush()
-            chat_map[c_data['name']] = chat.id
-    
-    return chat_map
-
-
-def import_chat_messages(messages_data: List[Dict], chat_map: Dict[str, int], user_map: Dict[str, int]):
-    """Importiert Chat-Nachrichten."""
-    for m_data in messages_data:
-        chat_name = m_data.get('chat_name')
-        sender_email = m_data.get('sender_email')
-        
-        if not chat_name or chat_name not in chat_map:
-            continue
-        if not sender_email or sender_email not in user_map:
-            continue
-        
-        chat_id = chat_map[chat_name]
-        sender_id = user_map[sender_email]
-        
-        message = ChatMessage(
-            chat_id=chat_id,
-            sender_id=sender_id,
-            content=m_data.get('content'),
-            message_type=m_data.get('message_type', 'text'),
-            media_url=m_data.get('media_url'),
-            is_deleted=m_data.get('is_deleted', False)
-        )
-        if m_data.get('created_at'):
-            message.created_at = datetime.fromisoformat(m_data['created_at'])
-        if m_data.get('edited_at'):
-            message.edited_at = datetime.fromisoformat(m_data['edited_at'])
-        db.session.add(message)
-
-
-def import_chat_members(members_data: List[Dict], chat_map: Dict[str, int], user_map: Dict[str, int]):
-    """Importiert Chat-Mitglieder."""
-    for m_data in members_data:
-        chat_name = m_data.get('chat_name')
-        user_email = m_data.get('user_email')
-        
-        if not chat_name or chat_name not in chat_map:
-            continue
-        if not user_email or user_email not in user_map:
-            continue
-        
-        chat_id = chat_map[chat_name]
-        user_id = user_map[user_email]
-        
-        # Prüfe ob Mitgliedschaft bereits existiert
-        existing = ChatMember.query.filter_by(chat_id=chat_id, user_id=user_id).first()
-        if not existing:
-            member = ChatMember(
-                chat_id=chat_id,
-                user_id=user_id
-            )
-            if m_data.get('joined_at'):
-                member.joined_at = datetime.fromisoformat(m_data['joined_at'])
-            if m_data.get('last_read_at'):
-                member.last_read_at = datetime.fromisoformat(m_data['last_read_at'])
-            db.session.add(member)
-
-
-def import_calendar_events(events_data: List[Dict], user_map: Dict[str, int]) -> Dict[str, int]:
+def import_calendar_events(events_data: List[Dict], user_map: Dict[str, int], current_user_id: Optional[int] = None) -> Dict[str, int]:
     """Importiert Kalender-Termine und gibt ein Mapping von Titel zu neuer ID zurück."""
     event_map = {}  # event_title -> neue_id
     
     for e_data in events_data:
         created_by_email = e_data.get('created_by_email')
-        if not created_by_email or created_by_email not in user_map:
-            continue
+        if not created_by_email:
+            if current_user_id:
+                created_by_id = current_user_id
+            else:
+                continue
+        elif created_by_email not in user_map:
+            # Fallback: Wenn Benutzer nicht gefunden wird, verwende current_user
+            if current_user_id:
+                created_by_id = current_user_id
+            else:
+                continue
+        else:
+            created_by_id = user_map[created_by_email]
         
-        created_by_id = user_map[created_by_email]
-        
-        event = CalendarEvent(
+        # Prüfe ob Event bereits existiert (nach Titel, Startzeit und Ersteller)
+        existing = CalendarEvent.query.filter_by(
             title=e_data['title'],
-            description=e_data.get('description'),
             start_time=datetime.fromisoformat(e_data['start_time']),
-            end_time=datetime.fromisoformat(e_data['end_time']),
-            location=e_data.get('location'),
             created_by=created_by_id
-        )
-        db.session.add(event)
-        db.session.flush()
-        event_map[e_data['title']] = event.id
+        ).first()
+        
+        if existing:
+            event_map[e_data['title']] = existing.id
+        else:
+            event = CalendarEvent(
+                title=e_data['title'],
+                description=e_data.get('description'),
+                start_time=datetime.fromisoformat(e_data['start_time']),
+                end_time=datetime.fromisoformat(e_data['end_time']),
+                location=e_data.get('location'),
+                created_by=created_by_id
+            )
+            db.session.add(event)
+            db.session.flush()
+            event_map[e_data['title']] = event.id
     
     return event_map
 
 
-def import_event_participants(participants_data: List[Dict], event_map: Dict[str, int], user_map: Dict[str, int]):
+def import_event_participants(participants_data: List[Dict], event_map: Dict[str, int], user_map: Dict[str, int], current_user_id: Optional[int] = None):
     """Importiert Event-Teilnehmer."""
     for p_data in participants_data:
         event_title = p_data.get('event_title')
@@ -1325,11 +1467,19 @@ def import_event_participants(participants_data: List[Dict], event_map: Dict[str
         
         if not event_title or event_title not in event_map:
             continue
-        if not user_email or user_email not in user_map:
+        if not user_email:
             continue
         
         event_id = event_map[event_title]
-        user_id = user_map[user_email]
+        
+        # Fallback: Wenn Benutzer nicht gefunden wird, verwende current_user
+        if user_email not in user_map:
+            if current_user_id:
+                user_id = current_user_id
+            else:
+                continue
+        else:
+            user_id = user_map[user_email]
         
         # Prüfe ob Teilnahme bereits existiert
         existing = EventParticipant.query.filter_by(event_id=event_id, user_id=user_id).first()
@@ -1344,21 +1494,30 @@ def import_event_participants(participants_data: List[Dict], event_map: Dict[str
             db.session.add(participant)
 
 
-def import_credentials(credentials_data: List[Dict], user_map: Dict[str, int]):
+def import_credentials(credentials_data: List[Dict], user_map: Dict[str, int], current_user_id: Optional[int] = None):
     """Importiert Zugangsdaten (verschlüsselt neu)."""
     key = get_encryption_key()
     
     for c_data in credentials_data:
         created_by_email = c_data.get('created_by_email')
-        if not created_by_email or created_by_email not in user_map:
-            continue
+        if not created_by_email:
+            if current_user_id:
+                created_by_id = current_user_id
+            else:
+                continue
+        elif created_by_email not in user_map:
+            # Fallback: Wenn Benutzer nicht gefunden wird, verwende current_user
+            if current_user_id:
+                created_by_id = current_user_id
+            else:
+                continue
+        else:
+            created_by_id = user_map[created_by_email]
         
-        created_by_id = user_map[created_by_email]
-        
-        # Prüfe ob Credential bereits existiert
+        # Prüfe ob Credential bereits existiert (nach URL, Username und Ersteller)
         existing = Credential.query.filter_by(
-            website_url=c_data['website_url'],
-            username=c_data['username'],
+            website_url=c_data.get('website_url'),
+            username=c_data.get('username'),
             created_by=created_by_id
         ).first()
         
@@ -1384,7 +1543,7 @@ def import_credentials(credentials_data: List[Dict], user_map: Dict[str, int]):
             db.session.add(credential)
 
 
-def import_folders(folders_data: List[Dict], user_map: Dict[str, int]) -> Dict[str, int]:
+def import_folders(folders_data: List[Dict], user_map: Dict[str, int], current_user_id: Optional[int] = None) -> Dict[str, int]:
     """Importiert Ordner und gibt ein Mapping von Ordner-Name zu neuer ID zurück."""
     folder_map = {}  # folder_name -> neue_id
     
@@ -1393,16 +1552,29 @@ def import_folders(folders_data: List[Dict], user_map: Dict[str, int]) -> Dict[s
     
     for f_data in sorted_folders:
         created_by_email = f_data.get('created_by_email')
-        if not created_by_email or created_by_email not in user_map:
-            continue
-        
-        created_by_id = user_map[created_by_email]
+        if not created_by_email:
+            if current_user_id:
+                created_by_id = current_user_id
+            else:
+                continue
+        elif created_by_email not in user_map:
+            # Fallback: Wenn Benutzer nicht gefunden wird, verwende current_user
+            if current_user_id:
+                created_by_id = current_user_id
+            else:
+                continue
+        else:
+            created_by_id = user_map[created_by_email]
         parent_id = None
         if f_data.get('parent_name') and f_data['parent_name'] in folder_map:
             parent_id = folder_map[f_data['parent_name']]
         
-        # Prüfe ob Ordner bereits existiert
-        existing = Folder.query.filter_by(name=f_data['name'], created_by=created_by_id).first()
+        # Prüfe ob Ordner bereits existiert (nach Name, Parent und Ersteller)
+        existing = Folder.query.filter_by(
+            name=f_data.get('name'),
+            parent_id=parent_id,
+            created_by=created_by_id
+        ).first()
         if existing:
             folder_map[f_data['name']] = existing.id
         else:
@@ -1423,20 +1595,33 @@ def import_folders(folders_data: List[Dict], user_map: Dict[str, int]) -> Dict[s
     return folder_map
 
 
-def import_files(files_data: List[Dict], folder_map: Dict[str, int], user_map: Dict[str, int]):
+def import_files(files_data: List[Dict], folder_map: Dict[str, int], user_map: Dict[str, int], current_user_id: Optional[int] = None):
     """Importiert Dateien."""
     for f_data in files_data:
         uploaded_by_email = f_data.get('uploaded_by_email')
-        if not uploaded_by_email or uploaded_by_email not in user_map:
-            continue
-        
-        uploaded_by_id = user_map[uploaded_by_email]
+        if not uploaded_by_email:
+            if current_user_id:
+                uploaded_by_id = current_user_id
+            else:
+                continue
+        elif uploaded_by_email not in user_map:
+            # Fallback: Wenn Benutzer nicht gefunden wird, verwende current_user
+            if current_user_id:
+                uploaded_by_id = current_user_id
+            else:
+                continue
+        else:
+            uploaded_by_id = user_map[uploaded_by_email]
         folder_id = None
         if f_data.get('folder_name') and f_data['folder_name'] in folder_map:
             folder_id = folder_map[f_data['folder_name']]
         
-        # Prüfe ob Datei bereits existiert
-        existing = File.query.filter_by(name=f_data['name'], uploaded_by=uploaded_by_id).first()
+        # Prüfe ob Datei bereits existiert (nach Name, Ordner und Uploader)
+        existing = File.query.filter_by(
+            name=f_data.get('name'),
+            folder_id=folder_id,
+            uploaded_by=uploaded_by_id
+        ).first()
         
         if existing:
             # Aktualisiere bestehende Datei
@@ -1492,14 +1677,23 @@ def import_files(files_data: List[Dict], folder_map: Dict[str, int], user_map: D
             db.session.add(file)
 
 
-def import_file_versions(versions_data: List[Dict], user_map: Dict[str, int]):
+def import_file_versions(versions_data: List[Dict], user_map: Dict[str, int], current_user_id: Optional[int] = None):
     """Importiert Datei-Versionen."""
     for v_data in versions_data:
         uploaded_by_email = v_data.get('uploaded_by_email')
-        if not uploaded_by_email or uploaded_by_email not in user_map:
-            continue
-        
-        uploaded_by_id = user_map[uploaded_by_email]
+        if not uploaded_by_email:
+            if current_user_id:
+                uploaded_by_id = current_user_id
+            else:
+                continue
+        elif uploaded_by_email not in user_map:
+            # Fallback: Wenn Benutzer nicht gefunden wird, verwende current_user
+            if current_user_id:
+                uploaded_by_id = current_user_id
+            else:
+                continue
+        else:
+            uploaded_by_id = user_map[uploaded_by_email]
         
         # Finde Datei nach Name
         file = File.query.filter_by(name=v_data.get('file_name')).first()
@@ -1585,16 +1779,25 @@ def import_wiki_tags(tags_data: List[Dict]) -> Dict[str, int]:
     return tag_map
 
 
-def import_wiki_pages(pages_data: List[Dict], category_map: Dict[str, int], tag_map: Dict[str, int], user_map: Dict[str, int]) -> Dict[str, int]:
+def import_wiki_pages(pages_data: List[Dict], category_map: Dict[str, int], tag_map: Dict[str, int], user_map: Dict[str, int], current_user_id: Optional[int] = None) -> Dict[str, int]:
     """Importiert Wiki-Seiten und gibt ein Mapping von Slug zu neuer ID zurück."""
     page_map = {}  # slug -> neue_id
     
     for p_data in pages_data:
         created_by_email = p_data.get('created_by_email')
-        if not created_by_email or created_by_email not in user_map:
-            continue
-        
-        created_by_id = user_map[created_by_email]
+        if not created_by_email:
+            if current_user_id:
+                created_by_id = current_user_id
+            else:
+                continue
+        elif created_by_email not in user_map:
+            # Fallback: Wenn Benutzer nicht gefunden wird, verwende current_user
+            if current_user_id:
+                created_by_id = current_user_id
+            else:
+                continue
+        else:
+            created_by_id = user_map[created_by_email]
         category_id = None
         if p_data.get('category_name') and p_data['category_name'] in category_map:
             category_id = category_map[p_data['category_name']]
@@ -1661,7 +1864,7 @@ def import_wiki_pages(pages_data: List[Dict], category_map: Dict[str, int], tag_
     return page_map
 
 
-def import_wiki_page_versions(versions_data: List[Dict], page_map: Dict[str, int], user_map: Dict[str, int]):
+def import_wiki_page_versions(versions_data: List[Dict], page_map: Dict[str, int], user_map: Dict[str, int], current_user_id: Optional[int] = None):
     """Importiert Wiki-Seiten-Versionen."""
     for v_data in versions_data:
         page_slug = v_data.get('page_slug')
@@ -1669,11 +1872,21 @@ def import_wiki_page_versions(versions_data: List[Dict], page_map: Dict[str, int
             continue
         
         created_by_email = v_data.get('created_by_email')
-        if not created_by_email or created_by_email not in user_map:
-            continue
+        if not created_by_email:
+            if current_user_id:
+                created_by_id = current_user_id
+            else:
+                continue
+        elif created_by_email not in user_map:
+            # Fallback: Wenn Benutzer nicht gefunden wird, verwende current_user
+            if current_user_id:
+                created_by_id = current_user_id
+            else:
+                continue
+        else:
+            created_by_id = user_map[created_by_email]
         
         page_id = page_map[page_slug]
-        created_by_id = user_map[created_by_email]
         content = v_data.get('content') or v_data.get('file_content', '')
         
         # Prüfe ob Version bereits existiert
@@ -1713,17 +1926,26 @@ def import_wiki_page_versions(versions_data: List[Dict], page_map: Dict[str, int
         db.session.add(version)
 
 
-def import_comments(comments_data: List[Dict], user_map: Dict[str, int]) -> Dict[str, int]:
+def import_comments(comments_data: List[Dict], user_map: Dict[str, int], current_user_id: Optional[int] = None) -> Dict[str, int]:
     """Importiert Kommentare und gibt ein Mapping von content_ref zu neuer ID zurück."""
     comment_map = {}  # content_ref -> neue_id
     
     # Erste Runde: Importiere alle Kommentare ohne Parent-Referenzen
     for c_data in comments_data:
         author_email = c_data.get('author_email')
-        if not author_email or author_email not in user_map:
-            continue
-        
-        author_id = user_map[author_email]
+        if not author_email:
+            if current_user_id:
+                author_id = current_user_id
+            else:
+                continue
+        elif author_email not in user_map:
+            # Fallback: Wenn Benutzer nicht gefunden wird, verwende current_user
+            if current_user_id:
+                author_id = current_user_id
+            else:
+                continue
+        else:
+            author_id = user_map[author_email]
         
         # Finde Content-Objekt basierend auf Referenz
         content_id = None
@@ -1813,7 +2035,7 @@ def import_comments(comments_data: List[Dict], user_map: Dict[str, int]) -> Dict
     return comment_map
 
 
-def import_comment_mentions(mentions_data: List[Dict], comment_map: Dict[str, int], user_map: Dict[str, int]):
+def import_comment_mentions(mentions_data: List[Dict], comment_map: Dict[str, int], user_map: Dict[str, int], current_user_id: Optional[int] = None):
     """Importiert Kommentar-Mentions."""
     for m_data in mentions_data:
         comment_content_ref = m_data.get('comment_content_ref')
@@ -1821,11 +2043,19 @@ def import_comment_mentions(mentions_data: List[Dict], comment_map: Dict[str, in
             continue
         
         user_email = m_data.get('user_email')
-        if not user_email or user_email not in user_map:
+        if not user_email:
             continue
         
         comment_id = comment_map[comment_content_ref]
-        user_id = user_map[user_email]
+        
+        # Fallback: Wenn Benutzer nicht gefunden wird, verwende current_user
+        if user_email not in user_map:
+            if current_user_id:
+                user_id = current_user_id
+            else:
+                continue
+        else:
+            user_id = user_map[user_email]
         
         # Prüfe ob Mention bereits existiert
         existing = CommentMention.query.filter_by(
@@ -1849,16 +2079,25 @@ def import_comment_mentions(mentions_data: List[Dict], comment_map: Dict[str, in
         db.session.add(mention)
 
 
-def import_product_folders(folders_data: List[Dict], user_map: Dict[str, int]) -> Dict[str, int]:
+def import_product_folders(folders_data: List[Dict], user_map: Dict[str, int], current_user_id: Optional[int] = None) -> Dict[str, int]:
     """Importiert Produkt-Ordner und gibt ein Mapping von Name zu neuer ID zurück."""
     folder_map = {}  # name -> neue_id
     
     for f_data in folders_data:
         created_by_email = f_data.get('created_by_email')
-        if not created_by_email or created_by_email not in user_map:
-            continue
-        
-        created_by_id = user_map[created_by_email]
+        if not created_by_email:
+            if current_user_id:
+                created_by_id = current_user_id
+            else:
+                continue
+        elif created_by_email not in user_map:
+            # Fallback: Wenn Benutzer nicht gefunden wird, verwende current_user
+            if current_user_id:
+                created_by_id = current_user_id
+            else:
+                continue
+        else:
+            created_by_id = user_map[created_by_email]
         
         existing = ProductFolder.query.filter_by(name=f_data['name']).first()
         if existing:
@@ -1877,16 +2116,25 @@ def import_product_folders(folders_data: List[Dict], user_map: Dict[str, int]) -
     return folder_map
 
 
-def import_products(products_data: List[Dict], folder_map: Dict[str, int], user_map: Dict[str, int]) -> Dict[str, int]:
+def import_products(products_data: List[Dict], folder_map: Dict[str, int], user_map: Dict[str, int], current_user_id: Optional[int] = None) -> Dict[str, int]:
     """Importiert Produkte und gibt ein Mapping von Name zu neuer ID zurück."""
     product_map = {}  # name -> neue_id
     
     for p_data in products_data:
         created_by_email = p_data.get('created_by_email')
-        if not created_by_email or created_by_email not in user_map:
-            continue
-        
-        created_by_id = user_map[created_by_email]
+        if not created_by_email:
+            if current_user_id:
+                created_by_id = current_user_id
+            else:
+                continue
+        elif created_by_email not in user_map:
+            # Fallback: Wenn Benutzer nicht gefunden wird, verwende current_user
+            if current_user_id:
+                created_by_id = current_user_id
+            else:
+                continue
+        else:
+            created_by_id = user_map[created_by_email]
         folder_id = None
         if p_data.get('folder_name') and p_data['folder_name'] in folder_map:
             folder_id = folder_map[p_data['folder_name']]
@@ -1895,6 +2143,18 @@ def import_products(products_data: List[Dict], folder_map: Dict[str, int], user_
         if existing:
             product_map[p_data['name']] = existing.id
         else:
+            normalized_length = None
+            if 'length_meters' in p_data and p_data['length_meters'] not in (None, ''):
+                try:
+                    normalized_length = format_length_from_meters(float(p_data['length_meters']))
+                except (TypeError, ValueError):
+                    normalized_length = None
+            if normalized_length is None:
+                raw_length = p_data.get('length')
+                if raw_length not in (None, ''):
+                    normalized_length, _ = normalize_length_input(raw_length)
+                    if normalized_length is None:
+                        normalized_length = raw_length
             product = Product(
                 name=p_data['name'],
                 description=p_data.get('description'),
@@ -1902,14 +2162,50 @@ def import_products(products_data: List[Dict], folder_map: Dict[str, int], user_
                 serial_number=p_data.get('serial_number'),
                 condition=p_data.get('condition'),
                 location=p_data.get('location'),
-                length=p_data.get('length'),
+                length=normalized_length,
                 purchase_date=datetime.fromisoformat(p_data['purchase_date']).date() if p_data.get('purchase_date') else None,
                 status=p_data.get('status', 'available'),
-                image_path=p_data.get('image_path'),
                 qr_code_data=p_data.get('qr_code_data'),
                 folder_id=folder_id,
                 created_by=created_by_id
             )
+            
+            # Importiere Produktbild wenn vorhanden
+            if p_data.get('image_content_base64'):
+                try:
+                    import base64
+                    from werkzeug.utils import secure_filename
+                    
+                    file_content = base64.b64decode(p_data['image_content_base64'])
+                    original_name = p_data.get('image_original_name', p_data.get('image_path', 'product.png'))
+                    
+                    # Erstelle Dateiname mit Timestamp
+                    if '.' in original_name:
+                        ext = os.path.splitext(original_name)[1]
+                        base_name = os.path.splitext(original_name)[0]
+                    else:
+                        ext = '.png'
+                        base_name = 'product'
+                    
+                    timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+                    filename = f"{timestamp}_{secure_filename(base_name)}{ext}"
+                    
+                    # Speichere Datei
+                    project_root = os.path.dirname(current_app.root_path)
+                    upload_dir = os.path.join(project_root, current_app.config.get('UPLOAD_FOLDER', 'uploads'), 'inventory', 'product_images')
+                    os.makedirs(upload_dir, exist_ok=True)
+                    file_path = os.path.join(upload_dir, filename)
+                    
+                    with open(file_path, 'wb') as f:
+                        f.write(file_content)
+                    
+                    product.image_path = filename
+                except Exception as e:
+                    current_app.logger.error(f"Fehler beim Importieren des Produktbilds für {p_data['name']}: {str(e)}")
+                    product.image_path = p_data.get('image_path')
+            else:
+                product.image_path = p_data.get('image_path')
+            
             db.session.add(product)
             db.session.flush()
             product_map[p_data['name']] = product.id
@@ -1917,7 +2213,7 @@ def import_products(products_data: List[Dict], folder_map: Dict[str, int], user_
     return product_map
 
 
-def import_borrow_transactions(transactions_data: List[Dict], product_map: Dict[str, int], user_map: Dict[str, int]):
+def import_borrow_transactions(transactions_data: List[Dict], product_map: Dict[str, int], user_map: Dict[str, int], current_user_id: Optional[int] = None):
     """Importiert Ausleihtransaktionen."""
     for t_data in transactions_data:
         product_name = t_data.get('product_name')
@@ -1926,14 +2222,36 @@ def import_borrow_transactions(transactions_data: List[Dict], product_map: Dict[
         
         if not product_name or product_name not in product_map:
             continue
-        if not borrower_email or borrower_email not in user_map:
-            continue
-        if not borrowed_by_email or borrowed_by_email not in user_map:
-            continue
+        
+        # Fallback für borrower_email
+        if not borrower_email:
+            if current_user_id:
+                borrower_id = current_user_id
+            else:
+                continue
+        elif borrower_email not in user_map:
+            if current_user_id:
+                borrower_id = current_user_id
+            else:
+                continue
+        else:
+            borrower_id = user_map[borrower_email]
+        
+        # Fallback für borrowed_by_email
+        if not borrowed_by_email:
+            if current_user_id:
+                borrowed_by_id = current_user_id
+            else:
+                continue
+        elif borrowed_by_email not in user_map:
+            if current_user_id:
+                borrowed_by_id = current_user_id
+            else:
+                continue
+        else:
+            borrowed_by_id = user_map[borrowed_by_email]
         
         product_id = product_map[product_name]
-        borrower_id = user_map[borrower_email]
-        borrowed_by_id = user_map[borrowed_by_email]
         
         existing = BorrowTransaction.query.filter_by(transaction_number=t_data['transaction_number']).first()
         if existing:
@@ -1955,16 +2273,25 @@ def import_borrow_transactions(transactions_data: List[Dict], product_map: Dict[
         db.session.add(transaction)
 
 
-def import_product_sets(sets_data: List[Dict], user_map: Dict[str, int]) -> Dict[str, int]:
+def import_product_sets(sets_data: List[Dict], user_map: Dict[str, int], current_user_id: Optional[int] = None) -> Dict[str, int]:
     """Importiert Produktsets und gibt ein Mapping von Name zu neuer ID zurück."""
     set_map = {}  # name -> neue_id
     
     for s_data in sets_data:
         created_by_email = s_data.get('created_by_email')
-        if not created_by_email or created_by_email not in user_map:
-            continue
-        
-        created_by_id = user_map[created_by_email]
+        if not created_by_email:
+            if current_user_id:
+                created_by_id = current_user_id
+            else:
+                continue
+        elif created_by_email not in user_map:
+            # Fallback: Wenn Benutzer nicht gefunden wird, verwende current_user
+            if current_user_id:
+                created_by_id = current_user_id
+            else:
+                continue
+        else:
+            created_by_id = user_map[created_by_email]
         
         existing = ProductSet.query.filter_by(name=s_data['name']).first()
         if existing:
@@ -2008,7 +2335,7 @@ def import_product_set_items(items_data: List[Dict], set_map: Dict[str, int], pr
         db.session.add(item)
 
 
-def import_product_documents(documents_data: List[Dict], product_map: Dict[str, int], user_map: Dict[str, int]):
+def import_product_documents(documents_data: List[Dict], product_map: Dict[str, int], user_map: Dict[str, int], current_user_id: Optional[int] = None):
     """Importiert Produktdokumente."""
     for d_data in documents_data:
         product_name = d_data.get('product_name')
@@ -2016,11 +2343,21 @@ def import_product_documents(documents_data: List[Dict], product_map: Dict[str, 
         
         if not product_name or product_name not in product_map:
             continue
-        if not uploaded_by_email or uploaded_by_email not in user_map:
-            continue
+        if not uploaded_by_email:
+            if current_user_id:
+                uploaded_by_id = current_user_id
+            else:
+                continue
+        elif uploaded_by_email not in user_map:
+            # Fallback: Wenn Benutzer nicht gefunden wird, verwende current_user
+            if current_user_id:
+                uploaded_by_id = current_user_id
+            else:
+                continue
+        else:
+            uploaded_by_id = user_map[uploaded_by_email]
         
         product_id = product_map[product_name]
-        uploaded_by_id = user_map[uploaded_by_email]
         
         document = ProductDocument(
             product_id=product_id,
@@ -2055,14 +2392,21 @@ def import_product_documents(documents_data: List[Dict], product_map: Dict[str, 
         db.session.add(document)
 
 
-def import_saved_filters(filters_data: List[Dict], user_map: Dict[str, int]):
+def import_saved_filters(filters_data: List[Dict], user_map: Dict[str, int], current_user_id: Optional[int] = None):
     """Importiert gespeicherte Filter."""
     for f_data in filters_data:
         user_email = f_data.get('user_email')
-        if not user_email or user_email not in user_map:
+        if not user_email:
             continue
         
-        user_id = user_map[user_email]
+        # Fallback: Wenn Benutzer nicht gefunden wird, verwende current_user
+        if user_email not in user_map:
+            if current_user_id:
+                user_id = current_user_id
+            else:
+                continue
+        else:
+            user_id = user_map[user_email]
         
         existing = SavedFilter.query.filter_by(user_id=user_id, name=f_data['name']).first()
         if existing:
@@ -2076,18 +2420,26 @@ def import_saved_filters(filters_data: List[Dict], user_map: Dict[str, int]):
         db.session.add(filter_obj)
 
 
-def import_product_favorites(favorites_data: List[Dict], product_map: Dict[str, int], user_map: Dict[str, int]):
+def import_product_favorites(favorites_data: List[Dict], product_map: Dict[str, int], user_map: Dict[str, int], current_user_id: Optional[int] = None):
     """Importiert Produktfavoriten."""
     for f_data in favorites_data:
         user_email = f_data.get('user_email')
         product_name = f_data.get('product_name')
         
-        if not user_email or user_email not in user_map:
-            continue
         if not product_name or product_name not in product_map:
             continue
+        if not user_email:
+            continue
         
-        user_id = user_map[user_email]
+        # Fallback: Wenn Benutzer nicht gefunden wird, verwende current_user
+        if user_email not in user_map:
+            if current_user_id:
+                user_id = current_user_id
+            else:
+                continue
+        else:
+            user_id = user_map[user_email]
+        
         product_id = product_map[product_name]
         
         existing = ProductFavorite.query.filter_by(user_id=user_id, product_id=product_id).first()
@@ -2101,16 +2453,25 @@ def import_product_favorites(favorites_data: List[Dict], product_map: Dict[str, 
         db.session.add(favorite)
 
 
-def import_inventories(inventories_data: List[Dict], user_map: Dict[str, int]) -> Dict[str, int]:
+def import_inventories(inventories_data: List[Dict], user_map: Dict[str, int], current_user_id: Optional[int] = None) -> Dict[str, int]:
     """Importiert Inventuren und gibt ein Mapping von Name zu neuer ID zurück."""
     inventory_map = {}  # name -> neue_id
     
     for i_data in inventories_data:
         started_by_email = i_data.get('started_by_email')
-        if not started_by_email or started_by_email not in user_map:
-            continue
-        
-        started_by_id = user_map[started_by_email]
+        if not started_by_email:
+            if current_user_id:
+                started_by_id = current_user_id
+            else:
+                continue
+        elif started_by_email not in user_map:
+            # Fallback: Wenn Benutzer nicht gefunden wird, verwende current_user
+            if current_user_id:
+                started_by_id = current_user_id
+            else:
+                continue
+        else:
+            started_by_id = user_map[started_by_email]
         
         existing = Inventory.query.filter_by(name=i_data['name']).first()
         if existing:
@@ -2133,7 +2494,7 @@ def import_inventories(inventories_data: List[Dict], user_map: Dict[str, int]) -
     return inventory_map
 
 
-def import_inventory_items(items_data: List[Dict], inventory_map: Dict[str, int], product_map: Dict[str, int], user_map: Dict[str, int]):
+def import_inventory_items(items_data: List[Dict], inventory_map: Dict[str, int], product_map: Dict[str, int], user_map: Dict[str, int], current_user_id: Optional[int] = None):
     """Importiert Inventur-Items."""
     for i_data in items_data:
         inventory_name = i_data.get('inventory_name')
@@ -2152,8 +2513,13 @@ def import_inventory_items(items_data: List[Dict], inventory_map: Dict[str, int]
             continue
         
         checked_by_id = None
-        if i_data.get('checked_by_email') and i_data['checked_by_email'] in user_map:
-            checked_by_id = user_map[i_data['checked_by_email']]
+        checked_by_email = i_data.get('checked_by_email')
+        if checked_by_email:
+            if checked_by_email in user_map:
+                checked_by_id = user_map[checked_by_email]
+            elif current_user_id:
+                # Fallback: Wenn Benutzer nicht gefunden wird, verwende current_user
+                checked_by_id = current_user_id
         
         item = InventoryItem(
             inventory_id=inventory_id,

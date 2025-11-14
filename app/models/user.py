@@ -20,6 +20,7 @@ class User(UserMixin, db.Model):
     # User status and role
     is_active = db.Column(db.Boolean, default=False, nullable=False)
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
+    is_super_admin = db.Column(db.Boolean, default=False, nullable=False)  # Hauptadministrator - kann Admin-Rechte nicht entzogen bekommen
     
     # Email confirmation
     confirmation_code = db.Column(db.String(6), nullable=True)
@@ -38,6 +39,7 @@ class User(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     last_login = db.Column(db.DateTime, nullable=True)
+    last_seen = db.Column(db.DateTime, nullable=True)  # Last activity timestamp for online status
     
     # Localization
     language = db.Column(db.String(10), default='de', nullable=False)
@@ -131,6 +133,20 @@ class User(UserMixin, db.Model):
     def set_dashboard_config(self, config):
         """Setzt die Dashboard-Konfiguration."""
         self.dashboard_config = json.dumps(config)
+        db.session.commit()
+    
+    def is_online(self, threshold_minutes=5):
+        """Prüft ob der Benutzer online ist (aktiv in den letzten X Minuten)."""
+        if not self.last_seen:
+            return False
+        
+        from datetime import timedelta
+        threshold = datetime.utcnow() - timedelta(minutes=threshold_minutes)
+        return self.last_seen >= threshold
+    
+    def update_last_seen(self):
+        """Aktualisiert den last_seen Timestamp."""
+        self.last_seen = datetime.utcnow()
         db.session.commit()
     
     def __repr__(self):

@@ -139,6 +139,29 @@ def get_messages(chat_id):
     } for msg in messages])
 
 
+@api_bp.route('/users/<int:user_id>/status', methods=['GET'])
+@login_required
+def get_user_status(user_id):
+    """Get online status of a user."""
+    user = User.query.get_or_404(user_id)
+    return jsonify({
+        'id': user.id,
+        'is_online': user.is_online(),
+        'last_seen': user.last_seen.isoformat() if user.last_seen else None
+    })
+
+
+@api_bp.route('/users/update-last-seen', methods=['POST'])
+@login_required
+def update_last_seen():
+    """Update current user's last_seen timestamp."""
+    try:
+        current_user.update_last_seen()
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @api_bp.route('/chats/<int:chat_id>/members', methods=['GET'])
 @login_required
 def get_chat_members(chat_id):
@@ -166,7 +189,8 @@ def get_chat_members(chat_id):
         'phone': member.phone,
         'profile_picture': url_for('settings.profile_picture', filename=member.profile_picture) if member.profile_picture else None,
         'is_admin': member.is_admin,
-        'is_creator': member.id == chat.created_by
+        'is_creator': member.id == chat.created_by,
+        'is_online': member.is_online()
     } for member in members])
 
 
