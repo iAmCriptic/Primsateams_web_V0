@@ -213,6 +213,7 @@ def create_booking_tables():
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         form_id INTEGER NOT NULL,
                         event_name VARCHAR(200) NOT NULL,
+                        applicant_name VARCHAR(200),
                         email VARCHAR(120) NOT NULL,
                         token VARCHAR(64) UNIQUE,
                         status VARCHAR(20) NOT NULL DEFAULT 'pending',
@@ -243,6 +244,7 @@ def create_booking_tables():
                         id INT AUTO_INCREMENT PRIMARY KEY,
                         form_id INT NOT NULL,
                         event_name VARCHAR(200) NOT NULL,
+                        applicant_name VARCHAR(200),
                         email VARCHAR(120) NOT NULL,
                         token VARCHAR(64) UNIQUE,
                         status VARCHAR(20) NOT NULL DEFAULT 'pending',
@@ -272,6 +274,7 @@ def create_booking_tables():
                         id SERIAL PRIMARY KEY,
                         form_id INTEGER NOT NULL,
                         event_name VARCHAR(200) NOT NULL,
+                        applicant_name VARCHAR(200),
                         email VARCHAR(120) NOT NULL,
                         token VARCHAR(64) UNIQUE,
                         status VARCHAR(20) NOT NULL DEFAULT 'pending',
@@ -413,6 +416,221 @@ def create_booking_tables():
                 print("  ✓ Spalte booking_request_id in calendar_events existiert bereits")
         else:
             print("  ⚠ Tabelle calendar_events existiert nicht - booking_request_id wird beim nächsten Start hinzugefügt")
+    
+    # Erstelle Tabellen für Rollen-System
+    print("\nErstelle Tabellen für Rollen-System...")
+    
+    # booking_form_roles
+    if not table_exists('booking_form_roles'):
+        print("  - Erstelle Tabelle booking_form_roles...")
+        if is_sqlite:
+            db.session.execute(text("""
+                CREATE TABLE booking_form_roles (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    form_id INTEGER NOT NULL,
+                    role_name VARCHAR(200) NOT NULL,
+                    role_order INTEGER NOT NULL DEFAULT 0,
+                    is_required BOOLEAN NOT NULL DEFAULT 1,
+                    created_at DATETIME NOT NULL,
+                    updated_at DATETIME NOT NULL,
+                    FOREIGN KEY (form_id) REFERENCES booking_forms(id) ON DELETE CASCADE
+                )
+            """))
+        elif is_mysql:
+            db.session.execute(text("""
+                CREATE TABLE booking_form_roles (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    form_id INT NOT NULL,
+                    role_name VARCHAR(200) NOT NULL,
+                    role_order INT NOT NULL DEFAULT 0,
+                    is_required BOOLEAN NOT NULL DEFAULT TRUE,
+                    created_at DATETIME NOT NULL,
+                    updated_at DATETIME NOT NULL,
+                    FOREIGN KEY (form_id) REFERENCES booking_forms(id) ON DELETE CASCADE
+                )
+            """))
+        else:  # PostgreSQL
+            db.session.execute(text("""
+                CREATE TABLE booking_form_roles (
+                    id SERIAL PRIMARY KEY,
+                    form_id INTEGER NOT NULL,
+                    role_name VARCHAR(200) NOT NULL,
+                    role_order INTEGER NOT NULL DEFAULT 0,
+                    is_required BOOLEAN NOT NULL DEFAULT TRUE,
+                    created_at TIMESTAMP NOT NULL,
+                    updated_at TIMESTAMP NOT NULL,
+                    FOREIGN KEY (form_id) REFERENCES booking_forms(id) ON DELETE CASCADE
+                )
+            """))
+        db.session.commit()
+        print("    ✓ Tabelle booking_form_roles erstellt")
+    else:
+        print("  - Tabelle booking_form_roles existiert bereits")
+    
+    # booking_form_role_users
+    if not table_exists('booking_form_role_users'):
+        print("  - Erstelle Tabelle booking_form_role_users...")
+        if is_sqlite:
+            db.session.execute(text("""
+                CREATE TABLE booking_form_role_users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    role_id INTEGER NOT NULL,
+                    user_id INTEGER NOT NULL,
+                    created_at DATETIME NOT NULL,
+                    FOREIGN KEY (role_id) REFERENCES booking_form_roles(id) ON DELETE CASCADE,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                    UNIQUE(role_id, user_id)
+                )
+            """))
+        elif is_mysql:
+            db.session.execute(text("""
+                CREATE TABLE booking_form_role_users (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    role_id INT NOT NULL,
+                    user_id INT NOT NULL,
+                    created_at DATETIME NOT NULL,
+                    FOREIGN KEY (role_id) REFERENCES booking_form_roles(id) ON DELETE CASCADE,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                    UNIQUE KEY unique_role_user (role_id, user_id)
+                )
+            """))
+        else:  # PostgreSQL
+            db.session.execute(text("""
+                CREATE TABLE booking_form_role_users (
+                    id SERIAL PRIMARY KEY,
+                    role_id INTEGER NOT NULL,
+                    user_id INTEGER NOT NULL,
+                    created_at TIMESTAMP NOT NULL,
+                    FOREIGN KEY (role_id) REFERENCES booking_form_roles(id) ON DELETE CASCADE,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                    UNIQUE(role_id, user_id)
+                )
+            """))
+        db.session.commit()
+        print("    ✓ Tabelle booking_form_role_users erstellt")
+    else:
+        print("  - Tabelle booking_form_role_users existiert bereits")
+    
+    # booking_request_approvals
+    if not table_exists('booking_request_approvals'):
+        print("  - Erstelle Tabelle booking_request_approvals...")
+        if is_sqlite:
+            db.session.execute(text("""
+                CREATE TABLE booking_request_approvals (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    request_id INTEGER NOT NULL,
+                    role_id INTEGER NOT NULL,
+                    user_id INTEGER,
+                    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+                    comment TEXT,
+                    approved_at DATETIME,
+                    rejected_at DATETIME,
+                    created_at DATETIME NOT NULL,
+                    updated_at DATETIME NOT NULL,
+                    FOREIGN KEY (request_id) REFERENCES booking_requests(id) ON DELETE CASCADE,
+                    FOREIGN KEY (role_id) REFERENCES booking_form_roles(id) ON DELETE CASCADE,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+                    UNIQUE(request_id, role_id)
+                )
+            """))
+        elif is_mysql:
+            db.session.execute(text("""
+                CREATE TABLE booking_request_approvals (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    request_id INT NOT NULL,
+                    role_id INT NOT NULL,
+                    user_id INT,
+                    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+                    comment TEXT,
+                    approved_at DATETIME,
+                    rejected_at DATETIME,
+                    created_at DATETIME NOT NULL,
+                    updated_at DATETIME NOT NULL,
+                    FOREIGN KEY (request_id) REFERENCES booking_requests(id) ON DELETE CASCADE,
+                    FOREIGN KEY (role_id) REFERENCES booking_form_roles(id) ON DELETE CASCADE,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+                    UNIQUE KEY unique_request_role_approval (request_id, role_id)
+                )
+            """))
+        else:  # PostgreSQL
+            db.session.execute(text("""
+                CREATE TABLE booking_request_approvals (
+                    id SERIAL PRIMARY KEY,
+                    request_id INTEGER NOT NULL,
+                    role_id INTEGER NOT NULL,
+                    user_id INTEGER,
+                    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+                    comment TEXT,
+                    approved_at TIMESTAMP,
+                    rejected_at TIMESTAMP,
+                    created_at TIMESTAMP NOT NULL,
+                    updated_at TIMESTAMP NOT NULL,
+                    FOREIGN KEY (request_id) REFERENCES booking_requests(id) ON DELETE CASCADE,
+                    FOREIGN KEY (role_id) REFERENCES booking_form_roles(id) ON DELETE CASCADE,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+                    UNIQUE(request_id, role_id)
+                )
+            """))
+        db.session.commit()
+        print("    ✓ Tabelle booking_request_approvals erstellt")
+    else:
+        print("  - Tabelle booking_request_approvals existiert bereits")
+    
+    # Füge secondary_logo_path zu booking_forms hinzu
+    if not column_exists('booking_forms', 'secondary_logo_path'):
+        print("  - Füge Spalte secondary_logo_path zu booking_forms hinzu...")
+        if is_sqlite:
+            db.session.execute(text("ALTER TABLE booking_forms ADD COLUMN secondary_logo_path VARCHAR(500)"))
+        elif is_mysql:
+            db.session.execute(text("ALTER TABLE booking_forms ADD COLUMN secondary_logo_path VARCHAR(500)"))
+        else:  # PostgreSQL
+            db.session.execute(text("ALTER TABLE booking_forms ADD COLUMN secondary_logo_path VARCHAR(500)"))
+        db.session.commit()
+        print("    ✓ Spalte secondary_logo_path hinzugefügt")
+    else:
+        print("  - Spalte secondary_logo_path existiert bereits")
+    
+    # Füge PDF-Texte zu booking_forms hinzu
+    if not column_exists('booking_forms', 'pdf_application_text'):
+        print("  - Füge Spalte pdf_application_text zu booking_forms hinzu...")
+        if is_sqlite:
+            db.session.execute(text("ALTER TABLE booking_forms ADD COLUMN pdf_application_text TEXT"))
+        elif is_mysql:
+            db.session.execute(text("ALTER TABLE booking_forms ADD COLUMN pdf_application_text TEXT"))
+        else:  # PostgreSQL
+            db.session.execute(text("ALTER TABLE booking_forms ADD COLUMN pdf_application_text TEXT"))
+        db.session.commit()
+        print("    ✓ Spalte pdf_application_text hinzugefügt")
+    else:
+        print("  - Spalte pdf_application_text existiert bereits")
+    
+    if not column_exists('booking_forms', 'pdf_footer_text'):
+        print("  - Füge Spalte pdf_footer_text zu booking_forms hinzu...")
+        if is_sqlite:
+            db.session.execute(text("ALTER TABLE booking_forms ADD COLUMN pdf_footer_text TEXT"))
+        elif is_mysql:
+            db.session.execute(text("ALTER TABLE booking_forms ADD COLUMN pdf_footer_text TEXT"))
+        else:  # PostgreSQL
+            db.session.execute(text("ALTER TABLE booking_forms ADD COLUMN pdf_footer_text TEXT"))
+        db.session.commit()
+        print("    ✓ Spalte pdf_footer_text hinzugefügt")
+    else:
+        print("  - Spalte pdf_footer_text existiert bereits")
+    
+    # Füge applicant_name zu booking_requests hinzu (falls Tabelle existiert)
+    if table_exists('booking_requests'):
+        if not column_exists('booking_requests', 'applicant_name'):
+            print("  - Füge Spalte applicant_name zu booking_requests hinzu...")
+            if is_sqlite:
+                db.session.execute(text("ALTER TABLE booking_requests ADD COLUMN applicant_name VARCHAR(200)"))
+            elif is_mysql:
+                db.session.execute(text("ALTER TABLE booking_requests ADD COLUMN applicant_name VARCHAR(200)"))
+            else:  # PostgreSQL
+                db.session.execute(text("ALTER TABLE booking_requests ADD COLUMN applicant_name VARCHAR(200)"))
+            db.session.commit()
+            print("    ✓ Spalte applicant_name hinzugefügt")
+        else:
+            print("  - Spalte applicant_name existiert bereits")
     
     print()
     print("=" * 60)

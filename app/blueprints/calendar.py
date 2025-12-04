@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from app import db
 from app.models.calendar import CalendarEvent, EventParticipant, PublicCalendarFeed
 from app.models.user import User
+from app.models.booking import BookingRequest
 from app.utils.access_control import check_module_access
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
@@ -334,11 +335,20 @@ def delete_event(event_id):
     
     event = CalendarEvent.query.get_or_404(event_id)
     
+    # Entferne die Verknüpfung zu BookingRequests, bevor das Event gelöscht wird
+    booking_requests = BookingRequest.query.filter_by(calendar_event_id=event.id).all()
+    for booking_request in booking_requests:
+        booking_request.calendar_event_id = None
+    
     # Wenn es ein Master-Event ist, lösche alle Instanzen
     if event.is_master_event:
         # Lösche alle Instanzen (falls welche gespeichert wurden)
         instances = CalendarEvent.query.filter_by(parent_event_id=event.id).all()
         for instance in instances:
+            # Auch für Instanzen die BookingRequest-Verknüpfungen entfernen
+            instance_booking_requests = BookingRequest.query.filter_by(calendar_event_id=instance.id).all()
+            for booking_request in instance_booking_requests:
+                booking_request.calendar_event_id = None
             db.session.delete(instance)
     
     db.session.delete(event)

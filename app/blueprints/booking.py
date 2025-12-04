@@ -3,7 +3,8 @@ from flask_login import login_required, current_user
 from app import db
 from app.models.booking import (
     BookingForm, BookingFormField, BookingFormImage,
-    BookingRequest, BookingRequestField, BookingRequestFile
+    BookingRequest, BookingRequestField, BookingRequestFile,
+    BookingFormRole, BookingFormRoleUser, BookingRequestApproval
 )
 from app.models.calendar import CalendarEvent, EventParticipant
 from app.models.file import Folder
@@ -65,8 +66,13 @@ def public_form(form_id):
     
     if request.method == 'POST':
         # Validiere Pflichtfelder
+        applicant_name = request.form.get('applicant_name', '').strip()
         event_name = request.form.get('event_name', '').strip()
         email = request.form.get('email', '').strip()
+        
+        if not applicant_name:
+            flash('Bitte geben Sie Ihren Namen ein.', 'danger')
+            return render_template('booking/public_form.html', form=form)
         
         if not event_name:
             flash('Bitte geben Sie einen Namen für die Veranstaltung ein.', 'danger')
@@ -120,6 +126,7 @@ def public_form(form_id):
         booking_request = BookingRequest(
             form_id=form.id,
             event_name=event_name,
+            applicant_name=applicant_name,
             email=email,
             token=token,
             status='pending',
@@ -129,6 +136,15 @@ def public_form(form_id):
         )
         db.session.add(booking_request)
         db.session.flush()
+        
+        # Erstelle Zustimmungs-Einträge für alle Rollen
+        for role in form.roles:
+            approval = BookingRequestApproval(
+                request_id=booking_request.id,
+                role_id=role.id,
+                status='pending'
+            )
+            db.session.add(approval)
         
         # Speichere zusätzliche Feldwerte
         for field in form.fields:
@@ -196,7 +212,13 @@ def public_form(form_id):
     # GET: Zeige Formular
     # Sortiere Felder nach field_order
     fields = sorted(form.fields, key=lambda f: f.field_order)
-    return render_template('booking/public_form.html', form=form, fields=fields)
+    
+    # Lade Portalslogo
+    from app.models.settings import SystemSettings
+    portal_logo_setting = SystemSettings.query.filter_by(key='portal_logo').first()
+    portal_logo_filename = portal_logo_setting.value if portal_logo_setting and portal_logo_setting.value else None
+    
+    return render_template('booking/public_form.html', form=form, fields=fields, portal_logo_filename=portal_logo_filename)
 
 
 @booking_bp.route('/view/<token>')
@@ -210,11 +232,17 @@ def public_view(token):
     for field_value in booking_request.field_values:
         field_values[field_value.field_id] = field_value
     
+    # Lade Portalslogo
+    from app.models.settings import SystemSettings
+    portal_logo_setting = SystemSettings.query.filter_by(key='portal_logo').first()
+    portal_logo_filename = portal_logo_setting.value if portal_logo_setting and portal_logo_setting.value else None
+    
     return render_template('booking/public_view.html', 
                          request=booking_request, 
                          form=form,
                          field_values=field_values,
-                         token=token)
+                         token=token,
+                         portal_logo_filename=portal_logo_filename)
 
 
 @booking_bp.route('/mailbox/<token>', methods=['GET', 'POST'])
@@ -355,10 +383,30 @@ def request_detail(request_id):
     for field_value in booking_request.field_values:
         field_values[field_value.field_id] = field_value
     
+    # Lade Zustimmungen
+    approvals = {}
+    user_role_assignments = {}  # Welche Rollen hat der aktuelle Benutzer?
+    
+    for role in form.roles:
+        approval = BookingRequestApproval.query.filter_by(
+            request_id=booking_request.id,
+            role_id=role.id
+        ).first()
+        approvals[role.id] = approval
+        
+        # Prüfe ob aktueller Benutzer dieser Rolle zugewiesen ist
+        role_user = BookingFormRoleUser.query.filter_by(
+            role_id=role.id,
+            user_id=current_user.id
+        ).first()
+        user_role_assignments[role.id] = role_user is not None
+    
     return render_template('booking/request_detail.html', 
                          request=booking_request, 
                          form=form,
-                         field_values=field_values)
+                         field_values=field_values,
+                         approvals=approvals,
+                         user_role_assignments=user_role_assignments)
 
 
 @booking_bp.route('/request/<int:request_id>/accept', methods=['POST'])
@@ -535,4 +583,123 @@ def request_send_email(request_id):
         flash('Fehler beim Senden der E-Mail.', 'danger')
     
     return redirect(url_for('booking.request_detail', request_id=request_id))
+
+
+@booking_bp.route('/request/<int:request_id>/approve/<int:role_id>', methods=['POST'])
+@login_required
+@check_module_access('module_booking')
+def request_approve(request_id, role_id):
+    """Zustimmung für eine Rolle geben."""
+    booking_request = BookingRequest.query.get_or_404(request_id)
+    role = BookingFormRole.query.get_or_404(role_id)
+    
+    # Prüfe ob Benutzer dieser Rolle zugewiesen ist
+    role_user = BookingFormRoleUser.query.filter_by(role_id=role_id, user_id=current_user.id).first()
+    if not role_user:
+        flash('Sie sind dieser Rolle nicht zugewiesen.', 'danger')
+        return redirect(url_for('booking.request_detail', request_id=request_id))
+    
+    # Finde oder erstelle Approval
+    approval = BookingRequestApproval.query.filter_by(request_id=request_id, role_id=role_id).first()
+    if not approval:
+        approval = BookingRequestApproval(
+            request_id=request_id,
+            role_id=role_id,
+            status='pending'
+        )
+        db.session.add(approval)
+    
+    # Setze Zustimmung
+    approval.status = 'approved'
+    approval.user_id = current_user.id
+    approval.approved_at = datetime.utcnow()
+    approval.comment = request.form.get('comment', '').strip() or None
+    
+    db.session.commit()
+    
+    # Prüfe ob alle erforderlichen Rollen zugestimmt haben
+    all_required_approved = True
+    for r in booking_request.form.roles:
+        if r.is_required:
+            appr = BookingRequestApproval.query.filter_by(request_id=request_id, role_id=r.id).first()
+            if not appr or appr.status != 'approved':
+                all_required_approved = False
+                break
+    
+    # Prüfe ob jemand abgelehnt hat
+    any_rejected = BookingRequestApproval.query.filter_by(request_id=request_id, status='rejected').first() is not None
+    
+    # Aktualisiere Status der Buchung
+    if any_rejected:
+        booking_request.status = 'rejected'
+    elif all_required_approved:
+        booking_request.status = 'accepted'
+    
+    db.session.commit()
+    
+    flash(f'Zustimmung für {role.role_name} wurde gespeichert.', 'success')
+    return redirect(url_for('booking.request_detail', request_id=request_id))
+
+
+@booking_bp.route('/request/<int:request_id>/reject-role/<int:role_id>', methods=['POST'])
+@login_required
+@check_module_access('module_booking')
+def request_reject_role(request_id, role_id):
+    """Ablehnung für eine Rolle geben."""
+    booking_request = BookingRequest.query.get_or_404(request_id)
+    role = BookingFormRole.query.get_or_404(role_id)
+    
+    # Prüfe ob Benutzer dieser Rolle zugewiesen ist
+    role_user = BookingFormRoleUser.query.filter_by(role_id=role_id, user_id=current_user.id).first()
+    if not role_user:
+        flash('Sie sind dieser Rolle nicht zugewiesen.', 'danger')
+        return redirect(url_for('booking.request_detail', request_id=request_id))
+    
+    # Finde oder erstelle Approval
+    approval = BookingRequestApproval.query.filter_by(request_id=request_id, role_id=role_id).first()
+    if not approval:
+        approval = BookingRequestApproval(
+            request_id=request_id,
+            role_id=role_id,
+            status='pending'
+        )
+        db.session.add(approval)
+    
+    # Setze Ablehnung
+    approval.status = 'rejected'
+    approval.user_id = current_user.id
+    approval.rejected_at = datetime.utcnow()
+    approval.comment = request.form.get('rejection_reason', '').strip() or None
+    
+    # Wenn eine Rolle ablehnt, ist die gesamte Buchung abgelehnt
+    booking_request.status = 'rejected'
+    
+    db.session.commit()
+    
+    flash(f'Ablehnung für {role.role_name} wurde gespeichert.', 'warning')
+    return redirect(url_for('booking.request_detail', request_id=request_id))
+
+
+@booking_bp.route('/request/<int:request_id>/pdf')
+@login_required
+@check_module_access('module_booking')
+def request_pdf(request_id):
+    """PDF für Buchungsanfrage generieren und herunterladen."""
+    booking_request = BookingRequest.query.get_or_404(request_id)
+    
+    from app.utils.booking_pdf_generator import generate_booking_request_pdf
+    from flask import send_file
+    from io import BytesIO
+    
+    # Generiere PDF
+    pdf_buffer = generate_booking_request_pdf(booking_request)
+    
+    # Sende PDF als Download
+    filename = f"Buchung_{booking_request.event_name}_{booking_request.id}.pdf"
+    return send_file(
+        pdf_buffer,
+        mimetype='application/pdf',
+        as_attachment=True,
+        download_name=filename
+    )
 

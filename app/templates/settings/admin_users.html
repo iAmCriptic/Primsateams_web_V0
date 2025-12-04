@@ -161,6 +161,17 @@
                             <!-- Wird dynamisch geladen -->
                         </div>
                     </div>
+                    
+                    <hr class="my-4">
+                    
+                    <div id="bookingRolesSection">
+                        <h6 class="mb-3">Buchungsrollen</h6>
+                        <p class="text-muted mb-3">Weisen Sie diesem Benutzer Buchungsrollen zu, damit er Buchungsanfragen zustimmen oder ablehnen kann:</p>
+                        
+                        <div id="bookingRolesCheckboxes">
+                            <!-- Wird dynamisch geladen -->
+                        </div>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -237,12 +248,83 @@ function loadUserRoles(userId) {
                 container.appendChild(col);
             });
             
+            // Lade Buchungsrollen
+            loadBookingRoles(data.booking_roles || []);
+            
             toggleModuleRoles();
         })
         .catch(error => {
             console.error('Fehler beim Laden der Rollen:', error);
             alert('Fehler beim Laden der Rollen. Bitte Seite neu laden.');
         });
+}
+
+function loadBookingRoles(bookingRoles) {
+    const container = document.getElementById('bookingRolesCheckboxes');
+    container.innerHTML = '';
+    
+    if (!bookingRoles || bookingRoles.length === 0) {
+        container.innerHTML = '<p class="text-muted">Keine Buchungsrollen verfügbar. Erstellen Sie zuerst Rollen in den Buchungsformularen.</p>';
+        return;
+    }
+    
+    // Gruppiere nach Formular
+    const formsMap = {};
+    bookingRoles.forEach(role => {
+        if (!formsMap[role.form_id]) {
+            formsMap[role.form_id] = {
+                form_title: role.form_title,
+                form_is_active: role.form_is_active !== undefined ? role.form_is_active : true,
+                roles: []
+            };
+        }
+        formsMap[role.form_id].roles.push(role);
+    });
+    
+    // Erstelle UI für jedes Formular
+    Object.keys(formsMap).forEach(formId => {
+        const formData = formsMap[formId];
+        
+        const formCard = document.createElement('div');
+        formCard.className = 'card mb-3';
+        
+        const cardHeader = document.createElement('div');
+        cardHeader.className = formData.form_is_active ? 'card-header bg-light' : 'card-header bg-secondary text-white';
+        let headerText = `<strong>${formData.form_title}</strong>`;
+        if (!formData.form_is_active) {
+            headerText += ' <span class="badge bg-warning ms-2">Inaktiv</span>';
+        }
+        cardHeader.innerHTML = headerText;
+        formCard.appendChild(cardHeader);
+        
+        const cardBody = document.createElement('div');
+        cardBody.className = 'card-body';
+        
+        formData.roles.forEach(role => {
+            const formCheck = document.createElement('div');
+            formCheck.className = 'form-check form-switch mb-2';
+            
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.className = 'form-check-input booking-role-checkbox';
+            checkbox.id = `booking_role_${role.role_id}`;
+            checkbox.name = 'booking_role';
+            checkbox.value = role.role_id;
+            checkbox.checked = role.is_assigned || false;
+            
+            const label = document.createElement('label');
+            label.className = 'form-check-label';
+            label.htmlFor = `booking_role_${role.role_id}`;
+            label.innerHTML = `${role.role_name} ${role.is_required ? '<span class="badge bg-danger ms-2">Erforderlich</span>' : '<span class="badge bg-secondary ms-2">Optional</span>'}`;
+            
+            formCheck.appendChild(checkbox);
+            formCheck.appendChild(label);
+            cardBody.appendChild(formCheck);
+        });
+        
+        formCard.appendChild(cardBody);
+        container.appendChild(formCard);
+    });
 }
 
 function toggleModuleRoles() {
@@ -275,6 +357,12 @@ function saveRoles() {
         if (checkbox && checkbox.checked) {
             formData.append(module.key, 'on');
         }
+    });
+    
+    // Sammle Buchungsrollen-Checkboxen
+    const bookingRoleCheckboxes = document.querySelectorAll('.booking-role-checkbox:checked');
+    bookingRoleCheckboxes.forEach(checkbox => {
+        formData.append('booking_role', checkbox.value);
     });
     
     fetch(`/settings/admin/roles/user/${userId}/update`, {

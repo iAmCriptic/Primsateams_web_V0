@@ -23,3 +23,8 @@ class UserModuleRole(db.Model):
     def __repr__(self):
         return f'<UserModuleRole user={self.user_id} module={self.module_key} access={self.has_access}>'
 
+
+
+
+
+

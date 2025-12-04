@@ -19,7 +19,18 @@
             <div class="col-lg-8">
                 <div class="card">
                     <div class="card-header">
-                        <h3 class="mb-0">{{ request.event_name }}</h3>
+                        <div class="text-center mb-3">
+                            <div class="d-flex justify-content-center align-items-center gap-3 flex-wrap">
+                                {% if portal_logo_filename %}
+                                <img src="{{ url_for('settings.portal_logo', filename=portal_logo_filename) }}" alt="Portal Logo" style="max-height: 50px; height: auto;">
+                                {% endif %}
+                                {% if form.secondary_logo_path %}
+                                {% set logo_filename = form.secondary_logo_path.replace('\\', '/').split('/')[-1] %}
+                                <img src="{{ url_for('settings.booking_secondary_logo', form_id=form.id, filename=logo_filename) }}" alt="Formular Logo" style="max-height: 50px; height: auto;">
+                                {% endif %}
+                            </div>
+                        </div>
+                        <h3 class="mb-0 text-center">{{ request.event_name }}</h3>
                     </div>
                     <div class="card-body">
                         <div class="mb-3">

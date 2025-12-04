@@ -474,6 +474,7 @@ def create_app(config_name='default'):
     from app.blueprints.wiki import wiki_bp
     from app.blueprints.comments import comments_bp
     from app.blueprints.booking import booking_bp
+    from app.blueprints.music import music_bp
     
     app.register_blueprint(setup_bp)
     app.register_blueprint(auth_bp)
@@ -492,6 +493,7 @@ def create_app(config_name='default'):
     app.register_blueprint(wiki_bp)
     app.register_blueprint(comments_bp)
     app.register_blueprint(booking_bp, url_prefix='/booking')
+    app.register_blueprint(music_bp)
     
     @app.route('/manifest.json')
     def manifest():

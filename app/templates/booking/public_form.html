@@ -24,6 +24,17 @@
 <body>
     <div class="booking-header">
         <div class="container">
+            <div class="text-center mb-3">
+                <div class="d-flex justify-content-center align-items-center gap-3 flex-wrap">
+                    {% if portal_logo_filename %}
+                    <img src="{{ url_for('settings.portal_logo', filename=portal_logo_filename) }}" alt="Portal Logo" style="max-height: 60px; height: auto;">
+                    {% endif %}
+                    {% if form.secondary_logo_path %}
+                    {% set logo_filename = form.secondary_logo_path.replace('\\', '/').split('/')[-1] %}
+                    <img src="{{ url_for('settings.booking_secondary_logo', form_id=form.id, filename=logo_filename) }}" alt="Formular Logo" style="max-height: 60px; height: auto;">
+                    {% endif %}
+                </div>
+            </div>
             <h1 class="text-center mb-2">{{ form.title }}</h1>
             {% if form.description %}
             <p class="text-center mb-0">{{ form.description }}</p>
@@ -60,6 +71,13 @@
                             <h3 class="mb-4">Buchungsdetails</h3>
                             
                             <!-- Pflichtfelder -->
+                            <div class="mb-3">
+                                <label for="applicant_name" class="form-label">
+                                    Ihr Name <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="applicant_name" name="applicant_name" required>
+                            </div>
+                            
                             <div class="mb-3">
                                 <label for="event_name" class="form-label">
                                     Name der Veranstaltung <span class="text-danger">*</span>

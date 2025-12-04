@@ -21,11 +21,19 @@ class BookingForm(db.Model):
     enable_mailbox = db.Column(db.Boolean, default=False, nullable=False)  # Briefkasten aktivieren
     enable_shared_folder = db.Column(db.Boolean, default=False, nullable=False)  # Geteilter Ordner aktivieren
     
+    # Logo
+    secondary_logo_path = db.Column(db.String(500), nullable=True)  # Optionales 2. Logo
+    
+    # PDF-Texte
+    pdf_application_text = db.Column(db.Text, nullable=True)  # Text für "Die Person ... beantragt ..."
+    pdf_footer_text = db.Column(db.Text, nullable=True)  # Optionaler Text am Ende des PDFs
+    
     # Relationships
     creator = db.relationship('User', backref='created_booking_forms')
     fields = db.relationship('BookingFormField', back_populates='form', cascade='all, delete-orphan', order_by='BookingFormField.field_order')
     images = db.relationship('BookingFormImage', back_populates='form', cascade='all, delete-orphan', order_by='BookingFormImage.display_order')
     requests = db.relationship('BookingRequest', back_populates='form', cascade='all, delete-orphan')
+    roles = db.relationship('BookingFormRole', back_populates='form', cascade='all, delete-orphan', order_by='BookingFormRole.role_order')
     
     def __repr__(self):
         return f'<BookingForm {self.title}>'
@@ -90,6 +98,7 @@ class BookingRequest(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     form_id = db.Column(db.Integer, db.ForeignKey('booking_forms.id'), nullable=False)
     event_name = db.Column(db.String(200), nullable=False)  # Pflicht
+    applicant_name = db.Column(db.String(200), nullable=True)  # Name des Antragstellers
     email = db.Column(db.String(120), nullable=False)  # Pflicht
     token = db.Column(db.String(64), unique=True, nullable=True, index=True)  # Token nach Absendung
     
@@ -125,6 +134,7 @@ class BookingRequest(db.Model):
     files = db.relationship('BookingRequestFile', back_populates='request', cascade='all, delete-orphan')
     accepter = db.relationship('User', foreign_keys=[accepted_by], backref='accepted_bookings')
     rejecter = db.relationship('User', foreign_keys=[rejected_by], backref='rejected_bookings')
+    approvals = db.relationship('BookingRequestApproval', back_populates='request', cascade='all, delete-orphan')
     
     def __repr__(self):
         return f'<BookingRequest {self.event_name} ({self.status})>'
@@ -161,4 +171,74 @@ class BookingRequestFile(db.Model):
     
     def __repr__(self):
         return f'<BookingRequestFile {self.original_filename}>'
+
+
+class BookingFormRole(db.Model):
+    """Rolle für Zustimmungen pro Buchungsformular."""
+    __tablename__ = 'booking_form_roles'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    form_id = db.Column(db.Integer, db.ForeignKey('booking_forms.id'), nullable=False)
+    role_name = db.Column(db.String(200), nullable=False)  # z.B. "Schulleitung", "Hausmeister"
+    role_order = db.Column(db.Integer, default=0, nullable=False)
+    is_required = db.Column(db.Boolean, default=True, nullable=False)  # Ob Zustimmung erforderlich
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    form = db.relationship('BookingForm', back_populates='roles')
+    users = db.relationship('BookingFormRoleUser', back_populates='role', cascade='all, delete-orphan')
+    approvals = db.relationship('BookingRequestApproval', back_populates='role', cascade='all, delete-orphan')
+    
+    def __repr__(self):
+        return f'<BookingFormRole {self.role_name} (Form {self.form_id})>'
+
+
+class BookingFormRoleUser(db.Model):
+    """Zuordnung von Benutzern zu Rollen."""
+    __tablename__ = 'booking_form_role_users'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    role_id = db.Column(db.Integer, db.ForeignKey('booking_form_roles.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    
+    # Relationships
+    role = db.relationship('BookingFormRole', back_populates='users')
+    user = db.relationship('User', backref='booking_role_assignments')
+    
+    __table_args__ = (
+        db.UniqueConstraint('role_id', 'user_id', name='unique_role_user'),
+    )
+    
+    def __repr__(self):
+        return f'<BookingFormRoleUser role={self.role_id} user={self.user_id}>'
+
+
+class BookingRequestApproval(db.Model):
+    """Zustimmungen/Ablehnungen für Buchungsanfragen."""
+    __tablename__ = 'booking_request_approvals'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    request_id = db.Column(db.Integer, db.ForeignKey('booking_requests.id'), nullable=False)
+    role_id = db.Column(db.Integer, db.ForeignKey('booking_form_roles.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # Wer hat zugestimmt/abgelehnt
+    status = db.Column(db.String(20), default='pending', nullable=False)  # pending, approved, rejected
+    comment = db.Column(db.Text, nullable=True)  # Optionaler Grund/Kommentar
+    approved_at = db.Column(db.DateTime, nullable=True)
+    rejected_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    request = db.relationship('BookingRequest', back_populates='approvals')
+    role = db.relationship('BookingFormRole', back_populates='approvals')
+    approver = db.relationship('User', foreign_keys=[user_id], backref='booking_approvals')
+    
+    __table_args__ = (
+        db.UniqueConstraint('request_id', 'role_id', name='unique_request_role_approval'),
+    )
+    
+    def __repr__(self):
+        return f'<BookingRequestApproval request={self.request_id} role={self.role_id} status={self.status}>'
 

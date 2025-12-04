@@ -1,34 +1,34 @@
 {% extends "base.html" %}
 
-{% block title %}Buchungsanfragen{% endblock %}
+{% block title %}{{ _('booking.requests.page_title') }}{% endblock %}
 
 {% block content %}
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}">Dashboard</a></li>
-        <li class="breadcrumb-item active">Buchungsanfragen</li>
+        <li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}">{{ _('booking.requests.breadcrumb_dashboard') }}</a></li>
+        <li class="breadcrumb-item active">{{ _('booking.requests.breadcrumb_requests') }}</li>
     </ol>
 </nav>
 
-<h2>Buchungsanfragen</h2>
+<h2>{{ _('booking.requests.heading') }}</h2>
 
 <div class="mb-3">
     <div class="btn-group" role="group">
         <a href="{{ url_for('booking.requests', status='pending') }}" 
            class="btn btn-outline-{% if status_filter == 'pending' %}primary{% else %}secondary{% endif %}">
-            Offen
+            {{ _('booking.requests.filters.pending') }}
         </a>
         <a href="{{ url_for('booking.requests', status='accepted') }}" 
            class="btn btn-outline-{% if status_filter == 'accepted' %}primary{% else %}secondary{% endif %}">
-            Angenommen
+            {{ _('booking.requests.filters.accepted') }}
         </a>
         <a href="{{ url_for('booking.requests', status='rejected') }}" 
            class="btn btn-outline-{% if status_filter == 'rejected' %}primary{% else %}secondary{% endif %}">
-            Abgelehnt
+            {{ _('booking.requests.filters.rejected') }}
         </a>
         <a href="{{ url_for('booking.requests', status='archived') }}" 
            class="btn btn-outline-{% if status_filter == 'archived' %}primary{% else %}secondary{% endif %}">
-            Archiviert
+            {{ _('booking.requests.filters.archived') }}
         </a>
     </div>
 </div>
@@ -51,13 +51,13 @@
             <table class="table table-hover">
                 <thead>
                     <tr>
-                        <th>Veranstaltung</th>
-                        <th>E-Mail</th>
-                        <th>Datum</th>
-                        <th>Formular</th>
-                        <th>Status</th>
-                        <th>Erstellt</th>
-                        <th>Aktionen</th>
+                        <th>{{ _('booking.requests.table.event') }}</th>
+                        <th>{{ _('booking.requests.table.email') }}</th>
+                        <th>{{ _('booking.requests.table.date') }}</th>
+                        <th>{{ _('booking.requests.table.form') }}</th>
+                        <th>{{ _('booking.requests.table.status') }}</th>
+                        <th>{{ _('booking.requests.table.created') }}</th>
+                        <th>{{ _('booking.requests.table.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -75,19 +75,19 @@
                         <td>{{ request.form.title }}</td>
                         <td>
                             {% if request.status == 'pending' %}
-                            <span class="badge bg-warning">Offen</span>
+                            <span class="badge bg-warning">{{ _('booking.requests.status.pending') }}</span>
                             {% elif request.status == 'accepted' %}
-                            <span class="badge bg-success">Angenommen</span>
+                            <span class="badge bg-success">{{ _('booking.requests.status.accepted') }}</span>
                             {% elif request.status == 'rejected' %}
-                            <span class="badge bg-danger">Abgelehnt</span>
+                            <span class="badge bg-danger">{{ _('booking.requests.status.rejected') }}</span>
                             {% elif request.status == 'archived' %}
-                            <span class="badge bg-secondary">Archiviert</span>
+                            <span class="badge bg-secondary">{{ _('booking.requests.status.archived') }}</span>
                             {% endif %}
                         </td>
                         <td>{{ request.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
                         <td>
                             <a href="{{ url_for('booking.request_detail', request_id=request.id) }}" class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-eye"></i> Details
+                                <i class="bi bi-eye"></i> {{ _('booking.requests.table.details') }}
                             </a>
                         </td>
                     </tr>
@@ -96,7 +96,7 @@
             </table>
         </div>
         {% else %}
-        <p class="text-muted text-center py-5">Keine Buchungsanfragen in dieser Kategorie.</p>
+        <p class="text-muted text-center py-5">{{ _('booking.requests.empty') }}</p>
         {% endif %}
     </div>
 </div>

@@ -13,8 +13,7 @@ from .inventory import Product, BorrowTransaction, ProductFolder, ProductSet, Pr
 from .api_token import ApiToken
 from .wiki import WikiPage, WikiPageVersion, WikiCategory, WikiTag, WikiFavorite
 from .comment import Comment, CommentMention
-from .booking import BookingForm, BookingFormField, BookingFormImage, BookingRequest, BookingRequestField, BookingRequestFile
-from .role import UserModuleRole
+from .music import MusicProviderToken, MusicWish, MusicQueue, MusicPlaylist, MusicSettings
 
 __all__ = [
     'User',
@@ -32,8 +31,7 @@ __all__ = [
     'ApiToken',
     'WikiPage', 'WikiPageVersion', 'WikiCategory', 'WikiTag', 'WikiFavorite',
     'Comment', 'CommentMention',
-    'BookingForm', 'BookingFormField', 'BookingFormImage', 'BookingRequest', 'BookingRequestField', 'BookingRequestFile',
-    'UserModuleRole'
+    'MusicProviderToken', 'MusicWish', 'MusicQueue', 'MusicPlaylist', 'MusicSettings'
 ]
 
 
